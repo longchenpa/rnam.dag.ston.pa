@@ -1,0 +1,1892 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2022-01-17 Anders: верификатор математики</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2022-01-17</a>
+</nav>
+<main>
+    <section>
+
+        <h3>Anders: верификатор математики</h3>
+
+        <p>Верификатор математики <a href="https://github.com/groupoid/anders">Anders</a> всего лишь один из трех гомотопических пруверов Групоид Инфинити.
+           Другие два &mdash; это: 1) верификатор под названием <a href="https://github.com/groupoid/hurricane">Hurricane</a> системы типов HoTT-I,
+           которая используется в теорем прувере JetBrains Arend, а также 2) верификатор
+           под названием <a href="https://github.com/groupoid/castle.bravo">Castle Bravo</a> авторской системы типов HoTT-∂. В отличии от Anders,
+           обе системы HoTT-I и HoTT-∂ обладают интересным свойством β-дефинициального равенства путей.
+           Посмотрите на них, они тоже интересные! Эта же статья посвящена целиком CCHM верификатору гомотопической
+           системы типов с двумя равенствами, известной как HTS система Воеводского или
+           система 2LTT Анненкова-Каприотти-Крауса-Саттлера. Кроме равенства на претипах, Андерс содержит
+           в качестве примитива стек де Рама Черубини-Шрайбера, что делает его пригодным для программирования
+           когомологий и синтетической дифференциальной геометрии.
+        </div></p>
+
+        <figure><code>type exp =
+  | EPre of Z.t | EKan of Z.t | EVar of name | EHole
+  | EPi of exp * (name * exp) | ELam of exp * (name * exp) | EApp of exp * exp
+  | ESig of exp * (name * exp) | EPair of tag * exp * exp | EFst of exp | ESnd of exp
+  | EId of exp | ERef of exp | EJ of exp | EField of exp * string
+  | EPathP of exp | EPLam of exp | EAppFormula of exp * exp
+  | EI | EDir of dir | EAnd of exp * exp | EOr of exp * exp | ENeg of exp
+  | ETransp of exp * exp | EHComp of exp * exp * exp * exp
+  | EPartial of exp | EPartialP of exp * exp | ESystem of exp System.t
+  | ESub of exp * exp * exp | EInc of exp * exp | EOuc of exp
+  | EGlue of exp | EGlueElem of exp * exp * exp | EUnglue of exp
+  | EEmpty | EIndEmpty of exp
+  | EUnit | EStar | EIndUnit of exp
+  | EBool | EFalse | ETrue | EIndBool of exp
+  | EW of exp * (name * exp) | ESup of exp * exp | EIndW of exp * exp * exp
+  | EIm of exp | EInf of exp | EIndIm of exp * exp | EJoin of exp
+</code></figure>
+
+        <h4>Космос или структура вселенных</h4>
+
+<p>Начать статью хотим с устройства тайп чекера. В сущности своей тайп чекер это функция над языком выражений exp.
+   Будем рассматривать устройство функций тайп чекера построчно для каждого притимитива из дерева exp.</P>
+
+<figure><code>type exp = | EPre of Z.t | EKan of Z.t | EVar of name | EHole </code></figure>
+
+<p>Система HTS (или 2LTT) характеризуется наличием двух иерархий предикативных
+   вселенных U<sub>i</sub> для фибрационных типов и V<sub>j</sub> для претипов,
+   где и живет гомотопический многомерный отрезок. Также в ядре тайп чекера обычно
+   находятся конструкторы для переменных и дыр удобных для процесса извлечения доказательств.
+  Уравнения для этих примитивов будут даны в этом параграфе.</p>
+
+<p>Сам тайпчекер устроен таким образом (стандартная практика, см. например ставшие уже классическими
+тайпчекеры Mini-TT или cubicaltt), что для процесса бета-нормализации (эвалуации) или интерпретирования
+выражения используется внутреннее представление, оптимизированное для нужд эффективных
+вычислений.</p>
+
+<figure><code>type value = | VKan of Z.t | VPre of Z.t | Var of name * value | VHole</code></figure>
+
+<p>Таким образом сигнатура тайпчекера выглядит так:</p>
+
+<figure><code>and check ctx (e0 : exp) (t0 : value) = traceCheck e0 t0; try match e0, t0 with</code></figure>
+
+<p>Алгоритм классический и звучит так: для типового выражения и его экземпляра мы берем экземпляр
+типового выражения выводим его тип и сравниваем с заданым типовым выражением. Если они совпадают то все хорошо,
+если нет -- то ошибка типизации. Дальше идет список паттерн-матчинг уравнений всех функций на деревьях
+языковых выражений expr:</p>
+
+<figure><code>check:
+  | EHole, v -> traceHole v ctx
+  | e, VPre u -> begin
+    match infer ctx e with
+    | VKan v | VPre v -> if ieq u v then () else raise (Ineq (VPre u, VPre v))
+    | t -> raise (Ineq (VPre u, t)) end
+  | e, t -> eqNf (infer ctx e) t
+  
+conv:
+  | VKan u, VKan v -> ieq u v | VPre u, VPre v -> ieq u v
+  | Var (u, _), Var (v, _) -> u = v
+
+eval:
+  | EPre u -> VPre u | EKan u -> VKan u
+  | EVar x -> getRho ctx x | EHole -> VHole
+
+infer:
+  | VPre n -> VPre (Z.succ n) | VKan n -> VKan (Z.succ n)
+  | EPre u -> VPre (Z.succ u) | EKan u -> VKan (Z.succ u)
+  | EVar x -> lookup x ctx
+
+inferV:
+  | Var (_, t) -> t | VPre n -> VPre (Z.succ n) | VKan n -> VKan (Z.succ n)
+
+act:
+  | Var (i, VI) -> actVar rho i | Var (x, t) -> Var (x, act rho t) | VHole -> VHole
+  | VKan u -> VKan u | VPre u -> VPre u
+
+check:
+  | e, t -> eqNf (infer ctx e) t
+
+and getRho ctx x = match Env.find_opt x ctx with
+  | Some (_, _, Value v) -> v
+  | Some (_, _, Exp e) -> eval e ctx
+  | None -> raise (VariableNotFound x)
+
+and eqNf v1 v2 : unit = traceEqNF v1 v2;
+  if conv v1 v2 then () else raise (Ineq (v1, v2))
+
+and lookup (x : name) (ctx : ctx) = match Env.find_opt x ctx with
+  | Some (_, Value v, _) -> v
+  | Some (_, Exp e, _) -> eval e ctx
+  | None -> raise (VariableNotFound x)
+</code></figure>
+
+<p>Здесь описывается так называемся база рекурсии и работа с контекстом верификатора (getRho, lookup).</p>
+
+        <h4>Π-тип</h4>
+
+  <p>Первым математическим прувером вообще и первым прувером на фибрационном типе считается AUTOMATH де Брейна.
+     Первая полная формальная система CoC и лямбда-куб были детально разработаны Барендрехтом. Однако отцом
+     формальной математики принято считать Мартина-Лёфа. Его типовая система до сих пор формирует вычислительную
+     основу современных пруверов. Традиционно MLTT состоит из Π, Σ, 0, 1, 2, W, Id типов.
+     При разработке верификатора Anders мы руководствовались мотивацией минималистичности поэтому отбросили
+     вариант имплементации общей схемы индуктивных типов и высших идуктивных типов (HIT),
+     а решили реализовать в качестве индуктивного ядра классические W-типы системы MLTT.
+  </div>
+  </p>
+
+<figure><code>eval:
+  | EPi (a, (p, b)) -> let t = eval a ctx in VPi (t, (fresh p, closByVal ctx p t b))
+  | ELam (a, (p, b)) -> let t = eval a ctx in VLam (t, (fresh p, closByVal ctx p t b))
+  | EApp (f, x) -> app (eval f ctx, eval x ctx)
+
+infer:
+  | EPi (a, (p, b)) -> inferTele ctx p a b
+
+inferV:
+  | VPi (t, (x, f)) -> imax (inferV t) (inferV (f (Var (x, t))))
+  | VLam (t, (x, f)) -> VPi (t, (x, fun x -> inferV (f x)))
+  | VApp (f, x) -> begin match inferV f with
+    | VPi (_, (_, g)) -> g x
+    | v -> raise (ExpectedPi v) end
+
+act:
+  | VLam (t, (x, g)) -> VLam (act rho t, (x, g >> act rho))
+  | VPi (t, (x, g)) -> VPi (act rho t, (x, g >> act rho))
+  | VApp (f, x) -> app (act rho f, act rho x)
+
+app:
+  | f, x -> VApp (f, x)
+
+conv:
+  | VPi (a,(p,f)), VPi (b,(_,g)) -> let x = Var (p,a) in conv a b && conv (f x) (g x)
+  | VLam (a,(p,f)), VLam (b,(_,g))
+  | VApp (f,a), VApp (g,b) -> conv f g && conv a b
+  
+check:
+  | ELam (a, (p, b)), VPi (t, (_, g)) ->
+    ignore (extSet (infer ctx a)); eqNf (eval a ctx) t;
+    let x = Var (p, t) in let ctx' = upLocal ctx p t x in check ctx' b (g x)
+
+and inferTele ctx p a b =
+    ignore (extSet (infer ctx a));
+    let t = eval a ctx in let x = Var (p, t) in
+    let ctx' = upLocal ctx p t x in
+    let v = infer ctx' b in imax (infer ctx a) v
+  
+and inferLam ctx p a e =
+    ignore (extSet (infer ctx a)); let t = eval a ctx in
+    ignore (infer (upLocal ctx p t (Var (p, t))) e);
+    VPi (t, (p, fun x -> inferV (eval e (upLocal ctx p t x))))
+    
+</code></figure>
+
+<p>Π-тип тестируется интернализацией, а при наличии гомотопического
+   равенства еще и функциональной экстенсиональностью.</p>
+
+<figure><code>
+def Pi (A : U) (B : A → U) : U := Π (x : A), B x
+def lambda (A: U) (B: A → U) (b: Pi A B) : Pi A B := λ (x : A), b x
+def lam (A B: U) (f: A → B) : A → B := λ (x : A), f x
+def apply (A: U) (B: A → U) (f: Pi A B) (a: A) : B a := f a
+def app (A B: U) (f: A → B) (x: A): B := f x
+
+def Π-β (A : U) (B : A → U) (a : A) (f : Pi A B)
+  : Path (B a) (apply A B (lambda A B f) a) (f a) := idp (B a) (f a)
+def Π-η (A : U) (B : A → U) (a : A) (f : Pi A B)
+  : Path (Pi A B) f (λ (x : A), f x) := idp (Pi A B) f
+
+def funext-form (A B: U) (f g: A → B): U := Path (A → B) f g
+def funext (A B: U) (f g: A → B) (p: Π (x: A), Path B (f x) (g x))
+  : funext-form A B f g := &lt;i> λ (a: A), p a @ i
+
+def happly (A B: U) (f g : A → B) (p: funext-form A B f g) (x : A)
+  : Path B (f x) (g x) := cong (A → B) B (λ (h: A → B), app A B h x) f g p
+
+def funext-β (A B: U) (f g: A → B) (p: Π (x: A), Path B (f x) (g x))
+  : Π (x: A), Path B (f x) (g x) := λ (x: A), happly A B f g (funext A B f g p) x
+
+def funext-η (A B: U) (f g: A → B) (p: Path (A → B) f g)
+  : Path (Path (A → B) f g) (funext A B f g (happly A B f g p)) p
+ := idp (Path (A → B) f g) p
+</code></figure>
+
+<h4>Σ-тип</h4>
+
+<p>Как вы уже могли заметить система типов прувера порезана на модули,
+   каждый из которых реализует определенный тип системы типов, а именно 5 правил
+   Мартина-Лёфа: 1) Правило сигнатуры или формации поселяющее тип в определенную вселенную,
+   2) Конструкторы с помощью которых создаются элементы типа,
+   3) Элиминаторы и/или Индукторы с помощью которых доказывают теоремы о типе,
+   4) Вычислительное уравнение гарантирующие процес вычислений (бета-правило),
+   5) Уравнение уникальности, гарантирующее обратный процес вычислений (эта-правило). </p>
+
+<p>При этом для добавления типа в систему достаточно добавить уравнения
+   паттерн-мачинга в набор функций из которых состоит тайп чекер:
+   <b>infer</b>, <b>inferV</b>, <b>app</b>, <b>check</b>,
+   <b>act</b>, <b>conv</b>, <b>eval</b>.
+</p>
+
+<figure><code>
+infer:
+  | ESig (a, (p, b)) -> inferTele ctx p a b
+  | EFst e -> fst (extSigG (infer ctx e))
+  | ESnd e -> let (_, (_, g)) = extSigG (infer ctx e) in g (vfst (eval e ctx))
+  | EField (e, p) -> inferField ctx p e
+
+inferV:
+  | VFst e -> fst (extSigG (inferV e))
+  | VSnd e -> let (_, (_, g)) = extSigG (inferV e) in g (vfst e)
+
+eval:
+  | ESig (a, (p, b)) -> let t = eval a ctx in VSig (t, (fresh p, closByVal ctx p t b))
+  | EPair (r, e1, e2) -> VPair (r, eval e1 ctx, eval e2 ctx)
+  | EFst e -> vfst (eval e ctx)
+  | EField (e, p) -> evalField p (eval e ctx)
+
+check:
+  | EPair (r, e1, e2), VSig (t, (p, g)) ->
+    ignore (extSet (inferV t)); check ctx e1 t;
+    check ctx e2 (g (eval e1 ctx)); begin match p with
+    | Name (v, _) -> r := Some v
+    | Irrefutable -> () end
+
+act:
+  | VSig (t, (x, g)) -> VSig (act rho t, (x, g >> act rho))
+  | VPair (r, u, v) -> VPair (r, act rho u, act rho v)
+  | VFst k -> vfst (act rho k) | VSnd k -> vsnd (act rho k)
+
+conv:
+  | VFst x, VFst y | VSnd x, VSnd y -> conv x y
+  | VPair (_, a, b), VPair (_, c, d) -> conv a c && conv b d
+  | VPair (_, a, b), v | v, VPair (_, a, b) -> conv (vfst v) a && conv (vsnd v) b
+
+and inferField ctx p e = snd (getField p (eval e ctx) (infer ctx e))
+
+let rec getField p v = function
+  | VSig (t, (q, g)) ->
+    if matchIdent p q then (vfst v, t)
+    else getField p (vsnd v) (g (vfst v))
+  | t -> raise (ExpectedSig t)
+
+let vfst : value -> value = function
+  | VPair (_, u, _) -> u
+  | v -> VFst v
+
+let vsnd : value -> value = function
+  | VPair (_, _, u) -> u
+  | v -> VSnd v
+</code></figure>
+
+<p>Наш Σ-тип расширен дополнительным элиминатором который дает доступ к именованому
+   телескому прямо в процессе нормализации. Этот механизм позволяет реализовать
+   базовый механизм записей-кортежей с именоваными полями,
+   за исключением наследования и расширений рекордов. Элиминаторы .1 и .2 (из cubicaltt) тоже работают.
+</p>
+
+<figure><code>def Sigma (A : U) (B : A → U) : U := summa (x: A), B x
+def prod (A B : U) : U := summa (_ : A), B
+def pair (A: U) (B: A → U) (a: A) (b: B a) : Sigma A B ≔ (a, b)
+def pr₁ (A: U) (B: A → U) (x: Sigma A B) : A ≔ x.1
+def pr₂ (A: U) (B: A → U) (x: Sigma A B) : B (pr₁ A B x) ≔ x.2
+  
+def Sigma-rec (A: U) (B: A -> U) (C: U) (g: Π (x: A), B(x) -> C)
+    (p: Σ (x: A), B x): C := g p.1 p.2
+  
+def Sigma-ind (A : U) (B : A -> U) (C : Π (s: Σ (x: A), B x), U) 
+    (g: Π (x: A) (y: B x), C (x,y)) (p: Σ (x: A), B x) : C p := g p.1 p.2
+  
+def ac (A B: U) (R: A -> B -> U) (g: Π (x: A), Σ (y: B), R x y)
+  : Σ (f: A -> B), Π (x: A), R x (f x) := (\(i:A),(g i).1,\(j:A),(g j).2)
+  
+def total (A:U) (B C : A -> U) (f : Π (x:A), B x -> C x) (w: Σ(x: A), B x)
+  : Σ(x: A), C x := (w.1,f (w.1) (w.2))
+  
+def funDepTr (A: U) (P: A -> U) (a0 a1: A) (p: PathP (&lt;_>A) a0 a1)
+    (u0: P a0) (u1: P a1)
+  : PathP (&lt;_>U) (PathP (&lt;i> P (p @ i)) u0 u1) (PathP (&lt;_>P a1)
+            (hcomp (P a1) 0 (λ (k : I), []) (transp (&lt;i> P (p @ i)) 0 u0)) u1)
+ := &lt;j> PathP (&lt;i> P (p @ j \/ i))
+            (comp (\(i:I), P (p @ j /\ i)) -j (\(k: I), [(j = 0) -> u0 ])
+            (inc (P a0) -j u0)) u1
+  
+def pathSig0 (A: U) (P: A -> U) (t u: Σ (x: A), P x) (p: PathP (&lt;_>A) t.1 u.1)
+  : PathP (&lt;_>U) (PathP (&lt;i>P (p @ i)) t.2 u.2) (PathP (&lt;_>P u.1)
+          (hcomp (P u.1) 0 (λ(k:I),[]) (transp (&lt;i> P (p @ i)) 0 t.2)) u.2)
+ := funDepTr A P t.1 u.1 p t.2 u.2</code></figure>
+
+<h4>0-тип</h4>
+
+<p>0-тип представляет собой тип-ложь, логический ноль 𝟎, пустоту, Empty, Void или ⊥.
+   Используется для доказательства противоречий, содержит только правила формации и индуктор.</p>
+
+<figure><code>eval:
+  | EEmpty -> VEmpty
+  | EIndEmpty e -> VIndEmpty (eval e ctx)
+
+inferV:
+  | VEmpty -> VKan Z.zero
+  | VIndEmpty t -> implv VEmpty t
+
+act:
+  | VEmpty -> VEmpty
+  | VIndEmpty v -> VIndEmpty (act rho v)
+
+conv:
+  | VEmpty, VEmpty -> true
+  | VIndEmpty u, VIndEmpty v -> conv u v
+
+infer:
+  | EEmpty | EUnit
+  | EIndEmpty e -> ignore (extSet (infer ctx e)); implv VEmpty (eval e ctx)
+</code></figure>
+
+<h4>1-тип</h4>
+
+<p>1-тип представляет собой логическую единицу 𝟏, тип-истину в интуиционистской
+   пропозициональной логике, Unit или ⊤. Имеет единственный конструктор ★.</p>
+
+<figure><code>eval:
+  | EUnit -> VUnit
+  | EStar -> VStar
+  | EIndUnit e -> VIndUnit (eval e ctx)
+
+app:
+  | VApp (VIndUnit _, x), VStar -> x
+
+inferV:
+  | VUnit -> VKan Z.zero
+  | VStar -> VUnit
+  | VIndUnit t -> recUnit t
+
+act:
+  | VUnit -> VUnit
+  | VStar -> VStar
+  | VIndUnit v -> VIndUnit (act rho v)
+
+conv:
+  | VUnit, VUnit -> true
+  | VStar, VStar -> true
+  | VIndUnit u, VIndUnit v -> conv u v
+
+infer:
+  | EStar -> VUnit
+  | EIndUnit e -> inferInd false ctx VUnit e recUnit
+
+and recUnit t = let x = freshName "x" in
+  implv (app (t, VStar)) (VPi (VUnit, (x, fun x -> app (t, x))))
+</code></figure>
+
+<h4>2-тип</h4>
+
+<p>2-тип представляет собой логическую двойку 𝟐, булевый тип Bool или 0-мерную гомотопическую сферу.
+   Имеет два конструктора false=0₂ и true=1₂.</p>
+
+<figure><code>eval:
+  | EBool -> VBool
+  | EFalse -> VFalse
+  | ETrue -> VTrue
+  | EIndBool e -> VIndBool (eval e ctx)
+
+app:
+  | VApp (VApp (VIndBool _, a), _), VFalse -> a
+  | VApp (VApp (VIndBool _, _), b), VTrue -> b
+
+inferV:
+  | VBool -> VKan Z.zero
+  | VFalse | VTrue -> VBool
+  | VIndBool t -> recBool t
+
+act:
+  | VBool -> VBool
+  | VFalse -> VFalse
+  | VTrue -> VTrue
+  | VIndBool v -> VIndBool (act rho v)
+
+conv:
+  | VBool, VBool -> true
+  | VFalse, VFalse -> true
+  | VTrue, VTrue -> true
+  | VIndBool u, VIndBool v -> conv u v
+
+infer:
+  | EBool -> VKan Z.zero
+  | EFalse | ETrue -> VBool
+  | EIndBool e -> inferInd false ctx VBool e recBool
+
+and recBool t = let x = freshName "x" in
+  implv (app (t, VFalse)) (implv (app (t, VTrue))
+    (VPi (VBool, (x, fun x -> app (t, x)))))
+</code></figure>
+
+<h4>W-тип</h4>
+
+<p>W-тип предназначен для кодирования хорошо-определенных деревьев. 
+   W-тип определяется на конструкторах индуктивного дерева,
+   а ветви условия выражены функцией второй зависимой компоненты. С помощью
+   гомотопического равенства, W-типов, а также типов 0,1,2 выразима индукция натуральных чисел.
+</p>
+
+<figure><code>
+eval:
+  | EW (a, (p, b)) -> let t = eval a ctx in W (t, (fresh p, closByVal ctx p t b))
+  | ESup (a, b) -> VSup (eval a ctx, eval b ctx)
+  | EIndW (a, b, c) -> VIndW (eval a ctx, eval b ctx, eval c ctx)
+
+app: 
+  | VApp (VIndW (a, b, c), g), VApp (VApp (VSup (_, _), x), f) ->
+    app (app (app (g, x), f),
+      VLam (app (b, x), (freshName "b", fun y ->
+        app (VApp (VIndW (a, b, c), g), app (f, y)))))
+
+inferV:
+  | VSup (a, b) -> inferSup a b
+  | VIndW (a, b, c) -> inferIndW a b c
+
+and wtype a b = W (a, (freshName "x", fun x -> app (b, x)))
+
+and inferSup a b = let t = wtype a b in let x = freshName "x" in
+  VPi (a, (x, fun x -> implv (implv (app (b, x)) t) t))
+
+and inferIndW a b c = let t = wtype a b in
+  implv (VPi (a, (freshName "x", fun x ->
+    VPi (implv (app (b, x)) t, (freshName "f", fun f ->
+      implv (VPi (app (b, x), (freshName "b", fun b -> app (c, (app (f, b))))))
+        (app (c, VApp (VApp (VSup (a, b), x), f))))))))
+    (VPi (t, (freshName "w", fun w -> app (c, w))))
+
+act:
+  | W (t, (x, g)) -> W (act rho t, (x, g >> act rho))
+  | VSup (a, b) -> VSup (act rho a, act rho b)
+  | VIndW (a, b, c) -> VIndW (act rho a, act rho b, act rho c)
+
+conv:
+  | VSup (a1,b1), VSup (a2,b2) -> conv a1 a2 && conv b1 b2
+  | VIndW (a1,b1,c1), VIndW (a2,b2,c2) -> conv a1 a2 && conv b1 b2 && conv c1 c2
+
+infer:
+  | ESup (a, b) -> let t = eval a ctx in ignore (extSet (infer ctx a));
+    let (t', (p, g)) = extPiG (infer ctx b) in eqNf t t';
+    ignore (extSet (g (Var (p, t))));
+    inferSup t (eval b ctx)
+  | EIndW (a, b, c) -> let t = eval a ctx in ignore (extSet (infer ctx a));
+    let (t', (p, g)) = extPiG (infer ctx b) in
+    eqNf t t'; ignore (extSet (g (Var (p, t))));
+    let (w', (q, h)) = extPiG (infer ctx c) in
+    eqNf (wtype t (eval b ctx)) w';
+    ignore (extSet (h (Var (q, w'))));
+    inferIndW t (eval b ctx) (eval c ctx)
+
+and inferIndW a b c = let t = wtype a b in
+    implv (VPi (a, (freshName "x", fun x ->
+      VPi (implv (app (b, x)) t, (freshName "f", fun f ->
+        implv (VPi (app (b, x), (freshName "b", fun b -> app (c, (app (f, b))))))
+          (app (c, VApp (VApp (VSup (a, b), x), f))))))))
+      (VPi (t, (freshName "w", fun w -> app (c, w))))
+
+   </code></figure>
+
+   <p>После того как мы определили W типы в ядре, для реализации принципа индукции нам потребуется
+      транспорт в фибрационном путе Path.</p>
+
+<figure><code>
+def indᵂ-β (A : U) (B : A → U) (C : (W (x : A), B x) → U) (g : Π (x : A)
+    (f : B x → (W (x : A), B x)), (Π (b : B x), C (f b)) → C (sup A B x f))
+    (a : A) (f : B a → (W (x : A), B x))
+  : PathP (&lt;_> C (sup A B a f))
+          (indᵂ A B C g (sup A B a f)) (g a f (λ (b : B a), indᵂ A B C g (f b)))
+ := &lt;_> g a f (λ (b : B a), indᵂ A B C g (f b))
+
+def trans-W (A : I → U) (B : Π (i : I), A i → U)
+    (a : A 0) (f : B 0 a → (W (x : A 0), B 0 x))
+  : W (x : A 1), B 1 x
+ := sup (A 1) (B 1) (transp (&lt;i> A i) 0 a)
+        (transp (&lt;i> B i (transFill (A 0)
+                (A 1) (<j> A j) a @ i) → (W (x : A i), B i x)) 0 f)
+
+def trans-W′ (A : I → U) (B : Π (i : I), A i → U)
+    (a : A 0) (f : B 0 a → (W (x : A 0), B 0 x))
+  : W (x : A 1), B 1 x
+ := transp (&lt;i> W (x : A i), B i x) 0 (sup (A 0) (B 0) a f)
+
+def trans-W-is-correct (A : I → U) (B : Π (i : I), A i → U)
+    (a : A 0) (f : B 0 a → (W (x : A 0), B 0 x))
+  : Path (W (x : A 1), B 1 x) (trans-W A B a f) (trans-W′ A B a f)
+ := &lt;_> trans-W A B a f
+
+def hcomp-W′ (A : U) (B : A → U) (r : I) (a : I → Partial A r)
+    (f : Π (i : I), PartialP [(r = 1) → B (a i 1=1) → (W (x : A), B x)] r)
+    (a₀ : A[r ↦ a 0]) (f₀ : (B (ouc a₀) → (W (x : A), B x)) [r ↦ f 0])
+  : W (x : A), B x
+ := hcomp (W (x : A), B x) r
+          (λ (i : I), [(r = 1) → sup A B (a i 1=1) (f i 1=1)])
+          (sup A B (ouc a₀) (ouc f₀))
+
+</code></figure>
+
+<h4>Path-тип</h4>
+
+<p>Наконец многомерный Path тип представляет собой то гомотопическое кубическое гетерогенное
+   равенство с помощью которого можно построить групоиды (смотрите базовую библиотеку Андерса).</p>
+
+<figure><code>eval:
+  | EPathP e -> VPathP (eval e ctx)
+  | EPLam e -> VPLam (eval e ctx)
+  
+check:
+  | EPLam (ELam (EI, (i, e))), VApp (VApp (VPathP p, u0), u1) ->
+    let v = Var (i, VI) in let ctx' = upLocal ctx i VI v in
+    let v0 = eval e (upLocal ctx i VI vzero) in
+    let v1 = eval e (upLocal ctx i VI vone) in
+    check ctx' e (appFormula p v); eqNf v0 u0; eqNf v1 u1
+
+inferV:
+  | VPLam (VLam (VI, (_, g))) -> let t = VLam (VI, (freshName "ι", g >> inferV)) in
+    VApp (VApp (VPathP (VPLam t), g vzero), g vone)
+  | VAppFormula (f, x)       -> let (p, _, _) = extPathP (inferV f) in appFormula p x
+  | VPathP p -> let (_, _, v) = freshDim () in let t = inferV (appFormula p v) in
+    let v0 = appFormula p vzero in let v1 = appFormula p vone in implv v0 (implv v1 t)
+
+act:
+  | VPLam f -> VPLam (act rho f)
+  | VPathP v -> VPathP (act rho v)
+  | VAppFormula (f, x)   -> appFormula (act rho f) (act rho x)
+
+conv:
+  | VPLam f, VPLam g -> conv f g
+  | VPLam f, v | v, VPLam f ->
+    let (_, _, i) = freshDim () in conv (appFormula v i) (app (f, i))
+  | VPathP a, VPathP b -> conv a b
+
+infer:
+  | EPathP p -> inferPath ctx p
+  | EPLam (ELam (EI, (i, e))) ->
+    let ctx' = upLocal ctx i VI (Var (i, VI)) in ignore (infer ctx' e);
+    let g = fun j -> eval e (upLocal ctx i VI j) in
+    let t = VLam (VI, (freshName "ι", g >> inferV)) in
+    VApp (VApp (VPathP (VPLam t), g vzero), g vone)
+  | EPLam _ -> raise (InferError e)
+  | VAppFormula (f, x), VAppFormula (g, y) -> conv f g && conv x y
+
+and inferPath ctx p =
+  let (_, t0, t1) = extPathP (infer ctx p) in
+  let k = extSet (inferV t0) in implv t0 (implv t1 (VKan k))
+
+and appFormula v x = match v with
+  | VPLam f -> app (f, x)
+  | _       -> let (_, u0, u1) = extPathP (inferV v) in
+    begin match x with
+      | VDir Zero -> u0
+      | VDir One  -> u1
+      | i -> VAppFormula (v, i)
+    end
+</code></figure>
+
+<p>Имея Π,Σ и Path типы а также урезанный транспорт можно построить
+   вычислительную семантику MLTT-73:</p>
+
+<figure><code>def MLTT (A : U) : U₁ ≔ Σ
+  (Π-form  : Π (B: A → U), U)
+  (Π-ctor₁ : Π (B: A → U), Pi A B → Pi A B)
+  (Π-elim₁ : Π (B: A → U), Pi A B → Pi A B)
+  (Π-comp₁ : Π (B: A → U) (a: A) (f: Pi A B),
+               Equ (B a) (Π-elim₁ B (Π-ctor₁ B f) a) (f a))
+  (Π-comp₂ : Π (B : A → U) (a : A) (f : Pi A B),
+               Equ (Pi A B) f (λ (x : A), f x))
+  (Σ-form  : Π (B: A → U), U)
+  (Σ-ctor₁ : Π (B: A → U) (a: A) (b : B a) , Sigma A B)
+  (Σ-elim₁ : Π (B: A → U) (p: Sigma A B), A)
+  (Σ-elim₂ : Π (B: A → U) (p: Sigma A B), B (pr₁ A B p))
+  (Σ-comp₁ : Π (B: A → U) (a: A) (b: B a), Equ A a (Σ-elim₁ B (Σ-ctor₁ B a b)))
+  (Σ-comp₂ : Π (B: A → U) (a: A) (b: B a), Equ (B a) b (Σ-elim₂ B (a, b)))
+  (Σ-comp₃ : Π (B: A → U) (p: Sigma A B), Equ (Sigma A B) p (pr₁ A B p, pr₂ A B p))
+  (=-form  : Π (a: A), A → U)
+  (=-ctor₁ : Π (a: A), Equ A a a)
+  (=-elim₁ : Π (a: A) (C: D A) (d: C a a (=-ctor₁ a)) (y: A) (p: Equ A a y), C a y p)
+  (=-comp₁ : Π (a: A) (C: D A) (d: C a a (=-ctor₁ a)),
+     Equ (C a a (=-ctor₁ a)) d (=-elim₁ a C d a (=-ctor₁ a))), 𝟏
+
+theorem internalizing (A : U) : MLTT A ≔
+  (Pi A, lambda A, app A, comp₁ A, comp₂ A,
+   Sigma A, pair A, pr₁ A, pr₂ A, comp₃ A, comp₄ A, comp₅ A,
+   Equ A, refl A, J A, comp₆ A, A)
+</code></figure>
+
+<p>Мы используем эти термы в качестве самопроверки (reality check).</p>
+
+<figure><code>
+def Path (A : U) (x y : A) : U := PathP (&lt;_> A) x y
+def idp (A : U) (x : A) : Path A x x := &lt;_> x
+def singl (A: U) (a: A): U := Σ (x: A), Path A a x
+def eta (A: U) (a: A): singl A a := (a, idp A a)
+def sym (A: U) (a b : A) (p : Path A a b) : Path A b a := &lt;i> p @ -i
+def contr (A : U) (a b : A) (p : Path A a b)
+  : Path (singl A a) (eta A a) (b, p) := &lt;i> (p @ i, &lt;j> p @ i /\ j)
+
+def isContr (A: U) : U := Σ (x: A), Π (y: A), Path A x y
+def isContrSingl (A : U) (a : A) : isContr (singl A a)
+ := ((a,idp A a),(\ (z:singl A a), contr A a z.1 z.2))
+
+def cong (A B : U) (f : A → B) (a b : A) (p : Path A a b)
+  : Path B (f a) (f b) := &lt;i> f (p @ i)
+
+def ap (A: U) (a x: A) (B: A → U) (f: A → B a) (b: B a) (p: Path A a x)
+  : Path (B a) (f a) (f x) := &lt;i> f (p @ i)
+
+def inv (A: U) (a b: A) (p: Path A a b): Path A b a := &lt;i> p @ -i
+def Path-η (A : U) (x y : A) (p : Path A x y)
+  : Path (Path A x y) p (&lt;i> p @ i) := &lt;_> p
+
+def idp-left (A : U) (x y : A) (p : Path A x y)
+  : Path (Path A x x) (&lt;_> x) (&lt;_> p @ 0) := &lt;_ _> x
+
+def idp-right (A : U) (x y : A) (p : Path A x y)
+  : Path (Path A y y) (&lt;_> y) (&lt;_> p @ 1) := &lt;_ _> y
+
+def sym-sym-eq-idp (A : U) (x y : A) (p : Path A x y)
+  : Path (Path A x y) p (sym A y x (sym A x y p)) := &lt;_> p
+
+def section (A B : U) (f : A -> B) (g : B -> A) : U
+ := Π (b : B), Path B (f (g b)) b
+
+def retract (A B : U) (f : A -> B) (g : B -> A) : U
+ := Π (a : A), Path A (g (f a)) a
+
+def hmtpy (A : U) (x y : A) (p : Path A x y)
+  : Path (Path A x x) (&lt;_> x) (&lt;i> p @ i /\ -i) := <j i> p @ j /\ i /\ -i
+
+def plam (A : U) (f : I → A) : Path A (f 0) (f 1) := &lt;i> f i
+def elim (A : U) (a b : A) (p : Path A a b) : I → A := λ (i : I), p @ i
+def plam-elim (A : U) (f : I → A)
+  : Id (I → A) (elim A (f 0) (f 1) (plam A f)) f := ref f
+
+def elim-plam (A : U) (a b : A) (p : Path A a b)
+  : Path (Path A a b) (plam A (elim A a b p)) p := &lt;_> p
+
+def isProp (A : U) : U := Π (a b : A), Path A a b
+def isSet (A : U) : U := Π (a b : A) (a0 b0 : Path A a b), Path (Path A a b) a0 b0
+def isGroupoid (A : U) : U := Π (a b : A) (x y : Path A a b)
+      (i j : Path (Path A a b) x y), Path (Path (Path A a b) x y) i j
+
+def SET : U₁ := Σ (X : U), isSet X
+
+def transport (A B: U) (p : PathP (&lt;_> U) A B) (a: A): B := transp p 0 a
+def trans_comp (A : U) (a : A) : Path A a (transport A A (&lt;i> A) a)
+ := &lt;j> transp (&lt;_> A) -j a
+def subst (A : U) (P : A -> U) (a b : A) (p : Path A a b) (e : P a)
+  : P b := transp (&lt;i> P (p @ i)) 0 e
+def D (A : U) : U₁ ≔ Π (x y : A), Path A x y → U
+def J (A: U) (x: A) (C: D A) (d: C x x (idp A x)) (y: A) (p: Path A x y) : C x y p
+ := subst (singl A x) (\ (z: singl A x), C x (z.1) (z.2))
+          (eta A x) (y, p) (contr A x y p) d
+  
+def subst_comp (A: U) (P: A → U) (a: A) (e: P a)
+  : Path (P a) e (subst A P a a (idp A a) e) := trans_comp (P a) e
+
+def J-β (A : U) (a : A) (C : D A) (d: C a a (idp A a))
+  : Path (C a a (idp A a)) d (J A a C d a (idp A a))
+ := subst_comp (singl A a) (\ (z: singl A a), C a (z.1) (z.2)) (eta A a) d
+
+</code></figure>
+
+<p>А также категорная конструкция групоида для проверки минимальных
+вычислительных свойств гомотопического пути.</p>
+
+<figure><code>def isCatGroupoid (C: cat): U := Σ
+  (id: Π (x: C.ob), C.hom x x)
+  (c: Π (x y z:C.ob), C.hom x y -> C.hom y z -> C.hom x z)
+  (HomSet: Π (x y: C.ob), isSet (C.hom x y))
+  (inv: Π (x y: C.ob), C.hom x y -> C.hom y x)
+  (inv-left: Π(x y: C.ob) (p: C.hom x y),
+      Path (C.hom x x)(c x y x p (inv x y p))(id x))
+  (inv-right: Π(x y: C.ob) (p: C.hom x y),
+      Path (C.hom y y)(c y x y (inv x y p) p)(id y))
+  (left: Π (x y: C.ob) (f: C.hom x y), Path (C.hom x y) f (c x x y (id x) f))
+  (right: Π (x y: C.ob) (f: C.hom x y), Path (C.hom x y) f (c x y y f (id y)))
+  (assoc: Π (x y z w: C.ob) (f: C.hom x y) (g: C.hom y z) (h: C.hom z w),
+    Path (C.hom x w) (c x z w (c x y z f g) h) (c x y w f (c y z w g h))), 𝟏
+
+def CatGroupoid (X : U) (G : isGroupoid X)
+  : isCatGroupoid (PathCat X)
+ := ( idp X,
+      comp-Path X,
+      G,
+      sym X,
+      comp-inv-Path⁻¹ X,
+      comp-inv-Path X,
+      comp-Path-left X,
+      comp-Path-right X,
+      comp-Path-assoc X,
+      ★
+    )</code></figure>
+
+<h4>ℕ-тип</h4>
+
+<p>Тип натуральных чисел выводим в нашей системе</p>
+
+<figure><code>def ℕ := W (x : 𝟐), ind₂ (λ (_ : 𝟐), U) 𝟎 𝟏 x
+def ℕ-ctor := ind₂ (λ (_ : 𝟐), U) 𝟎 𝟏
+def zero : ℕ := sup 𝟐 ℕ-ctor 0₂ (ind₀ ℕ)
+def succ (n : ℕ) : ℕ := sup 𝟐 ℕ-ctor 1₂ (λ (x : 𝟏), n)
+  
+def 𝟎⟶ℕ (C : ℕ → U) (f : 𝟎 → ℕ) : C zero → C (sup 𝟐 ℕ-ctor 0₂ f)
+ := transp (&lt;i> C (sup 𝟐 ℕ-ctor 0₂
+        (λ (x : 𝟎), ind₀ (PathP (&lt;_> ℕ) (ind₀ ℕ x) (f x)) x @ i))) 0
+  
+def 𝟏⟶ℕ (C : ℕ → U) (f : 𝟏 → ℕ) : C (succ (f ★)) → C (sup 𝟐 ℕ-ctor 1₂ f)
+ := transp (&lt;i> C (sup 𝟐 ℕ-ctor 1₂
+        (λ (x : 𝟏), ind₁ (λ (y : 𝟏), PathP (&lt;_> ℕ) (f ★) (f y))
+                (&lt;_> f ★) x @ i))) 0
+  
+def ℕ-ind (C : ℕ → U) (z : C zero) (s : Π (n : ℕ), C n → C (succ n))
+  : Π (n : ℕ), C n
+ := indᵂ 𝟐 ℕ-ctor C
+    (ind₂ (λ (x : 𝟐), Π (f : ℕ-ctor x → ℕ),
+             (Π (b : ℕ-ctor x), C (f b)) → C (sup 𝟐 ℕ-ctor x f))
+          (λ (f : 𝟎 → ℕ) (g : Π (x : 𝟎), C (f x)), 𝟎⟶ℕ C f z)
+          (λ (f : 𝟏 → ℕ) (g : Π (x : 𝟏), C (f x)), 𝟏⟶ℕ C f (s (f ★) (g ★))))
+  
+def ℕ-rec (C : U) (z : C) (s : ℕ → C → C) : ℕ → C := ℕ-ind (λ (_ : ℕ), C) z s
+def ℕ-iter (C : U) (z : C) (s : C → C) : ℕ → C := ℕ-rec C z (λ (_ : ℕ), s)
+def ℕ-case (C : U) (z s : C) : ℕ → C := ℕ-iter C z (λ (_ : C), s)
+  
+def plus : ℕ → ℕ → ℕ
+ := ℕ-iter (ℕ → ℕ) (idfun ℕ) (∘ ℕ ℕ ℕ succ)
+
+def mult : ℕ → ℕ → ℕ
+ := ℕ-rec (ℕ → ℕ) (\(_: ℕ), zero) (\(_: ℕ) (x: ℕ → ℕ) (m: ℕ), plus m (x m))
+</code></figure>
+
+<h4>+ тип</h4>
+
+<p>Операция логического или в IPL выводима в нашей системе</p>
+
+<figure><code>def + (A B: U) : U := Σ (x : 𝟐), ind₂ (λ (_ : 𝟐), U) A B x
+def inl (A B : U) (a : A) : + A B := (0₂, a)
+def inr (A B : U) (b : B) : + A B := (1₂, b)
+def +-ind (A B : U) (C : + A B → U) (f : Π (x : A), C (inl A B x))
+    (g : Π (y : B), C (inr A B y)) (w : + A B) : C w
+ := ind₂ (λ (x : 𝟐), Π (u : ind₂ (λ (_ : 𝟐), U) A B x), C (x, u)) f g w.1 w.2
+</code></figure>
+
+<h4>Maybe-тип</h4>
+
+<p>Maybe-тип выводим в нашей системе</p>
+
+<figure><code>def maybe (A : U) : U := + 𝟏 A
+def nothing (A : U) : maybe A := (0₂, ★)
+def just (A : U) (a : A) : maybe A := (1₂, a)
+def maybe-ind (A : U) (P: maybe A -> U) (n: P (nothing A))
+    (j: Π (x: A), P (just A x)) : Π (a: maybe A), P a
+ := +-ind 𝟏 A P (ind₁ (λ (x : 𝟏), P (0₂, x)) n) j
+</code></figure>
+
+<h4>Fin-тип</h4>
+
+<p>Тип конечных множеств выводим в нашей системе:</p>
+
+<figure><code>def Fin : ℕ → U := ℕ-iter U 𝟎 (+ 𝟏)
+def fzero (n : ℕ) : Fin (succ n) := (0₂, ★)
+def fsucc (n : ℕ) (m : Fin n) : Fin (succ n) := (1₂, m)
+def Fin-ind (T : Π (n : ℕ), Fin n → U) (z : Π (n : ℕ), T (succ n) (fzero n))
+    (s: Π (n: ℕ) (x: Fin n), T n x → T (succ n) (fsucc n x)) (m: ℕ) (x: Fin m)
+  : T m x
+ := ℕ-ind (λ (k : ℕ), Π (x : Fin k), T k x)
+          (λ (x : 𝟎), ind₀ (T zero x) x)
+          (λ (k : ℕ) (f : Π (x : Fin k), T k x),
+             +-ind 𝟏 (Fin k) (T (succ k)) (ind₁ (λ (w : 𝟏), T (succ k) (0₂, w)) (z k))
+                     (λ (w : Fin k), s k w (f w))) m x
+            </code></figure>
+
+            
+<h4>Vec-тип</h4>
+
+<p>Тип зависимого вектора выводим в нашей системе</p>
+
+<figure><code>def Vec (A : U) : ℕ → U := ℕ-iter U 𝟏 (λ (X : U), A × X)
+def vzero (A : U) : Vec A zero := ★
+def vsucc (A : U) (n : ℕ) (head : A) (tail : Vec A n)
+  : Vec A (succ n) := (head, tail)
+
+def Vec-ind (A : U) (T : Π (n : ℕ), Vec A n → U) (z : T zero (vzero A))
+    (s : Π (n : ℕ) (x : A) (v : Vec A n), T n v → T (succ n) (vsucc A n x v))
+    (m : ℕ) : Π (x : Vec A m), T m x
+ := ℕ-ind (λ (k : ℕ), Π (x : Vec A k), T k x)
+          (ind₁ (T zero) z)
+          (λ (k : ℕ) (f : Π (x : Vec A k), T k x) (y : Vec A (succ k)),
+             s k y.1 y.2 (f y.2)) m
+
+def Vec-rec (A B : U) (z : B) (s : Π (n : ℕ), A → Vec A n → B → B)
+    (m : ℕ) : Vec A m → B
+ := Vec-ind A (λ (n : ℕ) (_ : Vec A n), B) z s m
+
+def Vec-map (A B : U) (f : A → B) (n : ℕ) : Vec A n → Vec B n
+ := Vec-ind A (λ (k : ℕ) (_ : Vec A k), Vec B k) ★
+       (λ (k : ℕ) (x : A) (_ : Vec A k), vsucc B k (f x)) n  </code></figure>
+
+<h4>I-претип</h4>
+
+<p>Претипы I имеют в качестве элементов концы отрезка 0 и 1 и реализуют
+   алгебру де Моргана на них. Поэтому для вычисления кубических систем
+   достаточно алгоритма представления дизъюнктивных нормальных форм.</p>
+
+<figure><code>eval:
+  | EI -> VI
+  | EDir d -> VDir d
+  | EAnd (e1, e2) -> evalAnd (eval e1 ctx) (eval e2 ctx)
+  | EOr (e1, e2) -> evalOr (eval e1 ctx) (eval e2 ctx)
+  | ENeg e -> negFormula (eval e ctx)
+
+inferV:
+  | VI -> VPre Z.zero
+  | VDir _ | VOr _ | VAnd _ | VNeg _ -> VI
+
+act:
+  | VI -> VI
+  | VDir d -> VDir d
+  | VAnd (u, v) -> evalAnd (act rho u) (act rho v)
+  | VOr (u, v) -> evalOr (act rho u) (act rho v)
+  | VNeg u -> negFormula (act rho u)
+
+conv:
+  | VI, VI -> true
+  | VDir u, VDir v -> u = v
+
+infer:
+  | EI -> VPre Z.zero | EDir _ -> VI | ENeg e -> check ctx e VI; VI
+  | EOr (e1, e2) | EAnd (e1, e2) -> check ctx e1 VI; check ctx e2 VI; VI
+</code></figure>
+
+<p>Пример работы встроенного ДНФ солвера:</p>
+
+<figure><code>def ∂ (i: I) := i ∨ -i
+def ∂-eq-neg-∂ (i: I): Id I (∂ i) (∂ -i) := ref (∂ i)
+def min (i j: I) := i ∧ j
+def max (i j: I) := i ∨ j
+def ⊕ (i j: I) : I := (i ∧ -j) ∨ (-i ∧ j)
+def ⊕-comm (i j: I): Id I (⊕ i j) (⊕ j i) := ref (⊕ i j)
+def ∧-comm (i j: I): Id I (i ∧ j) (j ∧ i) := ref (i ∧ j)
+def ∨-comm (i j: I): Id I (i ∨ j) (j ∨ i) := ref (i ∨ j)
+def ¬-of-∧ (i j: I): Id I -(i ∧ j) (-i ∨ -j) := ref -(i ∧ j)
+def ¬-of-∨ (i j: I): Id I -(i ∨ j) (-i ∧ -j) := ref -(i ∨ j)
+def ∧-distrib-∨ (i j k: I): Id I ((i ∨ j)∧ k) ((i ∧ k)∨(j ∧ k)) := ref ((i ∨ j)∧ k)
+def ∨-distrib-∧ (i j k: I): Id I ((i ∧ j)∨ k) ((i ∨ k)∧(j ∨ k)) := ref ((i ∧ j)∨ k)
+def ∧-assoc (i j k: I): Id I (i ∧ (j ∧ k)) ((i ∧ j) ∧ k) := ref (i ∧ (j ∧ k))
+</code></figure>
+
+<h4>Id-тип</h4>
+
+<p>Система Воеводского HTS а также более новые ситемы 2LTT содержат в себе два вида равенств:
+одно для претипов (в нашем случае отрезка), а второе для фибрационных
+типов (в нешем случае для всех остальных типов).</p>
+
+<figure><code>eval:
+  | EId e -> VId (eval e ctx)
+  | ERef e -> VRef (eval e ctx)
+  | EJ e -> VJ (eval e ctx)
+
+infer:
+  | EId e -> let v = eval e ctx in implv v (implv v (VPre (extSet (infer ctx e))))
+  | ERef e -> let v = eval e ctx in VApp (VApp (VId (infer ctx e)), v), v)
+  | EJ e -> inferJ (eval e ctx) (infer ctx e)
+
+app:
+  | VApp (VApp (VApp (VApp (VJ _, _), _), f), _), VRef _ -> f
+
+inferV:
+  | VId v -> let n = extSet (inferV v) in implv v (implv v (VPre n))
+  | VJ v -> inferJ v (inferV v)
+
+act:
+  | VId v -> VId (act rho v)
+  | VRef v -> VRef (act rho v)
+  | VJ v -> VJ (act rho v)
+
+and inferJ v t =
+  let x = freshName "x" in
+  let y = freshName "y" in
+  let pi = freshName "P" in
+  let p = freshName "p" in
+  let k = extSet t in
+  let t = VPi (v, (x, fun x -> VPi (v, (y, fun y -> implv (idv v x y) (VPre k))))) in
+  VPi (t, (pi, fun pi ->
+  VPi (v, (x, fun x ->
+  implv (app (app (app (pi, x), x), VRef x))
+        (VPi (v, (y, fun y ->
+           VPi (idv v x y, (p, fun p ->
+             app (app (app (pi, x), y), p))))))))))
+</code></figure>
+
+<p>Тестирование равенства на претипах</p>
+
+<figure><code>def ≤ (i j : I) := Id I (i ∧ j) i
+def ≥ (i j : I) := ≤ j i
+
+def ∧-split (i j : I) : Partial (1= i) (i ∧ j) := [(i = 1) (j = 1) → 1=1]
+def ∨-left (i j : I) (p : 1= i) : 1= (i ∨ j)
+ := idJ I (λ (i i′ : I) (_ : Id I i i′), Id I 1 (i′ ∨ j)) 1 1=1 i p
+def ∨-right (i j : I) (p : 1= j) : 1= (i ∨ j) := ∨-left j i p 
+def ∧-1 (i j : I) (p : 1= (i ∧ j)) : 1= i := ∧-split i j p
+def ∧-1′ (i j : I) (p : 1= (i ∧ j)) : 1= i
+ := cong-Id I I (λ (k : I), k ∨ i) 1 (i ∧ j) p
+def ∧-min-left  (i j : I) : ≤ (i ∧ j) i := ref (i ∧ j)
+def ∧-min-right (i j : I) : ≤ (i ∧ j) j := ref (i ∧ j)
+def ∨-max-left  (i j : I) : ≤ i (i ∨ j) := ref i
+def ∨-max-right (i j : I) : ≤ j (i ∨ j) := ref j
+def ∧-to-∨ (i j : I) (p : Id I (i ∧ j) i) : Id I (i ∨ j) j
+ := rev I j (i ∨ j) (cong-Id I I (λ (k : I), k ∨ j) (i ∧ j) i p)
+
+def ≤-asymm (i j : I) (p : ≤ i j) (q : ≤ j i) : Id I i j
+ := comp-Id I i (i ∧ j) j (rev I (i ∧ j) i p) q
+def ≤-refl (i : I) : ≤ i i := ref i
+def ≤-trans (i j k : I) (p : ≤ i j) (q : ≤ j k) : ≤ i k
+ := comp-Id I (i ∧ k) (i ∧ j) i
+    (comp-Id I (i ∧ k) (i ∧ j ∧ k) (i ∧ j)
+      (rev I (i ∧ j ∧ k) (i ∧ k) (cong-Id I I (min k) (i ∧ j) i p))
+      (cong-Id I I (min i) (j ∧ k) j q)) p
+
+def 0-is-min (i : I) : ≤ 0 i := ref 0
+def 1-is-max (i : I) : ≤ i 1 := ref i
+
+def Δ² := Σ (i j : I), ≤ i j
+def Δ²-1 : Δ² := (0, 0, ref 0)
+def Δ²-2 : Δ² := (0, 1, ref 0)
+def Δ²-3 : Δ² := (1, 1, ref 1)
+def Δ²-1-2 : PathP (&lt;_> Δ²) Δ²-1 Δ²-2 := &lt;i> (0, i, ref 0)
+def Δ²-2-3 : PathP (&lt;_> Δ²) Δ²-2 Δ²-3 := &lt;i> (i, 1, ref i)
+def Δ²-1-3 : PathP (&lt;_> Δ²) Δ²-1 Δ²-3 := &lt;i> (i, i, ref i)
+
+def Δ³ := Σ (i j k : I), (≤ i j) × (≤ j k)
+def Δ³-1 : Δ³ := (0, 0, 0, ref 0, ref 0)
+def Δ³-2 : Δ³ := (0, 0, 1, ref 0, ref 0)
+def Δ³-3 : Δ³ := (0, 1, 1, ref 0, ref 1)
+def Δ³-4 : Δ³ := (1, 1, 1, ref 1, ref 1)
+</code></figure>
+
+<h4>Частичные типы, кубические системы</h4>
+
+<figure><code>eval:
+  | EPartial e -> let (i, _, _) = freshDim () in
+    VLam (VI, (i, fun r -> let ts = mkSystem (List.map (fun mu ->
+      (mu, eval e (faceEnv mu ctx))) (solve r One)) in VPartialP (VSystem ts, r)))
+  | EPartialP (t, r) -> VPartialP (eval t ctx, eval r ctx)
+  | ESystem xs -> VSystem (evalSystem ctx xs)
+
+app:
+  | VSystem ts, x -> reduceSystem ts x
+
+inferV:
+  | VPartialP (VSystem ts, _) -> begin match System.choose_opt ts with
+    | Some (_, t) -> VPre (extSet (inferV t))
+    | None        -> VPre Z.zero end
+  | VPartialP (t, _) -> inferV (inferV t)
+  | VSystem ts -> VPartialP (VSystem (System.map inferV ts), getFormulaV ts)
+
+infer:
+  | EPartial e -> let n = extSet (infer ctx e) in implv VI (VPre n)
+  | EPartialP (u, r0) ->
+    check ctx r0 VI; let t = infer ctx u in begin match t with
+    | VPartialP (ts, r) -> eqNf r (eval r0 ctx); inferV (inferV ts)
+    | _ -> failwith "Expected partial function into universe" end
+  | ESystem ts -> checkOverlapping ctx ts;
+    VPartialP (VSystem (System.mapi (fun mu -> infer (faceEnv mu ctx)) ts),
+           eval (getFormula ts) ctx)
+
+and evalSystem ctx = bimap (getRho ctx) (fun beta t -> eval t (faceEnv beta ctx))
+
+and faceEnv alpha ctx =
+  Env.map (fun (p, t, v) ->
+  if p = Local then (p, updTerm alpha t, updTerm alpha v) else (p, t, v)) ctx
+  |> Env.fold (fun p dir -> Env.add p (Local, Value VI, Value (VDir dir))) alpha
+
+let reduceSystem ts x =
+  match System.find_opt eps ts with
+  | Some v -> v
+  | None   -> VApp (VSystem ts, x)
+
+and checkOverlapping ctx ts =
+  System.iter (fun alpha e1 ->
+    System.iter (fun beta e2 ->
+      if comparable alpha beta then
+        let ctx' = faceEnv (meet alpha beta) ctx in
+        eqNf (eval e1 ctx') (eval e2 ctx')
+      else ()) ts) ts
+</code></figure>
+
+<p>Тестирование кубические систем</p>
+
+<figure><code>
+def φ (i : I) : Partial U₁ (i ∨ -i) := [(i = 0) → U, (i = 1) → U → U]
+def φ′ (i : I) : Partial U₁ (i ∨ -i) := [(i = 1) → U → U, (i = 0) → U]
+def ψ (i j : I) : Partial U₁ (-i ∨ i ∨ (i ∧ j))
+ := [(i = 1) → U, (i = 1) (j = 1) → U, (i = 0) → U → U]
+
+def φ-0 : PathP (&lt;_> U₁) (φ 0 1=1) U := &lt;_> U
+def φ-1 : PathP (&lt;_> U₁) (φ 1 1=1) (U → U) := &lt;_> U → U
+def φ-eq-φ′ (i : I) : Id (Partial U₁ (i ∨ -i)) (φ i) (φ′ i) := ref (φ′ i)
+def ρ (i j : I) : Partial U₁ (-i ∨ (i ∧ j)) := [(i = 0) → U, (i = 1) (j = 1) → U]
+def κ : Partial U₁ 1 := [(1 = 1) → U]
+def θ (A B : U) (a : A) (b : B) (φ : I)
+  : PartialP [(φ = 0) → A, (φ = 1) → B] (φ ∨ -φ) := [(φ = 0) → a, (φ = 1) → b]
+
+def partial-app-test (A : U) (a : A) (φ : I) (p : 1= φ) : A := [(φ = 1) → a] p
+def Partial′ (A : U) (i : I) := Partial A i
+def seg : PathP (&lt;_> I) 0 1 := &lt;i> i
+def Partial-app (A : U) (i : I) (u : Partial A i) (p : 1= i) : A := u p
+def Id-path (A : U) (a b : A) : Id A a b → Path A a b
+ := idJ A (λ (a b : A) (_ : Id A a b), Path A a b) a (&lt;_> a) b
+</code></figure>
+
+<h4>Кубические подтипы</h4>
+
+<figure><code>eval:
+  | ESub (a, i, u) -> VSub (eval a ctx, eval i ctx, eval u ctx)
+  | EInc (t, r) -> VInc (eval t ctx, eval r ctx)
+  | EOuc e -> ouc (eval e ctx)
+
+app:
+  | VInc (t, r), v -> inc t r v
+
+inferV:
+  | VSub (t, _, _) -> VPre (extSet (inferV t))
+  | VInc (t, i) -> inferInc t i
+  | VOuc v -> begin match inferV v with
+    | VSub (t, _, _) -> t
+    | _ -> raise (ExpectedSubtypeV v)  end
+
+infer:
+  | ESub (a, i, u) -> let n = extSet (infer ctx a) in check ctx i VI;
+    check ctx u (partialv (eval a ctx) (eval i ctx)); VPre n
+  | EInc (e, r) -> ignore (extKan (infer ctx e)); check ctx r VI;
+    inferInc (eval e ctx) (eval r ctx)
+  | EOuc e -> begin match infer ctx e with
+      | VSub (t, _, _) -> t
+      | _ -> raise (ExpectedSubtype e) end
+
+conv:
+  | VInc (t1, r1), VInc (t2, r2) -> conv t1 t2 && conv r1 r2
+  | VOuc u, VOuc v -> conv u v
+
+and inc t r = function | VOuc v -> v | v -> VApp (VInc (t, r), v)
+and ouc v = match v, inferV v with
+  | _, VSub (_, VDir One, u) -> app (u, VRef vone)
+  | VApp (VInc _, v), _ -> v
+  | _, _ -> VOuc v
+</code></figure>
+
+ <P>Интернализация кубических подтипов</P>
+
+<figure><code>
+def sub (A : U) (i : I) (u : Partial A i) : V := A[i ↦ u]
+def inc′ (A : U) (i : I) (a : A) : sub A i [(i = 1) → a] := inc A i a
+def ouc′ (A : U) (i : I) (u : Partial A i) (a : A[i ↦ u]) : A := ouc a
+</code></figure>
+
+<h4>Glue-тип</h4>
+
+<p>Основная цель типов Glue — построить куб, в котором некоторые грани
+   были заменены эквивалентными типами. Это аналогично тому, как hcomp
+   позволяет нам заменить некоторые грани куба, составив его из других кубов,
+   но для типов Glue вы можете составлять эквиваленты вместо путей.
+   Отсюда вытекает принцип унивалентности, и это то, что позволяет
+   нам перемещаться по путям, построенным из эквивалентностей. </p>
+
+<figure><code>
+conv:
+  | VGlue v, VGlue u -> conv u v
+  | VUnglue v, VUnglue u -> conv u v
+  | VGlueElem (r1,u1,a1), VGlueElem (r2,u2,a2) ->
+    conv r1 r2 && conv u1 u2 && conv a1 a2
+  
+app:
+  | VApp (VGlue _, VDir One), u -> vfst (app (u, VRef vone))
+
+act:
+  | VGlue v -> VGlue (act rho v)
+  | VGlueElem (r, u, a) -> VGlueElem (act rho r, act rho u, act rho a)
+  | VUnglue v -> VUnglue (act rho v)
+
+conv:
+  | VGlue v, VGlue u -> conv u v
+  | VUnglue v, VUnglue u -> conv u v
+  | VGlueElem (r1, u1, a1), VGlueElem (r2, u2, a2) ->
+    conv r1 r2 && conv u1 u2 && conv a1 a2
+
+infer:
+  | EGlue e -> ignore (extKan (infer ctx e)); inferGlue (eval e ctx)
+  | EGlueElem (e, u0, a) ->
+    check ctx e VI; let r = eval e ctx in let t = infer ctx a in
+    check ctx u0 (partialv (equivPtSingl t) r); let u = eval u0 ctx in
+    List.iter (fun mu -> let v = app (upd mu u, VRef vone) in
+      let f = vfst (vfst (vsnd v)) in
+      eqNf (eval a (faceEnv mu ctx)) (app (f, vsnd (vsnd v)))) (solve r One);
+    inferGlueElem r u t
+  | EUnglue e -> let (t, _, _) = extGlue (infer ctx e) in t
+
+inferV:
+  | VGlue t -> inferGlue t
+  | VGlueElem (r, u, a) -> inferGlueElem r u (inferV a)
+  | VUnglue v -> let (t, _, _) = extGlue (inferV v) in t
+
+and fiber t1 t2 f y =
+  VSig (t1, (freshName "a", fun x -> pathv (idp t2) y (app (f, x)))) 
+
+and isContr t = let x = freshName "x" in let y = freshName "y" in
+  VSig (t, (x, fun x -> VPi (t, (y, fun y -> pathv (idp t) x y))))
+  
+and isEquiv t1 t2 f = VPi (t2, (freshName "b", isContr << fiber t1 t2 f))
+and equiv t1 t2 = VSig (implv t1 t2, (freshName "f", isEquiv t1 t2))
+and equivSingl t0 = VSig (inferV t0, (freshName "T", fun t -> equiv t t0))
+and equivPtSingl t0 = VSig (inferV t0, (freshName "T", fun t -> prodv (equiv t t0) t))
+
+and inferGlue t = let (r, _, _) = freshDim () in let k = inferV t in
+  VPi (VI, (r, fun r -> implv (partialv (equivSingl t) r) k))
+
+and inferGlueElem r u t =
+  VApp (VApp (VGlue t, r),
+        VSystem (walk (fun v -> VPair (ref None, vfst v, vfst (vsnd v))) r u))
+
+</code></figure>
+
+<p>Тестируются Glue типы обычно типом-унивалентностью [Equiv -> Path] Воеводского:</p>
+
+<figure><code>
+def univ-formation (A B : U)
+ := equiv A B -> PathP (&lt;_> U) A B
+
+def univ-intro (A B : U)
+  : univ-formation A B
+ := λ (e : equiv A B), &lt;i> Glue B (∂ i)
+    [ (i = 0) → (A, e),
+      (i = 1) → (B, idEquiv B)]
+
+def univ-elim (A B : U) (p : PathP (&lt;_> U) A B) : equiv A B
+ := transp (&lt;i> equiv A (p @ i)) 0 (idEquiv A)
+
+def univ-computation (A B : U) (p : PathP (&lt;_> U) A B)
+  : PathP (&lt;_> PathP (&lt;_> U) A B) (univ-intro A B (univ-elim A B p)) p
+ := &lt;j i> Glue B (j ∨ ∂ i)
+          [ (i = 0) → (A, univ-elim A B p), (i = 1) → (B, idEquiv B),
+            (j = 1) → (p @ i, univ-elim (p @ i) B (&lt;k> p @ (i \/ k))) ]
+</code></figure>
+
+<P>А также Минивалентностью [Iso -> Equiv] авторства Шульмана, Люмсдейна, Уоррена и Ликаты,
+   известные также как авторы gradLemma:</P>
+
+<figure><code>def mini-Form (A B : U) : U
+ := iso A B -> equiv A B
+
+def mini-Intro (A B : U)
+  : mini-Form A B
+ := \ (x : iso A B), univ-elim A B (isoPath A B x.f x.g x.s x.t)
+
+def mini-Elim (A B : U)
+  : equiv A B -> iso A B
+ := \ (x : equiv A B),
+    ( x.f,
+      inv-equiv A B x,
+      ret-equiv A B x,
+      sec-equiv A B x,
+      star
+    )
+</code></figure>
+<p>и Юниморфизмом [Iso -> Path] авторства CCHM (Коэн, Кокан, Губер, Мортберг)
+   с большим термом lemIso:</P>
+
+<figure><code>def iso-Form (A B: U) : U₁
+ := iso A B -> PathP (&lt;_>U) A B
+
+def iso-Intro (A B: U)
+  : iso-Form A B
+ := \ (x : iso A B), isoPath A B x.f x.g x.s x.t
+
+def iso-Elim (A B : U)
+  : PathP (&lt;_> U) A B -> iso A B
+ := λ (p : PathP (&lt;_> U) A B),
+      ( coerce A B p,
+        coerce B A (&lt;i> p @ -i),
+        trans⁻¹-trans A B p,
+        λ (a : A), &lt;<k> trans-trans⁻¹ A B p a @ -k,
+        star
+      )
+
+    </code></figure>
+    
+    <p>Впервые гомотопическая система на Coq была разработана Пелайо, Уорреном и Воеводским в 2012 году.</P>
+    
+    <figure><code>def fiber (A B : U) (f: A -> B) (y : B): U := Σ (x : A), Path B y (f x)
+def isContr' (A: U) : U := Σ (x: A), Π (y: A), Path A x y
+def isEquiv (A B : U) (f : A -> B) : U := Π (y : B), isContr (fiber A B f y)
+def equiv (A B : U) : U := Σ (f : A -> B), isEquiv A B f
+
+def contrSingl (A : U) (a b : A) (p : Path A a b)
+  : Path (Σ (x : A), Path A a x) (a,&lt;_>a) (b,p) := &lt;i> (p @ i, &lt;j> p @ i /\ j)
+def idIsEquiv (A : U) : isEquiv A A (id A)
+ := \ (a : A), ((a,&lt;_>a),\ (z : fiber A A (id A) a), contrSingl A a z.1 z.2)
+def idEquiv (A : U) : equiv A A := (id A, isContrSingl A)
+
+def isInjective (A B : U) (f : A -> B) : U
+ := Π (x y : A), Path B (f x) (f y) -> Path A x y
+def isInjective' (A B : U) (f : A -> B): U
+ := Π (b : B), isProp (fiber A B f b)
+def injective (A B : U) : U := Σ (f : A -> B), isInjective A B f
+
+def isEmbedding (A B : U) (f : A -> B) : U
+ := Π (x y : A), isEquiv (Path A x y) (Path B (f x) (f y)) (cong A B f x y)
+def embedding (A B : U) : U := Σ (f : A -> B), isEmbedding A B f
+
+def inv-equiv (A B : U) (w : equiv A B) : B -> A := λ (y : B), (w.2 y).1.1
+def ret-equiv (A B : U) (w : equiv A B) (y : B)
+  : Path B (w.1 (inv-equiv A B w y)) y
+ := &lt;i> (w.2 y).1.2 @ -i
+
+def sec-equiv (A B : U) (w : equiv A B) (x : A)
+  : Path A (inv-equiv A B w (w.1 x)) x
+ := &lt;i> ((w.2 (w.1 x)).2 (x, &lt;j> w.1 x) @ i).1
+</code></figure>
+
+<p>Интернализация Glue типов</p>
+
+<figure><code>def Glue′ (A : U) (φ : I) (e : Partial (Σ (T : U), equiv T A) φ)
+  : U := Glue A φ e
+
+def glue′ (A : U) (φ : I) (u : Partial (Σ (T : U), equiv T A × T) φ)
+    (a : A[φ ↦ [(φ = 1) → (u 1=1).2.1.1 (u 1=1).2.2]])
+ := glue φ u (ouc a)
+
+def unglue′ (A : U) (φ : I) (e : Partial (Σ (T : U), equiv T A) φ)
+    (b : Glue A φ e)
+  : A := unglue b
+   </code></figure>
+
+
+<h4>Стек де Рама</h4>
+
+<p>Стек де Рама или Инфинитиземальная Модальность Формы &mdash; это базовый примитив
+   для доказательства теорем из синтетической дифференциальной геометрии. Данный
+   теоретико-типовой аппарт был разработан впервые Феликсом Черубини под руководством Урса Шрайбера.
+   Прувер Anders реализует вычислительную семантику стека де Рама.</p>
+
+<figure><code>eval:
+  | EIm e -> VIm (eval e ctx)
+  | EInf e -> inf (eval e ctx)
+  | EJoin e -> join (eval e ctx)
+  | EIndIm (a, b) -> VIndIm (eval a ctx, eval b ctx)
+
+act:
+  | VIm t -> VIm (act rho t)
+  | VInf v -> inf (act rho v)
+  | VJoin v -> join (act rho v)
+  | VIndIm (a, b) -> VIndIm (act rho a, act rho b)
+
+inferV:
+  | VIm t -> inferV t
+  | VInf v -> VIm (inferV v)
+  | VJoin v -> extIm (inferV v)
+  | VIndIm (a, b) -> inferIndIm a b
+
+infer:
+  | EIm e -> let t = infer ctx e in ignore (extSet t); t
+  | EInf e -> VIm (infer ctx e)
+  | EJoin e -> let t = extIm (infer ctx e) in ignore (extIm t); t
+  | EIndIm (a, b) -> ignore (extSet (infer ctx a)); let t = eval a ctx in
+    let (c, (x, g)) = extPiG (infer ctx b) in eqNf (VIm t) c;
+    ignore (extSet (g (Var (x, c)))); inferIndIm t (eval b ctx)
+
+conv:
+  | VIm u, VIm v -> conv u v
+  | VInf u, VInf v -> conv u v
+  | VJoin u, VJoin v -> conv u v
+  | VIndIm (a1, b1), VIndIm (a2, b2) -> conv a1 a2 && conv b1 b2
+
+app:
+  | VApp (VIndIm _, f), VInf a -> app (f, a)
+  | VApp (VIndIm (a, b), VLam (t, (x, g))), v -> let u = g (Var (x, t)) in
+    if mem x u then VApp (VApp (VIndIm (a, b), VLam (t, (x, g))), v) else u
+
+and join = function | VInf v -> v | v -> VJoin v
+and inf = function | VJoin v -> v | v -> VInf v
+
+</code></figure>
+
+<p>Стек де Рама тестируется докторской диссертацией Феликса Черубини посвященной картановой геометрии:</p>
+
+<figure><code>
+def ι (A : U) (a : A) : ℑ A := ℑ-unit a
+def μ (A : U) (a : ℑ (ℑ A)) := ℑ-join a
+
+def is-coreduced (A : U) : U := isEquiv A (ℑ A) (ι A)
+def ℑ-coreduced (A : U) : is-coreduced (ℑ A)
+ := isoToEquiv (ℑ A) (ℑ (ℑ A)) (ι (ℑ A)) (μ A)
+       (λ (x : ℑ (ℑ A)), &lt;_> x) (λ (y : ℑ A), &lt;_> y)
+
+def ind-ℑβ (A : U) (B : ℑ A → U) (f : Π (a : A), ℑ (B (ι A a)))
+    (a : A) : Path (ℑ (B (ι A a))) (ind-ℑ A B f (ι A a)) (f a) := &lt;_> f a
+
+def trans-ℑ (A : I → U) (a : A 0) : ℑ (A 1) := ℑ-unit (transp (&lt;i> A i) 0 a)
+def trans-ℑ′ (A : I → U) (a : A 0) : ℑ (A 1) := transp (&lt;i> ℑ (A i)) 0 (ℑ-unit a)
+
+def trans-ℑ-is-correct (A : I → U) (a : A 0)
+  : Path (ℑ (A 1)) (trans-ℑ A a) (trans-ℑ′ A a) := &lt;_> trans-ℑ A a
+
+def hcomp-ℑ (A : U) (r : I) (u : I → Partial A r) (u₀ : A[r ↦ u 0])
+  : ℑ A := ℑ-unit (hcomp A r u (ouc u₀))
+
+def hcomp-ℑ′ (A : U) (r : I) (u : I → Partial A r) (u₀ : A[r ↦ u 0])
+  : ℑ A := hcomp (ℑ A) r (λ (i : I), [(r = 1) → ℑ-unit (u i 1=1)]) (ℑ-unit (ouc u₀))
+
+def hcomp-ℑ-is-correct (A : U) (r : I) (u : I → Partial A r) (u₀ : A[r ↦ u 0])
+  : Path (ℑ A) (hcomp-ℑ A r u u₀) (hcomp-ℑ′ A r u u₀) := &lt;_> hcomp-ℑ A r u u₀
+
+def ℑ-ind (A : U) (B : ℑ A → U) (c : Π (a : ℑ A), is-coreduced (B a))
+    (f : Π (a : A), B (ι A a)) (a : ℑ A) : B a
+ := (c a (ind-ℑ A B (λ (x : A), ι (B (ι A x)) (f x)) a)).1.1
+
+def ℑ-indβ (A : U) (B : ℑ A → U) (c : Π (a : ℑ A), is-coreduced (B a))
+    (f : Π (a : A), B (ι A a)) (a : A)
+  : Path (B (ι A a)) (f a) ((ℑ-ind A B c f) (ι A a))
+ := &lt;i> sec-equiv (B (ι A a)) (ℑ (B (ι A a))) (ι (B (ι A a)), c (ι A a)) (f a) @ -i
+
+def ℑ-rec (A B : U) (c : is-coreduced B) (f : A → B) : ℑ A → B
+ := ℑ-ind A (λ (_ : ℑ A), B) (λ (_ : ℑ A), c) f
+
+def ℑ-recβ (A B : U) (c : is-coreduced B) (f : A → B) (a : A)
+  : PathP (<_> B) (f a) ((ℑ-rec A B c f) (ι A a))
+ := ℑ-indβ A (λ (_ : ℑ A), B) (λ (_ : ℑ A), c) f a
+
+def ℑ-rec′ (A B : U) (f : A → ℑ B) : ℑ A → ℑ B := ind-ℑ A (λ (x : ℑ A), B) f
+def ℑ-rec′-β (A B : U) (f : A → ℑ B) (x : A)
+  : Path (ℑ B) (ℑ-rec′ A B f (ℑ-unit x)) (f x) := <_> f x
+
+def ℑ-app (A B : U) (f : A → B) : ℑ A → ℑ B
+ := ℑ-rec A (ℑ B) (ℑ-coreduced B) (∘ A B (ℑ B) (ι B) f)
+
+def ℑ-naturality (A B : U) (f : A → B) (a : A)
+  : Path (ℑ B) ((ι B) (f a)) ((ℑ-app A B f) (ι A a))
+ := &lt;_> ℑ-unit (f a)
+
+def ~ (X : U) (a x′ : X) : U := Path (ℑ X) (ι X a) (ι X x′)
+def 𝔻 (X : U) (a : X) : U := Σ (x′ : X), ~ X a x′
+def unitDisc (X : U) (x : ℑ X) : U := Σ (x′ : X), Path (ℑ X) x (ι X x′)
+def starDisc (X : U) (x : X) : 𝔻 X x := (x, idp (ℑ X) (ι X x))
+def T∞ (A : U) : U := Σ (a : A), 𝔻 A a
+
+def inf-prox-ap (X Y : U) (f : X → Y) (x x′ : X) (p : ~ X x x′)
+  : ~ Y (f x) (f x′) := &lt;i> ℑ-app X Y f (p @ i)
+</code></figure>
+
+<h4>Операции Кана</h4>
+
+<p>Базис операций Кана CHM версии CCHM кубической теории типов состоит из
+   операции транспорта transp и операции гомогенной композиции hcomp. Витальным
+   в контексте рекурсивных высших индуктивных типов для CCHM теории
+   оказывается наличие именно такого базиса в ядре, в противном случае
+   возникают пустые системы в процессе бета-нормализации. 
+.</p>
+
+<figure><code>
+infer:
+  | ETransp (p, i) -> inferTransport ctx p i
+  | EHComp (e, i, u, u0) -> let t = eval e ctx in let r = eval i ctx in
+    ignore (extKan (infer ctx e)); check ctx i VI;
+    check ctx u (implv VI (partialv t r)); check ctx u0 t;
+    List.iter (fun phi -> let ctx' = faceEnv phi ctx in
+      eqNf (eval (hcompval u) ctx') (eval u0 ctx')) (solve r One); t
+
+inferV:
+  | VTransp (p, _) -> implv (appFormula p vzero) (appFormula p vone)
+  | VHComp (t, _, _, _) -> t
+
+conv:
+  | VTransp (p, i), VTransp (q, j) -> conv p q && conv i j
+  | VHComp (t1, r1, u1, v1), VHComp (t2, r2, u2, v2) ->
+    conv t1 t2 && conv r1 r2 && conv u1 u2 && conv v1 v2
+
+app:
+  | VTransp (p, i), u0 -> transp p i u0
+
+act:
+  | VTransp (p, i)       -> VTransp (act rho p, act rho i)
+  | VHComp (t, r, u, u0) -> hcomp (act rho t) (act rho r) (act rho u) (act rho u0)
+
+and transp p phi u0 = match p with
+  | VPLam (VLam (VI, (i, g))) -> transport i (g (Var (i, VI))) phi u0
+  | _ -> VApp (VTransp (p, phi), u0)
+
+and inferTransport ctx p i =
+  check ctx i VI;
+  let u0 = appFormulaE ctx p ezero in
+  let u1 = appFormulaE ctx p eone in
+  let (t, _, _) = extPathP (infer ctx p) in
+  ignore (extKan (inferV (appFormula t (Var (freshName "ι", VI)))));
+  let (j, e, v) = freshDim () in let ctx' = upLocal ctx j VI v in
+  List.iter (fun phi -> let rho = faceEnv phi ctx' in
+    eqNf (appFormulaE rho p ezero) (appFormulaE rho p e))
+    (solve (eval i ctx) One);
+  implv u0 u1
+
+and transport i p phi u0 = match p, phi, u0 with
+  | _, VDir One, _ -> u0
+  | VKan _, _, _ -> u0
+  | VEmpty, _, _ -> u0
+  | VUnit, _, _ -> u0
+  | VBool, _, _ -> u0
+  | VPi (t, (_, b)), _, _ -> let x = fresh (name "x") in
+    let j = freshName "ι" in let k = freshName "κ" in
+    VLam (act0 i vone t, (x, fun x ->
+      let v = transFill j (act0 i (VNeg (dim j)) t) phi x in
+      transport k (swap i k (b (v (VNeg (dim k)))))
+        phi (app (u0, v vone))))
+  | VSig (t, (_, b)), _, _ ->
+    let j = freshName "ι" in let k = freshName "κ" in
+    let v1 = transFill j (swap i j t) phi (vfst u0) in
+    let v2 = transport k (swap i k (b (v1 (dim k)))) phi (vsnd u0) in
+    VPair (ref None, v1 vone, v2)
+  | VApp (VApp (VPathP p, v), w), _, _ ->
+    let j = freshName "ι" in let k = freshName "κ" in
+    VPLam (VLam (VI, (j, fun j ->
+      let uj = appFormula u0 j in let r = evalOr phi (evalOr j (negFormula j)) in
+      comp (fun k -> appFormula (act0 i k p) j) r k
+        (VSystem (unionSystem (border (solve phi One) uj)
+                 (unionSystem (border (solve j Zero) (swap i k v))
+                              (border (solve j One)  (swap i k w))))) uj)))
+  | W (t, (x, b)), _, VApp (VApp (VSup _, a), f) ->
+    let j = freshName "ι" in let k = freshName "κ" in
+    let v1 = transFill j (swap i j t) phi a in
+    let v2 = transport k (swap i k (implv (b (v1 (dim k))) (W (t, (x, b))))) phi f in
+    let t' = act0 i vone t in
+    VApp (VApp (VSup (t', VLam (t', (fresh x, b >> act0 i vone))), v1 vone), v2)
+  | VIm t, _, VInf a -> inf (transport i t phi a)
+  | _, _, _ -> VApp (VTransp (VPLam (VLam (VI, (i, fun j -> act0 i j p))), phi), u0)
+
+and transFill i p phi u0 j = let (k, _, _) = freshDim () in
+  transport k (act0 i (evalAnd (dim k) j) p) (evalOr phi (negFormula j)) u0
+
+and hcomp t r u u0 = let i = freshName "ι" in kan t r i (app (u, dim i)) u0
+
+and kan t r i u u0 = match t, r, u, u0 with
+  | _, VDir One, _, _ -> app (act0 i vone u, VRef vone)
+  | VPi (t, (x, b)), _, _, _ -> VLam (t, (fresh x, fun y -> kan (b y) r i
+    (VSystem (walk (fun v -> app (v, y)) r u)) (app (u0, y))))
+  | VSig (t, (_, b)), _, _, _ -> let k = freshName "κ" in
+    let v1 = hfill t r k (VSystem (walk (vfst >> act0 i (dim k)) r u)) (vfst u0) in
+    let v2 = comp (v1 >> b) r i (VSystem (walk vsnd r u)) (vsnd u0) in
+    VPair (ref None, v1 vone, v2)
+  | VApp (VApp (VPathP t, v), w), _, _, _ ->
+    let j = freshName "ι" in
+    VPLam (VLam (VI, (j, fun j ->
+      kan (appFormula t j) (evalOr r (evalOr j (negFormula j))) i
+          (VSystem (unionSystem (walk (flip appFormula j) r u)
+                   (unionSystem (border (solve j One)  w)
+                                (border (solve j Zero) v))))
+          (appFormula u0 j))))
+  | VIm t, _, VSystem u, VInf u0 when System.for_all (fun _ -> isInf) u ->
+    VInf (kan t r i (VSystem (System.map extInf u)) u0)
+  | _, _, _, _ -> VHComp (t, r, VLam (VI, (i, fun j ->
+    VSystem (walk (act0 i j) r u))), u0)
+
+and comp t r i u u0 = let j = freshName "ι" in
+  kan (t vone) r i
+      (VSystem (walk (transport j (t (evalOr (dim i) (dim j))) (dim i)) r u))
+      (transport j (t (dim j)) vzero u0)
+
+and hfill t r i u u0 j = let k = freshName "κ" in
+  kan t (evalOr (negFormula j) r) k
+    (VSystem (unionSystem (walk (act0 i (evalAnd (dim k) j)) r u)
+      (border (solve j Zero) u0))) u0
+
+</code></figure>
+
+<h4>Уравнения Губера</h4>
+
+<p>Операции Кана проверяются уравнениями Губера (reality check), который
+   впервые собрал граничные условия CHM базиса. </p>
+
+<figure><code>transpⁱ N φ u₀ = u₀
+transpⁱ U φ A = A
+transpⁱ (Π (x : A), B) φ u₀ v = transpⁱ B(x/w) φ (u₀ w(i/0)),
+  where [ w = transpFill⁻ⁱ A φ v, v : A(i/1) ]
+transpⁱ (Σ (x : A), B) φ u₀ = (transpⁱ A φ (u₀.1),transpⁱ B(x/v) φ(u₀.2)),
+  where [ v = transpFillⁱ A φ u₀.1 ]
+transpⁱ (Pathʲ A v w) φ u₀ =〈j〉compⁱ A [φ ↦ u₀ j, (j=0) ↦ v, (j=1) ↦ w] (u₀ j),
+  where [ u : A(j/0), v : A(j/1) ]
+transpⁱ (Glue [φ ↦ (T,w)] A) ψ u₀ = glue [φ(i/1) ↦ t′₁] a′₁ : B(i/1)
+transp⁻ⁱ A φ u = (transpⁱ A(i/1−i) φ u)(i/1−i) : A(i/0)
+transpFillⁱ A φ u₀ = transpʲ A(i/i∧j) (φ∨(i=0)) u₀ : A
+hfillⁱ A [φ ↦ u] u₀ = hcompʲ A [φ ↦ u(i/i∧j), (i=0) ↦ u₀] u₀ : A
+hcompⁱ N [φ ↦ 0] 0 = 0
+hcompⁱ N [φ ↦ S u] (S u₀) = S (hcompⁱ N [φ ↦ u] u₀)
+hcompⁱ U [φ ↦ E] A = Glue [φ ↦ (E(i/1), equivⁱ E(i/1−i))] A
+hcompⁱ (Π (x : A), B) [φ ↦ u] u₀ v = hcompⁱ B(x/v) [φ ↦ u v] (u₀ v)
+hcompⁱ (Σ (x : A), B) [φ ↦ u] u₀
+   = (v(i/1), compⁱ B(x/v) [φ ↦ u.2] u₀.2),
+        where [ v = hfillⁱ A [φ ↦ u.1] u₀.1 ]
+hcompⁱ (Pathʲ A v w) [φ ↦ u] u₀
+   = 〈j〉 hcompⁱ A [ φ ↦ u j, (j = 0) ↦ v, (j = 1) ↦ w ] (u₀ j)
+hcompⁱ (Glue [φ ↦ (T,w)] A) [ψ ↦ u] u₀ = glue [φ ↦ t₁] a₁
+   = glue [φ ↦ u(i/1)] (unglue u(i/1))
+   = u(i/1) : Glue [φ ↦ (T,w)] A,
+         where [ t₁ = u(i/1) : T,
+                 a₁ = unglue u(i/1) : A,
+                 glue [φ ↦ t₁] a1 = t₁ : T ]
+</code></figure>
+
+<h4>Установка языка</h4>
+
+<p>Anders поставляется вместе с базовой библиотекой как пакет пакетного менеджера OPAM 
+   языка программирования OCaml, которую вы можете попробовать с помощью:</p>
+   
+<figure><code>$ opam install anders</code></figure>
+
+<p>Вы будете удивлены приятной особенностью языка Anders &mdash; отзывчивостью
+   не только при сборке из исходников:</p>
+
+<figure><code>$ time dune build
+real    0m1.456s
+user    0m2.794s
+sys     0m0.564s
+</code></figure>
+
+<p>Но и скоростью верификации:</p>
+
+<figure><code>
+$ time dune exec anders check library/book.anders
+
+real    0m0.468s
+user    0m0.051s
+sys     0m0.032s
+</code></figure>
+
+<p>Пример консольной сессии и работа с дырами:</p>
+
+<figure><code>$ cat library/etale.anders
+import library/infinitesimal
+
+def isÉtaleMap (A B: U) (f: A -> B): U
+ := isPullbackSq A (ℑ A) B (ℑ B) (ℑ-app A B f) (ι B) (ι A) f ?
+</code></figure>
+
+<figure><code>$ ./anders.native check library/etale.anders repl
+Checking: isÉtaleMap
+  
+Hole:
+  
+A : U
+B : U
+f : A → B
+--------------------------------------------------------------------------------
+Π (z : A), PathP (<_> ℑ B) (ℑ-unit (f z)) (ℑ-unit (f z))
+  
+Checking: EtaleMap
+File “etale.anders” checked.
+
+Anders theorem prover [MLTT][CCHM][HTS][deRham] version 1.1.1
+>
+</code></figure>
+
+<P>Структура базовой библиотеки</P>
+
+<figure><code>$ tree -L 3 .
+│
+├── foundations
+│   │
+│   ├── mltt
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/bool.anders">bool.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/induction.anders">induction.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/either.anders">either.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/maybe.anders">maybe.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/nat.anders">nat.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/fin.anders">fin.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/vec.anders">vec.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/list.anders">list.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/mltt.anders">mltt.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/pi.anders">pi.anders</a>
+│   │   └── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/mltt/sigma.anders">sigma.anders</a>
+│   │
+│   ├── univalent
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/univalent/equiv.anders">equiv.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/univalent/extensionality.anders">extensionality.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/univalent/iso.anders">iso.anders</a>
+│   │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/univalent/path.anders">path.anders</a>
+│   │   └── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/univalent/prop.anders">prop.anders</a>
+│   │
+│   └── modal
+│       └── <a href="https://github.com/groupoid/anders/blob/main/lib/foundations/modal/infinitesimal.anders">infinitesimal.anders</a>
+│
+└── mathematics
+    │
+    ├── categories
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/categories/abelian.anders">abelian.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/categories/category.anders">category.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/categories/functor.anders">functor.anders</a>
+    │   └── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/categories/groupoid.anders">groupoid.anders</a>
+    │
+    ├── homotopy
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/coequalizer.anders">coequalizer.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/constcubes.anders">constcubes.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/hubSpokes.anders">hubSpokes.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/pullback.anders">pullback.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/pushout.anders">pushout.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/quotient.anders">quotient.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/suspension.anders">suspension.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/KGn.anders">KGn.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/S1.anders">S1.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/Sn.anders">Sn.anders</a>
+    │   └── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/homotopy/truncation.anders">truncation.anders</a>
+    │
+    ├── geometry
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/geometry/bundle.anders">bundle.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/geometry/etale.anders">etale.anders</a>
+    │   └── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/geometry/formalDisc.anders">formalDisc.anders</a>
+    │
+    ├── meta
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/meta/awodey.anders">awodey.anders</a>
+    │   ├── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/meta/favonia.anders">favonia.anders</a>
+    │   └── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/meta/kraus.anders">kraus.anders</a>
+    │
+    ├── algebra
+    │   └── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/algebra/algebra.anders">algebra.anders</a>
+    │
+    ├── analysis
+    │   └── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/analysis/real.anders">real.anders</a>
+    │
+    └── topoi
+        └── <a href="https://github.com/groupoid/anders/blob/main/lib/mathematics/topoi/topos.anders">topos.anders</a>
+</code></figure>
+
+
+<h4>Некоторые выражения из базовой библиотеки</h4>
+
+<p>Здесь же приведены выброчно термы из модулей библиотеки
+  для ознакомления с синтаксисом и возможностями языка.</p>
+
+<figure><code>def pushout (A B C : U) (f : C → A) (g : C → B) : U
+ := coequ C (+ A B) (∘ C A (+ A B) (inl A B) f) (∘ C B (+ A B) (inr A B) g)
+
+def po₁ (A B C: U) (f: C → A) (g: C → B) (a: A) : pushout A B C f g
+ := ι C (+ A B) (∘ C A (+ A B) (inl A B) f) (∘ C B (+ A B) (inr A B) g) (inl A B a)
+
+def po₂ (A B C: U) (f: C → A) (g: C → B) (b: B)
+  : pushout A B C f g
+ := ι C (+ A B) (∘ C A (+ A B) (inl A B) f) (∘ C B (+ A B) (inr A B) g) (inr A B b)
+
+def po₃ (A B C: U) (f: C → A) (g: C → B) (c: C)
+  : Path (pushout A B C f g) (po₁ A B C f g (f c)) (po₂ A B C f g (g c))
+ := resp C (+ A B) (∘ C A (+ A B) (inl A B) f) (∘ C B (+ A B) (inr A B) g) c
+
+def S¹ : U := coequ 𝟏 𝟏 (id 𝟏) (id 𝟏)
+def base : S¹ := ι 𝟏 𝟏 (id 𝟏) (id 𝟏) ★
+def loop : Path S¹ base base := resp 𝟏 𝟏 (id 𝟏) (id 𝟏) ★ 
+
+def 𝚺 (A: U) : U := pushout 𝟏 𝟏 A (const₁ A) (const₁ A)
+def 𝜎₁ (A: U): 𝚺 A := po₁ 𝟏 𝟏 A (const₁ A) (const₁ A) ★
+def 𝜎₂ (A: U): 𝚺 A := po₂ 𝟏 𝟏 A (const₁ A) (const₁ A) ★
+def 𝜎₃ (A: U) (a: A) : Path (𝚺 A) (𝜎₁ A) (𝜎₂ A) := po₃ 𝟏 𝟏 A (const₁ A) (const₁ A) a
+
+def S : ℕ → U := ℕ-iter U 𝟐 𝚺
+
+def trunc (A: U) (n: ℕ): U := hs (S n) A
+def trunc₁ (A: U) (n: ℕ) (x: A): trunc A n := center (S n) A x
+def trunc₂ (A: U) (n: ℕ) (f: S n → trunc A n) : trunc A n := hub (S n) A f
+def trunc₃ (A: U) (n: ℕ) (f: S n → trunc A n) (s : S n)
+  : Path (trunc A n) (hub (S n) A f) (f s) := spoke (S n) A f s
+
+def ‖_‖₋₁ (A : U) : U := trunc A zero -- Propositional Truncation ‖A‖₋₁
+def ‖_‖₀ (A : U) : U := trunc A one   -- Set Truncation ‖A‖₀
+def ‖_‖₁ (A : U) : U := trunc A two   -- Groupoid Truncation ‖A‖₁
+def ‖_‖ (A : U) : ℕ → U := trunc A
+
+def full (A : U) (R : A → A → U) := Σ (x y : A), R x y
+def quot (A : U) (R : A → A → U)
+ := coequ (full A R) A (λ (w : full A R), w.1) (λ (w : full A R), w.2.1)
+def quot₁ (A : U) (R : A → A → U) : A → quot A R
+ := ι (full A R) A (λ (w : full A R), w.1) (λ (w : full A R), w.2.1)
+def quot₂ (A : U) (R : A → A → U) (x y : A) (ρ : R x y)
+  : Path (quot A R) (quot₁ A R x) (quot₁ A R y)
+ := resp (full A R) A (λ (w : full A R), w.1) (λ (w : full A R), w.2.1) (x, y, ρ)
+
+def 𝚺ₓ (A: U) : ℕ → U := ℕ-iter U A 𝚺
+def discreteTopology (G : abgroup) : U := G.1.1
+def R-K1 (G : group) : 𝟏 → 𝟏 → U := λ (x y : 𝟏), G.1.1
+axiom Q-K1 (G : group) (x y : 𝟏) (u w : R¯ 𝟏 (R-K1 G) x y) : U
+ 
+def K1 (G : group) : U
+ := ‖_‖₁ (2-quot 𝟏 (R-K1 G) (Q-K1 G))
+ 
+def K (G : abgroup) (n: ℕ) : U
+ := ℕ-iter U (discreteTopology G) (λ (_: U), ‖_‖ (𝚺ₓ (K1 (G.X, G.2.g)) n) n) n
+
+def algebra : U₁ := Σ
+    -- a semicategory of contexts and substitutions:
+    (Con: U)
+    (Sub: Con → Con → U)
+    (◊: Π (Г Θ ∆ : Con), Sub Θ ∆ → Sub Г Θ → Sub Г ∆)
+    (◊-assoc: Π (Г Θ ∆ Ф : Con) (σ: Sub Г Θ) (δ: Sub Θ ∆) (ν: Sub ∆ Ф),
+       PathP (&lt;_>Sub Г Ф) (◊ Г ∆ Ф ν (◊ Г Θ ∆ δ σ)) (◊ Г Θ Ф (◊ Θ ∆ Ф ν δ) σ))
+    -- identity morphisms as identity substitutions:
+    (id: Π (Г : Con), Sub Г Г)
+    (id-left: Π (Θ ∆ : Con) (δ : Sub Θ ∆), Path (Sub Θ ∆) δ (◊ Θ ∆ ∆ (id ∆) δ))
+    (id-right: Π (Θ ∆ : Con) (δ : Sub Θ ∆), Path (Sub Θ ∆) δ (◊ Θ Θ ∆ δ (id Θ)))
+    -- a terminal oject as empty context:
+    (•: Con)
+    (є: Π (Г : Con), Sub Г •)
+    (•-η: Π (Г: Con) (δ: Sub Г •), Path (Sub Г •) (є Г) δ)
+    -- a presheaf of types:
+    (Ty: Con → U)
+    (_|_|ᵀ: Π (Г ∆ : Con), Ty ∆ → Sub Г ∆ → Ty Г)
+    (|id|ᵀ: Π (∆ : Con) (A : Ty ∆), Path (Ty ∆) (_|_|ᵀ ∆ ∆ A (id ∆)) A)
+    (|◊|ᵀ: Π (Г ∆ Ф: Con) (A : Ty Ф) (σ : Sub Г ∆) (δ : Sub ∆ Ф),
+    PathP (&lt;_>Ty Г) (_|_|ᵀ Г Ф A (◊ Г ∆ Ф δ σ)) (_|_|ᵀ Г ∆ (_|_|ᵀ ∆ Ф A δ) σ))
+    -- a (covariant) presheaf on the category of elements as terms:
+    (Tm: Π (Г : Con), Ty Г → U)
+    (_|_|ᵗ: Π (Г ∆ : Con) (A : Ty ∆) (B : Tm ∆ A) (σ: Sub Г ∆), Tm Г (_|_|ᵀ Г ∆ A σ))
+    (|id|ᵗ: Π (∆ : Con) (A : Ty ∆) (t: Tm ∆ A),
+        PathP (&lt;i> Tm ∆ (|id|ᵀ ∆ A @ i)) (_|_|ᵗ ∆ ∆ A t (id ∆)) t)
+    (|◊|ᵗ: Π (Г ∆ Ф: Con) (A : Ty Ф) (t: Tm Ф A) (σ : Sub Г ∆) (δ : Sub ∆ Ф),
+       PathP (&lt;i> Tm Г (|◊|ᵀ Г ∆ Ф A σ δ @ i))
+             (_|_|ᵗ Г Ф A t (◊ Г ∆ Ф δ σ))
+             (_|_|ᵗ Г ∆ (_|_|ᵀ ∆ Ф A δ) (_|_|ᵗ ∆ Ф A t δ) σ)), unit
+
+def cc (A : U) (a : A) (p : Path A a a)
+  : Cube A a a a a a a a a p p p p p p p p (cs A a p) (cs A a p) p p p p
+    (cs A a p) (cs A a p) (cs A a p) (cs A a p)
+ := &lt;k j i> hcomp A (∂ i \/ ∂ j \/ ∂ k)
+                    (λ (l : I), [ (i = 0) -> c₀ A a p @ l @ j @ k,
+                                  (i = 1) -> c₁ A a p @ l @ j @ k,
+                                  (j = 0) -> c₀ A a p @ l @ i @ k,
+                                  (j = 1) -> c₁ A a p @ l @ i @ k,
+                                  (k = 0) -> c₀ A a p @ l @ i @ j,
+                                  (k = 1) -> c₁ A a p @ l @ i @ j ])
+                    (cb A a p @ i @ j @ k)
+
+-- Definition (1) Dependent
+def isFBundle1 (B: U) (p: B → U) (F: U): U₁
+ := Σ (_: Π (b: B), isContr (PathP (<_>U) (p b) F)), (Π (x: Sigma B p), B)
+                    
+-- Definition (2) Dependent
+def isFBundle2 (B: U) (p: B → U) (F: U): U
+ := Σ (v: U) (w: surjective v B), (Π (x: v), PathP (<_>U) (p (w.1 x)) F)
+                    
+-- Definition (3) Non-Dependent
+def im₁ (A B: U) (f: A → B): U := Σ (b: B), ||₋₁ (Π (a : A), Path B (f a) b)
+def BAut (F: U): U := im₁ 𝟏 U (λ (x: 𝟏), F)
+def 𝟏-Im₁ (A B: U) (f: A → B): im₁ A B f → B := λ (x : im₁ A B f), x.1
+def 𝟏-BAut (F: U): BAut F → U := 𝟏-Im₁ 𝟏 U (λ (x: 𝟏), F)
+def classify (E: U) (A' A: U) (E': A' → U) (E: A → U) (f: A' → A): U
+ := Π (x: A'), Path U (E'(x)) (E(f(x)))
+def isFBundle3 (E B: U) (p: E → B) (F: U): U₁
+ := Σ (X: B → BAut F), classify E B (BAut F) (λ (b: B), fiber E B p b) (𝟏-BAut F) X
+                    
+-- Definition (4) Non-Dependent
+def isFBundle4 (E B: U) (p: E → B) (F: U): U₁
+ := Σ (X: U) (v: surjective X B) (v': prod X F → E),
+      pullbackSq (prod X F) E X B p v.1 v' (λ (x: prod X F), x.1)
+         
+def isÉtaleMap (A B: U) (f: A -> B): U
+ := isPullbackSq A (ℑ A) B (ℑ B) (ℑ-app A B f)
+                 (ι B) (ι A) f (\(a : A), &lt;i> ℑ-naturality A B f a @ -i)
+     
+def EtaleMap (A B: U): U  := Σ (f: A -> B), isÉtaleMap A B f
+
+def Family (B : U) : U₁ := B → U
+def Fibration (B : U) : U₁ := Σ (X : U), X → B
+ 
+def encode (B : U) (F : B → U) (y : B) : fiber (Sigma B F) B (pr₁ B F) y → F y
+ := λ (x : fiber (Sigma B F) B (pr₁ B F) y),
+     subst B F x.1.1 y (&lt;i> x.2 @ -i) x.1.2
+ 
+def decode (B : U) (F : B → U) (y : B) : F y → fiber (Sigma B F) B (pr₁ B F) y
+ := λ (x : F y), ((y, x), idp B y)
+ 
+def decode-encode (B : U) (F : B → U) (y : B) (x : F y)
+  : Path (F y) (transp (&lt;i> F (idp B y @ i)) 0 x) x
+ := &lt;j> transp (&lt;i> F y) j x
+ 
+def encode-decode (B : U) (F : B → U) (y : B) (x : fiber (Sigma B F) B (pr₁ B F) y)
+  : Path (fiber (Sigma B F) B (pr₁ B F) y) ((y, encode B F y x), idp B y) x
+ := &lt;i> ((x.2 @ i, transp (&lt;j> F (x.2 @ i ∨ -j)) i x.1.2), &lt;j> x.2 @ i ∧ j)
+ 
+def Bundle=Pi (B : U) (F : B → U) (y : B)
+  : PathP (&lt;_> U) (fiber (Sigma B F) B (pr₁ B F) y) (F y)
+ := isoPath (fiber (Sigma B F) B (pr₁ B F) y) (F y)
+    (encode B F y) (decode B F y) (decode-encode B F y) (encode-decode B F y)
+</code></figure>
+
+<h4>Чего нет в Anders</h4>
+
+<p>В Anders нет общей схемы индуктивных типов (data и система конструкторов),
+   которая предполагает кроме всего прочего наличие чекера для позитивности типов,
+   чекера для завершимости нормализации, а также возможность задания
+   взаимно-рекурсивных типов. Семантика полиномиальных функторов W-типов
+   имеет более жесткие ограничения на выразимость. Поэтому некоторые типы,
+   такие как K(G,n) или общая схема n-усечений требует другого базиса.
+   Также из-за отсутствия взаимно-рекурсивных типов в Anders пока невозможно
+   выразить вселенную Махло или полусимплициальные типы (SST).
+</p>
+
+<h4>Дальшейшие планы</h4>
+
+<p>В качестве эксперимента с такой минималистичной кубической теорией типов
+   мы хотим попытаться построить максимальное количество высших индуктивных типов
+   используя только <b>W</b>, коэквалайзер <b>coeq</b> и двухмерный спицевый диск <b>hubSpokes</b> в
+   духе библиотеки HoTT для Coq которую продолжает поддерживать Майк Шульман.
+</p>
+
+<figure><code>type extension =
+  | ECoeq of exp | EIota of exp | EResp of exp | EIndCoeq of exp
+  | EDisc of exp | EBase of exp | EHub of exp | ESpoke of exp | EIndDisc of exp
+</code></figure>
+
+<p>Также в фокусе нашего интереса находится модульная архитектура тайп-чекера,
+  мотивированая динамическим включением/выключением типов
+  или даже определенных конструкторов в ран-тайме для
+  полного контроля набора примитивов тайпчекера и исследования
+  возможных теоретико-типовых базисов.</p>
+
+<P>Третьей темой которую хотелось бы поднять здесь &mdash; это тактики.
+   Anders в будущем будет иметь Lean-подобную систему тактик.</P>
+
+<p>Системы типов которые нами имплементированы:</p>
+
+<p>
+1. CoC (Coquand)<br>
+2. MLTT (Martin-Löf)<br>
+3. HoTT-I (Isaev)<br>
+4. HoTT-∂ (Siegment)<br>
+5. Cubical (CCHM)<br>
+6. HTS (Voevodsky)<br>
+7. de Rham (Cherubini)<br>
+</p>
+
+<p>Системы типов которые мы хотим имплементировать:</p>
+
+<p>
+1. Guarded Cubical (BBCGSV)<br>
+2. Rezk (Riehl, Shulman)<br>
+3. Equivariant Super HoTT (Schreiber)<br>
+</p>
+
+<h4>Вместо заключения</h4>
+
+<p>Для детального ознакомления с прувером предлагаем вам следующие страницы:<br>
+  &mdash; Домашняя страница проекта: <a href="https://homotopy.dev/">Гомотопическая система типов.
+          Модальная теория типов с двумя равенствами, ее синтаксис и семантика.</a><br>
+  &mdash; <a href="https://github.com/groupoid/anders">Репозиторий проекта</a> на Github, где вы можете оставить отчеты об ошибках<br>
+  &mdash; Другие гомотопические пруверы Groupoid Infinity: <a href="https://cubical.systems">cubical.systems</a><br>
+</p>
+
+
+   <br><center>&dot;</center>
+
+   <div id="utterances" class="utterances" > </div>
+   <script src="https://utteranc.es/client.js" repo="5HT/tonpa.guru" issue-number="22" theme="github-light" crossorigin="anonymous" async> </script>
+
+</section>
+</main>
+<footer>
+  (19) Siegmentation Fault 🧊 Namdak Tonpa (41)</footer>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2018-11-30</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2018-11-30</a>
+</nav>
+<main>
+    <section>
+        <h3>Ошечки</h3>
+        <p>
+Я хотел бы немножечко больше рассказать об N2O и всем движе вокруг него.
+N2O — это история, история о создании программного обеспечения,
+такого от которого не хочется блевать, а хочется каждый день просыпаться и пилить нетленочку.
+К сожалению не все языки могут предложить такую экосистему, которая подходила бы всем людям,
+поэтому я считаю, что каждый мастер должен сам создать себе свою экосистему и показать свой
+способ писания программ. Рик Хикки создал целыйл язык и экосистему, Эрик Мейер создает
+библиотеки, сначала для Майкрософт, потом для себя http://reactivex.io (которую и мы
+используем у себя в производстве). Становится понятно, что если вы хотите создать,
+что-то стоящее оно должно иметь цену и быть лучше аналогов и в других языках. Если же покажется
+так, что ваша идея или технология не применима в других языках или не имеет в них большого смысла,
+то возможно ваша библиотека переоценена.
+        </p><p>
+Поэтому экспансия N2O на другие языки должна была состоятся, так как в распространении N2O
+нужно только понимание, когда приходит понимание устройства N2O и его принципов: минимализма,
+простоты и практичности; имплементация на других языках появляется сама собой. Если говорить о языках,
+то давайте рассмотрим следующую (предвзятую) шкалу языков, интересных нам для портирования N2O:
+        </p><p>
+
+        <p> &mdash; <a href="https://github.com/o1">github.com/o1</a> &mdash; Standard ML &mdash; <a href="https://o1.network">https://o1.network</a><br>
+            &mdash; <a href="https://github.com/o29">github.com/o29</a> &mdash; Coq<br>
+            &mdash; <a href="https://github.com/o3">github.com/o3</a> &mdash; Haskell &mdash; <a href="https://o3.click">https://o3.click</a><br>
+            &mdash; <a href="https://github.com/o4">github.com/o4</a> &mdash; Agda &mdash; <a href="https://o4.click">https://o4.click</a><br>
+            &mdash; <a href="https://github.com/o53">github.com/o53</a> &mdash; Clojure<br>
+            &mdash; <a href="https://github.com/o59">github.com/o59</a> &mdash; Java<br>
+            &mdash; <a href="https://github.com/o61">github.com/o61</a> &mdash; C#<br>
+            &mdash; <a href="https://github.com/o7">github.com/o7</a> &mdash; Elixir &mdash; <a href="https://o7.network">https://o7.network</a><br>
+            &mdash; <a href="https://github.com/synrc">github.com/synrc</a> &mdash; Erlang &mdash; <a href="https://n2o.dev">https://n2o.dev</a><br>
+            &mdash; <a href="https://github.com/erpuno">github.com/erpuno</a> &mdash; Elixir &mdash; <a href="https://n2o.dev">https://erp.uno</a><br>
+            &mdash; <a href="https://github.com/o83">github.com/o83</a> &mdash; Rust &mdash; <a href="https://o83.github.io/platform.rs">https://o83.github.io/platform.rs</a><br>
+            &mdash; <a href="https://github.com/o89">github.com/o89</a> &mdash; Lean<br></p>
+
+        <p>
+Что предлагает N2O? N2O предлагает спецификацию, которая говорит как строить
+и масштабировать достаточно сложные системы в рамках референсного аппликейшин сервера
+имеющего возможность работать поверх разных сетевых протоколов.  Мы гарантируем, что эта
+спецификация подходит и хорошо ложится на все функциональные языки и является
+конкурентноспособной со всеми ведущими проектами в этой отрасли на каждой из платформ.
+        </p><p>
+Не буду скрывать, некоторые заказчики вообще не понимают о чем мы. Некоторые удивляются
+даже тому, что мы можем деливерить целые системы и комплексы на Erlang без других языков
+и правильно боятся пушо они вряд ли найдут на свои низкие Эрланг зарплаты любителей
+минимализма и зрелой самостоятельности. Так-то, конечно, имея много денег, любой мыслящий сможет
+построить корпоративную машину и забросать Java и JavaScript позициями.
+        </p><p>
+Эту историю я хочу рассказать начиная со Standard ML, языке, который я считаю
+незаслужено забытым (что подтверждает отсутствие WebSocket имплементации),
+и который мы считаем одним из самых красивых языков. На этом языке мы имплементируем
+бызовый тракт N2O и делаем версию способную работать только поверх TCP, например. Дальше мы берем
+другой язык, например Coq, и показывваем как написать N2O на прувере с экстрактом в OCaml, т.е. в язык,
+который почти такой же как предыдущий. Потом мы демонстрируем N2O на Хаскеле и сравниваем его послойно с Yesod,
+демонстрируя полное превосходвство. И, наконец, переходим к самому немаргинальному и самому
+нетипизированному Эрлангу (тут всё понятно).
+        </p><p>
+Если вы считаете, что поняли N2O или хотите понять, и хотите написать его на языке которого
+нет в этом списке, свяжитесь со мной! И, на последок, обновленный агрегатор ошечек, главный сайт N2O ECO:
+        </p><p>
+        <a href="https://n2o.tech">https://n2o.tech</a> &mdash;
+         фреймворк для предприятий не зависящий от языков и технологий.
+        </p>
+        <br>
+        <p>Дискас: <a href="https://github.com/5ht/tonpa.guru/issues/6">https://github.com/5ht/tonpa.guru/issues/6</a></p>
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2019</footer>
+</body>
+</html>

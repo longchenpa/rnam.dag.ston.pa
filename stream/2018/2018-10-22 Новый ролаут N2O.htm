@@ -1,0 +1,129 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2018-10-22</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2018-10-22</a>
+</nav>
+<main>
+    <section>
+        <h3>Новий ролаут N2O</h3>
+        <p>
+Все хотів вести блог прямо в гітхабі, і ось я тут. Привіт, Твіттер!
+        </p><p>
+Один раз в рік я випускаю обновлені версії N2O. Цього року це — більш матурніша MQTT бібліотека,
+яка разом із версією веб-сокету отримала тег 5.10, остання все ще залишається в окремому репозиторії;
+NITRO вже змержилася і сумісна з обома версіями, хто знає, можливо, в наступних версіях,
+або вже в новому році прийде гранд мерж MQTT і N2O репозиторіїв (залишилося пару файлів
+перенести зі старого репозиторія і запустити старий веб-сокетний приклад на новому дереві)!
+У зв'язку з дедалі більшою кількістю деприкейтів у логах, було прийнято рішення залочити всі чужі ліби
+та зробити щось типу SYNRC сховища репозиторіїв. Цього місяця до нього ввійшли та залочилися:
+        </p><p>
+— <a href="https://github.com/voxoz/cowboy">https://github.com/voxoz/cowboy</a> — 1.0.4<br>
+— <a href="https://github.com/voxoz/cowlib">https://github.com/voxoz/cowlib</a> — 1.0.0<br>
+— <a href="https://github.com/voxoz/ranch">https://github.com/voxoz/ranch</a> — 1.0.0<br>
+— <a href="https://github.com/voxoz/erlydtl">https://github.com/voxoz/erlydtl</a> — 0.8<br>
+— <a href="https://github.com/voxoz/emqttc">https://github.com/voxoz/emqttc</a> — 0.8<br>
+— <a href="https://github.com/voxoz/gen_logger">https://github.com/voxoz/gen_logger</a> — 1.2<br>
+— <a href="https://github.com/voxoz/lager">https://github.com/voxoz/lager</a> — 3.2.2<br>
+— <a href="https://github.com/synrc/emq_dashboard">https://github.com/synrc/emq_dashboard</a> — 2.1.1<br>
+— <a href="https://github.com/synrc/emqttd">https://github.com/synrc/emqttd</a> — 2.1.2<br>
+— <a href="https://github.com/voxoz/esockd">https://github.com/voxoz/esockd</a> — 4.1.1<br>
+— <a href="https://github.com/voxoz/mochiweb">https://github.com/voxoz/mochiweb</a> — 4.2.1<br>
+— <a href="https://github.com/voxoz/gproc">https://github.com/voxoz/gproc</a> — 0.8<br>
+— <a href="https://github.com/voxoz/syn">https://github.com/voxoz/syn</a> — 1.5<br>
+        </p><p>
+Водночас з цим обновився головний хедлайнер сезону, бібліотека voxoz/mq,
+яка включає старий EMQ 2.1.2 і його дашборд. Крім цього викотилася жовтнева хвиля
+екосистеми N2O, а саме (від старих до нових):
+        </p><p>
+— <a href="https://github.com/synrc/n2o">https://github.com/synrc/n2o</a> — 5.10<br>
+— <a href="https://github.com/synrc/kvs">https://github.com/synrc/kvs</a> — 5.10<br>
+— <a href="https://github.com/synrc/mad">https://github.com/synrc/mad</a> — 4.10<br>
+— <a href="https://github.com/synrc/fs">https://github.com/synrc/fs</a> — 4.10<br>
+— <a href="https://github.com/synrc/active">https://github.com/synrc/active</a> — 4.10<br>
+— <a href="https://github.com/synrc/nitro">https://github.com/synrc/nitro</a> — 3.10<br>
+— <a href="https://github.com/synrc/bpe">https://github.com/synrc/bpe</a> — 3.10<br>
+— <a href="https://github.com/synrc/sh">https://github.com/synrc/sh</a> — 2.10<br>
+— <a href="https://github.com/synrc/review">https://github.com/synrc/review</a> — 1.10<br>
+— <a href="https://github.com/synrc/bert">https://github.com/synrc/bert</a> — 1.10<br>
+— <a href="https://github.com/synrc/mqtt">https://github.com/synrc/mqtt</a> — 5.10 (N2O-MQTT)<br>
+        </p><p>
+Цілком можливо, що час, у стилі NIH-синдрому, писати протокол
+свого репозиторія пакетів разом з бінарною дистриб'юцією пакетів
+самого ерлангу (давно просять). Адже, навіть я до таких глибин ще не
+опускався, якщо npm-вівці можуть, а я чим гірший!
+        </p><p>
+Десь мінорні фікси, десь ворнінги, всі репозиторії включені
+у тревісі і можна бачити їх стрим: https://travis-ci.org/voxoz,
+https://travis-ci.org/synrc,там же можна глянути всі логи всіх білдів.
+Як видно, багато репозиторіїв не були включеними, тому в найближчих планах
+засвітити все зеленим, це передбачає зборку ребаром та медом.
+        </p><p>
+Чому критикують mad, я не знаю, наприклад на тревісі rebar на 19.3 gen_logger
+        </p>
+        <figure><code>
+ ==> gen_logger (compile)
+ ERROR: OTP release 20.0.4 or later is required, you have: 19
+ ERROR: compile failed while processing
+        /home/travis/build/synrc/review/deps/gen_logger: rebar_abort
+        </code></figure>
+        <p>
+The command "rebar get-deps compile" exited with 1.
+        </p><p>
+не збирає, а з mad все працює:
+        </p>
+        <figure><code>
+ $ cat .travis.yml
+ language: erlang
+ otp_release:
+   - 19.3
+ script:
+   - "curl -fsSL https://raw.github.com/synrc/mad/master/mad > mad"
+   - "chmod +x mad"
+   - "./mad dep com"
+        </code></figure>
+        <figure><code>
+ The command "./mad dep com" exited with 0.
+ Done. Your build exited with 0.
+        </code></figure>
+        <p>
+mad почав підтримувати зборку кубічним тайпчекером, з'явився модуль mad_cubical,
+але через рік-два, хто знає, можливо, тут буде вже свій AST трансформатор на Erlang.
+        </p><p>
+Загалом ця робота зайняла 170 коммітів у 30 репозиторіях і рівно 1 добу без перерви.
+Сюди входять усі багфігси разом із видаленням файлів та склеюванням деяких репозиторіїв,
+все, починаючи від імпорту, закінчуючи ченджлогами та релізами. Я заморочився, але
+добився що в білдлогах на 19.1, 19.2, 19.3, 20.0.4, 21.0.4, 21.1.1 немає жодного ворнінгу!
+Думав, взагалі по-чесному переписати esockd з gen_fsm на gen_statem але виявилося,
+що завдання одним днем не обмежиться, тому 
+        </p>
+        <figure><code>
+ {erl_opts,[nowarn_deprecated_function]}.
+        </code></figure>
+        <p>
+врятувала ситуацію. Але депрекейтеди валяться в основному на останніх ерлангах, пропонують
+як покроковий турторіал, що на що переписувати, я пройшов цей квест для esockd,
+трохи але запустити успішно з першого разу не вдалося, а це ж головна частина тракту,
+а якщо ліки? тому я не став.
+        </p><p>
+Планую ще зробити багато гарного! Думаю зайнятися дизайном N2O,
+можливо на кубику протоколи N2O поки що напишу.
+        </p><p>
+Максим
+        </p>
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2019</footer>
+</body>
+</html>

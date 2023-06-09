@@ -1,0 +1,481 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2021-01-04</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2021-01-04</a>
+</nav>
+<main>
+    <section>
+        <h3>F# WebSocket Server</h3>
+
+        <h4>Аннотация</h4>
+
+        <p>Идея писать веб-сервера и веб-фреймворки на всех языках у меня возникла с тех пор,
+           когда я понял, что то, что я сделал для экосистемы Erlang: направление фреймворков
+           для предприятий под общим брендом N2O, а сейчас как часть платформы <a href="https://erp.uno">erp.uno</a>;
+           вполне применимо и для других языков и платформ. В этой статье представлена версия
+           вебсокет-сервера для языка программирования F# &mdash; <a href="https://ws.erp.uno">ws.erp.uno</a>.
+           Адрес пакета: <a href="https://www.nuget.org/packages/ws/">nuget.org/packages/ws</a>.
+           Адрес репозитория: <a href="https://github.com/erpuno/ws">erpuno/ws</a>.</p>
+
+        <h4>Предисловие</h4>
+
+        <p><b>Haskell</b>. Первый эксперимент был совершен Андреем Мельниковым в виде порта для Хаскеля:
+           <a href="https://github.com/nponeccop/n2o.hs">N2O.HS</a>, позже более полную версию с N2O и NITRO
+           с экзестенциальными сигнатурами сделал Марат Хафизов, который управляет
+           Github организацией <a href="https://github.com/o3">O3</a> и
+           сайтом <a href="https://o3.click">o3.click</a>. Мне совершенно непонятно,
+           почему ни один хаскель программист, которые вроде как должны восхищаться
+           минимализмом, не идет по этому пути, а обычно ищет правды в таких фреймворках
+           как UrWeb, IHP, UnisonWeb. На мой взгляд &mdash; всё это переусложненные штуки.</p>
+
+        <p><b>Standard ML</b>. Также в академических целях, Марат Хафизов сделал порт связки
+           веб-сервера N2O и веб-фреймворка NITRO на язык Standard ML
+           (обе главные версии SML/NJ и MLton) &mdash; эта работа представлена Github
+           организацией <a href="https://github.com/o1">O1</a>. Это тот язык, который
+           я считаю уместно преподавать как первый академический язык
+           программирования (до знакомства с промышленными языками Erlang, F#, Haskell).</p>
+
+        <p><b>Lean</b>. Для закрепления своей идеи и более четкой и точной ее артикуляции я
+           попросил <a href="https://github.com/forked-from-1kasper">Siegmentation Fault</a> сделать
+           порт на еще более формальный язык программирования, математический прувер Lean 4.
+           Эта версия связки веб-сервера N2O и веб-фреймворка NITRO представлена Github
+           организацией <a href="https://github.com/o89">O89</a> и сразу двумя
+           сайтами: <a href="https://lean4.dev">lean4.dev</a> и <a href="https://bum.pm">bum.pm</a>.
+           Последний представляет собой пакетный менеджер написанный на Lean 4, который нам
+           помогает администрировать Александр Темерев из CERN. Lean 4 N2O проекты залайкал
+           Леонардо де Мура, автор Lean и Z3, чему мы безмерно рады.</p>
+
+        <h4>Идиоматический веб-сервер на F#</h4>
+
+        <p>Критерии идиоматичности могут каждым восприниматься по разному, но в основном
+           это означаем минимум прелюдий и максимум сути, так или иначе основная мантра всех
+           минималистов в общем и N2O инфраструктуры в частности. Так в современные критерии
+           идиоматичности веб-сервера для языка F# я бы выделил следующее: 1) использование
+           системных классов System.Net.WebSockets, которые уже предоставляют буферизированные
+           енкодер и декодер фреймов стандарта RFC 6455; 2) сервер должен быть построен на Async
+           компютейшинал экспрешинах; 3) для управления асинхронными потоками
+           выполнения должен использоваться MailboxProcessor, а не самописная
+           система воркеров, которая хоть и поможет выжать последнее из F# (у меня
+           получилось 14 миллионов сообщений в секунду), но не продемонстрирует сути, так как будет
+           девиацией в сторону рантаймов; 4) Использование классов TcpListener и TcpClient,
+           NetworkStream. Больше ни чем не разрешается пользоваться!</p>
+
+        <h4>Что почитать перед написанием?</h4>
+
+        <p>Немного погуглив, я понял что интернету нехватает статьи, которая описывает историю
+           понятия асинхронных вычислений и вычислительных выражений, которые в народе
+           известны по ключевым словам <b>async/await</b>. Вижу статью, которая называется
+           <b>"Survey of Brief Async history"</b>, в которой будет показана ретроспектива Async
+           технологии:</p>
+
+        <p>0) J operator 1965;<br>
+           1) LISP call/cc 1968;<br>
+           2) Erlang 1986;<br>
+           3) Concurrent ML 1998;<br>
+           4) Haskell async 2004;<br>
+           5) C# async yield 2006;<br>
+           6) Perl IO:Async 2007;<br>
+           7) F# Async 2010<br>
+           8) C#/PHP Async 2012<br>
+           9) Python async 2015<br>
+           10) ECMAScript async 2017</p>
+
+        <p>Основополагающей статьей по F# async я бы назвал <a href="https://medium.com/@eulerfx/f-async-guide-eb3c8a2d180a">F# Async Guide</a> Лео Городинского,
+           <a href="https://jet.com">jet.com</a>.
+           Основной книгой, которую я бы порекомендовал
+           полистать перед знакомством с F# &mdash; это <b>"Expert F# 4.0"</b> автора языка Дона Сайма.
+           Основной презентацией по F# Async я бы назвал
+           доклад Дона Сайма на митапе в Лондоне &mdash;
+          <a href="https://www.erlang-factory.com/upload/presentations/270/FSharp-ef.pdf">Some F#
+           for the Erlang programmer</a>.
+           Вооружившись этими документами и <a href="https://gist.github.com/sgtz/95e7db96fd0858a28b5a">этим
+           Gist сниппетом</a> я ухал во Львов писать самый идиоматичный вебсокет-сервер.</p>
+
+        <h4>Витрина</h4>
+
+        <p>Как обычно принятно в бектрекинг системах, прологах и декларативных языках, будем
+           двигаться с конца, а именно с интерфейса который мы хотим получить. Хочется, чтобы
+           ЭХО-сервер представлял собой функцию <b>id</b>.</p>
+
+        <figure>
+        <code>
+  open N2O
+
+  module Program =
+
+    [&lt;EntryPoint>]
+    let main _ =
+        let mutable ret = 0
+
+        try Stream.protocol &lt;- fun x -> x
+            use ws = Server.start "0.0.0.0" 1900
+            System.Threading.Thread.Sleep -1
+        with exn ->
+            printfn "EXIT: %s" exn.Message
+            ret &lt;- 1
+        ret
+        </code>
+        </figure>
+
+        <h4>Архитектура асинхронных процессов</h4>
+
+        <p>Для тех, кто знаком с архитектурой Erlang/OTP, известно, что проектирование сетевых приложений
+           начинается с дерева супервижина легковесных процессов и протоколов которые определяют их взаимодействие.
+           Подчиненные дочерние процессы обычно разделяют токены времени жизни <b>CancellationToken</b>,
+           благодаря чему исключения возникшие в родительских процессах могут отменить все дерево подпроцессов.
+           Поэтому в циклах процессов присутствует выражение</p>
+
+        <figure>
+        <code>
+    while not ct.IsCancellationRequested do
+        </code>
+        </figure>
+
+        <p>Наш вебсокет-сервер состоит из 7 асинхронных процессов:</p>
+
+        <figure>
+        <code>
+         [Sup]    [L]*
+        /        /
+ [start]--[S]--[C]*
+        \        \
+         [H]      [T]*
+        </code>
+        </figure>
+
+        <p>Легенда этого дерева такова: [start] нода представляет собой точку входа,
+           из которой будут рождаться остальные асинхронные процессы, соотвествует функции <b>start</b>;
+           [S] нода соовтествует асинхронному процессу, который представлен функцией <b>listen</b>;
+           [Sup] нода соотвествует функции <b>startSupervisor</b>;
+           [C] нода соотвествует функции <b>startClient</b>;
+           [H] нода соотвествует функции <b>heartbeat</b>;
+           [L] нода соотвествует функции <b>loop</b>;
+           [T] нода соотвествует функции <b>telemetry</b>. Звездочкой будем обозначать процессы,
+           количество которых зависит от количества активных соединений: [C]*, [L]*, [T]*.
+
+        <h4>Протоколы взаимодействия</h4>
+
+        <p>В момент рождения клиента [C] в родительском процессе сервера [S] происходит нотификация [S]->[Sup]
+           по так называемому протоколу супервижина <b>Sup</b> с одноименным типом. Публичный протокол
+           публичной функции Stream.protocol представлен типом <b>Msg</b>, который предназначен для управления
+           асинхронным процессом [L].</p>
+
+        <p>Система серверных пингов реализована совместимой с протоколами <b>Sup</b> и <b>Msg</b>,
+           хартбит процесс [H] через интервал времени посылает <b>Tick</b> сообщение в супервизор [Sup],
+           который в свою очередь шлет броадкаст для всех клиентов телеметрии [T] созданных на той же очереди,
+           что и [C], т.е. тот же протокол.</p>
+
+        <p>Процесы [T], [L] и [C] разделяют WebSocket стрим и все связаны с супервизором сервера, нотифицируя его
+           в случае возникновения исключений.</p>
+
+        <figure>
+        <code>
+    type Msg =
+        | Bin of byte array
+        | Text of string
+        | Nope
+
+    type Sup =
+        | Connect of MailboxProcessor&lt;Msg> * WebSocket
+        | Disconnect of MailboxProcessor&lt;Msg>
+        | Close of WebSocket
+        | Tick
+        </code>
+        </figure>
+
+        <h4>RFC 6455 Хендшейк</h4>
+
+        <p>Функции обработки HTTP хедеров. <b>isWebSocketsUpgrade</b> ищет в хедерах
+           пару <b>Upgrade</b> и <b>WebSocket</b>. <b>getLines</b> возвращает хедеры
+           как массив строк, а функция <b>getKey</b> возвращает значение хедера по его ключу.</p>
+
+        <figure>
+        <code>
+    let isWebSocketsUpgrade (lines: string array) =
+        Array.exists (fun (x:string) -> "upgrade: websocket" = x.ToLower()) lines
+
+    let getKey (key: string) arr =
+        try let f (s: String) = s.StartsWith(key)
+            (Array.find f arr).[key.Length + 1..]
+        with _ -> ""
+
+    let getLines (bytes: byte array) len =
+        if len > 8 then
+            bytes.[..(len - 9)]
+            |> UTF8Encoding.UTF8.GetString
+            |> fun hs -> hs.Split([| "\r\n" |],
+                   StringSplitOptions.RemoveEmptyEntries)
+        else
+            [||]
+        </code>
+        </figure>
+
+        <p>Функция RFC 6455 ответа называется <b>handshake</b>. Этой функциональности
+           насколько мне известно нет в системных неймспейсах.</p>
+
+        <figure>
+        <code>
+    let acceptString6455 acceptCode =
+        "HTTP/1.1 101 Switching Protocols\r\n" +
+        "Upgrade: websocket\r\n" +
+        "Connection: Upgrade\r\n" +
+        "Sec-WebSocket-Accept: " + acceptCode + "\r\n\r\n"
+
+    let handshake lines =
+        (getKey "Sec-WebSocket-Key:" lines) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+        |> Encoding.ASCII.GetBytes
+        |> SHA1CryptoServiceProvider.Create().ComputeHash
+        |> Convert.ToBase64String
+        |> acceptString6455
+        |> Encoding.ASCII.GetBytes
+        </code>
+        </figure>
+
+
+        <h4>Асинхронные процессы сервера</h4>
+
+        <p>Первый процесс [start], представляет собой точку входа, где
+           стартует сразу три процесса: процесс супервизора всех соединений [Sup],
+           процесс сервера слушателя соединений [S] и, если включен флаг Server.ticker,
+           процесс сердцебиений, который работает как интервальный циклический таймер [H].
+           Эпилог процесса [start] содержит кенселяцию токена глобального для всех подпроцессов
+           при освобождении переменной, которая соджержит вебсокет-сервер во внешнем коде.</p>
+
+        <figure>
+        <code>
+    let start (addr: string) (port: int) =
+        let cts = new CancellationTokenSource()
+        let token = cts.Token
+        let sup = startSupervisor token
+        let listener = TcpListener(IPAddress.Parse(addr), port)
+
+        try
+            listener.Start(10)
+        with
+            | :? SocketException ->
+                failwithf "%s:%i is using by another program" addr port
+            | err ->
+                failwithf "%s" err.Message
+
+        Async.StartImmediate(listen listener token sup, token)
+        if ticker then Async.StartImmediate(heartbeat interval token sup, token)
+
+        { new IDisposable with
+            member x.Dispose() = cts.Cancel() }
+        </code>
+        </figure>
+
+        <p>Второй процесс [Sup], супервизор является чистой функцией,
+           которая обрабатывет сообщения супервижин протокола о регистрации
+           и смерти новых соединений. Тут же происходит бродкаст сообщений как
+           реакция на сердцебиение тикера.</p>
+
+        <figure>
+        <code>
+    let startSupervisor (ct: CancellationToken) =
+        MailboxProcessor.Start(
+            (fun (inbox: MailboxProcessor&lt;Sup>) ->
+                let listeners = ResizeArray&lt;_>()
+                async {
+                    while not ct.IsCancellationRequested do
+                        match! inbox.Receive() with
+                        | Close ws -> ()
+                        | Connect (l, ns) -> listeners.Add(l)
+                        | Disconnect l -> listeners.Remove(l) |> ignore
+                        | Tick -> listeners.ForEach(fun l -> l.Post Nope)
+                }),
+            cancellationToken = ct
+        )
+        </code>
+        </figure>
+
+        <p>Интервальный таймер сердцебиения [H].</p>
+
+        <figure>
+        <code>
+    let heartbeat (interval: int)
+                  (ct: CancellationToken)
+                  (sup: MailboxProcessor&lt;Sup>) =
+        async {
+            while not ct.IsCancellationRequested do
+                do! Async.Sleep interval
+                sup.Post(Tick)
+        }
+        </code>
+        </figure>
+
+        <p>Главный цикл процесса [S], который принимает новые TCP
+           соединения и стартует новых клиентов [C].</p>
+
+        <figure>
+        <code>
+    let listen (listener: TcpListener)
+               (ct: CancellationToken)
+               (sup: MailboxProcessor&lt;Sup>) =
+        async {
+            while not ct.IsCancellationRequested do
+                let! client = listener.AcceptTcpClientAsync() |> Async.AwaitTask
+
+                client.NoDelay &lt;- true
+                startClient client sup ct |> ignore
+        }
+        </code>
+        </figure>
+
+        <p>Асихронный процесс [C] с очередью (MailboxProcessor) обработки TCP соединений или, проще говоря, TCP клиент.
+           Это точка входа для клиентского соединения, именно здесь происходит хендшейк. В случае успешного
+           хендшейка мы шлем RFC 6455 ответ и запускаем сразу два асинхронных процесса: первый это сам
+           цикл обработки вебсокет сообщений [L], а также, если установлен флаг Server.ticker мы
+           запускаем процесс телеметрии [T], который разделяет WebSocket стрим и может осуществлять
+           туда асинхронный сброс сообщений, конкурируя с основным циклом [L]. Такие процессы
+           существуют всегда в паре.</p>
+
+        <figure>
+        <code>
+    let startClient (tcp: TcpClient)
+                    (sup: MailboxProcessor&lt;Sup>)
+                    (ct: CancellationToken) =
+        MailboxProcessor.Start(
+            (fun (inbox: MailboxProcessor&lt;Msg>) ->
+                async {
+                    let ns    = tcp.GetStream()
+                    let size  = tcp.ReceiveBufferSize
+                    let bytes = Array.create size (byte 0)
+                    let! len  = ns.ReadAsync(bytes, 0, bytes.Length)
+                                |> Async.AwaitTask
+                    let lines = getLines bytes len
+                    match isWebSocketsUpgrade lines with
+                    | true ->
+                        do! ns.AsyncWrite (handshake lines)
+                        let ws =
+                            WebSocket.CreateFromStream(
+                                (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
+                        sup.Post(Connect(inbox, ws))
+                        if ticker then Async.Start(telemetry ws inbox ct sup, ct)
+                        return! looper ws size ct sup
+                    | _ -> tcp.Close()
+                }),
+            cancellationToken = ct
+        )
+        </code>
+        </figure>
+
+        <p>Процесс телеметрии [T] слушает очередь, и на любое сообщение, шлет в вебсокет канал текстовое сообщение "TICK".
+
+        <figure>
+        <code>
+    let telemetry (ws: WebSocket)
+                  (inbox: MailboxProcessor&lt;Msg>)
+                  (ct: CancellationToken)
+                  (sup: MailboxProcessor&lt;Sup>) =
+        async {
+            try
+                while not ct.IsCancellationRequested do
+                    let! _ = inbox.Receive()
+                    do! send ws ct (Text "TICK")
+            finally
+                sup.Post(Disconnect &lt;| inbox)
+
+                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "TELEMETRY", ct)
+                |> ignore
+        }
+        </code>
+        </figure>
+
+        <p>Главный цикл обработки сообщений [L], в котором происходит
+           создание буферизированого WebSocket стрима,
+           тип которого явно присутствует в протоколе супервижина.
+           Также здесь выделяется глобальный для всего цикла буфер, куда копируются байты их сокета с
+           помощью ReceiveAsync. При возникновении
+           исключения происходит нотификация супервизора с помощью сообщения Close,
+           которое сигнализирует о разрыве соединения, например в случае ошибки валидации UTF-8.</p>
+
+        <figure>
+        <code>
+    let looper (ws: WebSocket)
+               (bufferSize: int)
+               (ct: CancellationToken)
+               (sup: MailboxProcessor&lt;Sup>) =
+        async {
+            try
+                let mutable bytes = Array.create bufferSize (byte 0)
+                while not ct.IsCancellationRequested do
+                    let! result =
+                        ws.ReceiveAsync(ArraySegment&lt;byte>(bytes), ct)
+                        |> Async.AwaitTask
+
+                    let recv = bytes.[0..result.Count - 1]
+
+                    match (result.MessageType) with
+                    | WebSocketMessageType.Text ->
+                        do! protocol (Text (Encoding.UTF8.GetString recv))
+                            |> send ws ct
+                    | WebSocketMessageType.Binary ->
+                        do! protocol (Bin recv)
+                            |> send ws ct
+                    | WebSocketMessageType.Close -> ()
+                    | _ -> printfn "PROTOCOL VIOLATION"
+            finally
+                sup.Post(Close &lt;| ws)
+
+                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER", ct)
+                |> ignore
+        }
+        </code>
+        </figure>
+
+        <p>Функции терминации канала наследуюет архаическое на мой
+           взгляд разделение текстовых и бинарных сообщений. Как показывает практика
+           трактовка всего как бинарных сообщений только улучшает семантику протокола.</p>
+
+        <figure>
+        <code>
+    let sendBytes (ws: WebSocket) ct bytes =
+        ws.SendAsync(ArraySegment&lt;byte>(bytes),
+            WebSocketMessageType.Binary, true, ct) |> ignore
+
+    let send ws ct (msg: Msg) =
+        async {
+            match msg with
+            | Text text -> sendBytes ws ct (Encoding.UTF8.GetBytes text)
+            | Bin arr -> sendBytes ws ct arr
+            | Nope -> ()
+        }
+        </code>
+        </figure>
+
+        <h4>Что дальше?</h4>
+
+        <p>Дальше идут три фазы:<p>
+
+        <p>1) Контекст пира: порт, айпишник, хедеры, эндпойнт, служебная информация;<br>
+           2) BERT сериализация для совместимости с клиентской инфраструктурой N2O;<br>
+           3) Имплементация NITRO протокола.</p>
+
+        <h4>Благодарности</h4>
+
+        <p>Хочется поблагодарить всех, кто ставил лайки нашему проекту, а осоебнно Филлипа Картера,
+           програмного менеджера .NET и F# <span class="heart">&nbsp;❤&nbsp;</span>
+           Мы чрезвычайно воодушевлены!</p>
+
+        <h4>Авторы</h4>
+
+        <p>Максим Сохацкий, Игорь Городецкий, Siegmentation Fault</p>
+
+    </section>
+</main>
+<footer>ERP.UNO</footer>
+</body>
+</html>

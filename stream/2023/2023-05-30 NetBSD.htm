@@ -1,0 +1,366 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2023-05-30 NetBSD</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2023-05-30</a>
+</nav>
+<main>
+    <section>
+
+        <h3>NetBSD: трицятиріччя</h3>
+
+        <p><b>Застосовуваність:</b> ця робота може бути використана як дидактичний матеріал курсу операційні системи
+              кафедри теоретичної інформатики інституту формальної математики.<br>
+           <b>Об'єкт та предмет:</b> операційна система NetBSD.<br>
+           <b>Мета та завдання:</b> розкриття мотивації та історія UNIX культури.</p>
+
+        <h4>Вступ</h4>
+
+        <p>Після переходу від мейнфреймових систем MULTICS на PL/1 для IBM на
+           мікрокомʼютери та мову C виникло поняття UNICS. AT&T Bell Labs вийшла з проекту ше в 1969,
+           а остання версія MULTICS MR12.5 вийшла в 1992 році в MIT. Саме тоді починалася історія UNIX
+           таку як ми її знаємо зараз. Коли Томпсон та Річі вийшли з Bell Labs вони почали
+           створювати UNIX, а університет MIT правовласник MULTICS почав оразу рухатися в тому ж напрямку.
+           Так виникли головні два відгалуження UNIX які відомі зараз як System V та BSD.</p>
+
+        <p>У традиційній термінології операційної системи ядро &mdash; це невеликий прошарок
+            програмного забезпечення, яке забезпечує лише мінімальні можливості, необхідні
+            для реалізації додаткових служб операційної системи. Ще до початку розробки UNIX
+            існувала на той час потужна теорія операційних систем у томи числі на мікроядрах:
+            1) Chorus [Rozier et al, 1988];
+            2) Mach [Accetta et al, 1986];
+            3) Tunis [Ewens et al, 1985];
+            4) V Kernel [Cheriton, 1988].
+            Мікроядра &mdash; це гранулярний розподіл функціональності поміж сервісів які є відображенням апаратури.
+            Такі служби, як файлові системи та мережеві протоколи, реалізуються як клієнтські прикладні процеси
+            ядра або ядра.</p>
+
+         <p>На основі теорії Mach (а саме кодової бази версії 2.5) був створений пакет 4.3BSD в MIT який
+            ще називався Net/2, Net/1 можна назвати експерименти які проводилися на апаратурі VAX.
+            Версія 4.4 цього пакету і лягла в основу NetBSD, як основної операційної
+            системи класу UNICS Каліфорнійського університету Берклі або просто Berkeley Software Distribution.</p>
+
+        <figure><code>
+$ git clone git@github.com:NetBSD/src
+$ git log --reverse | less
+
+commit e81d63576b2e46ab90da7d75fa155ea57ee4d32e Author: srcmastr &lt;srcmastr>
+Date:   Mon Jul 13 16:18:24 1992 +0000 Msg: initial empty check-in
+
+commit a50e92ee94fef5ef9c87e87efc192c0a3f75f06e Author: mrg &lt;mrg@NetBSD.org>
+Date:   Mon Jul 13 16:18:25 1992 +0000 Msg: 4.4BSD-Lite2
+
+commit 61f282557f0bc41c0b762c629a2f4c14be8b7591 Author: cgd &lt;cgd@NetBSD.org>
+Date:   Sun Mar 21 09:45:37 1993 +0000 Msg: initial import of 386bsd-0.1 sources
+
+commit e541169ce2dba4d690952ee70f68b7cd17452887 Author: cgd &lt;cgd@NetBSD.org>
+Date:   Sun Mar 21 18:04:42 1993 +0000 Msg: after 0.2.2 "stable" patches applied
+        </code></figure>
+
+        <h4>Мотивація</h4>
+
+        <p>У той час коли вчення про мінімалізм у програмному забезпеченні
+           втрачає своїх адептів, а професія програміста деградувала до DevOps дебілів,
+           ми все ще маємо можливість нюхнути справжної каліфорнійської культури
+           мінімалізму, який ліг в основу всіх BSD відгалужень (OpenBSD, NetBSD, FreeBSD).
+           Головна мотивація BSD, а також UNICS загалом полягала в мінімізації
+           кодової бази (бампінг) до максимального рівня, зокрема завдяки побудові
+           проміжних мов, якою стала мова С. Компілятори мови С існують навіть
+           для 8-бітних платформ, таких як Z80, хоча UNIX будувалися вже для 16-бітних архітектур.
+           Якщо ваша операційна система не має на меті бескомпромісний мінімалізм,
+           то вона не відповідає мотивації UNIX. Нам дуже пощастило, що ми маємо зараз
+           історію викарбовану в 30-річний досвід який до цих пір є основою сучасних обчислень.</p>
+
+        <p>В 1995 році Тео де Раадт керуючись принципами Benevolent dictator for life
+           (<a href="https://en.wikipedia.org/wiki/Benevolent_dictator_for_life">BFDL</a>),
+           послав нахуй товариство NetBSD і заснував власний форк NetBSD &mdash; в основу якого
+           поклав філософію безпеки (головним чином range-check та вихід за границі буферів,
+           щоб унеможливити розробку експоїтів, то чим зараз займаються такі системи як Valgrind,
+           фактично він був піонером ручної математичної верифікації коду). NetBSD ж
+           як університетський проект поставив собі за мету покрити максимальну кількість архітектур.
+           Якось святий Теор де Раадт <a href="https://home.nuug.no/~peter/pf/en/intro.html">посрався
+           з пацанами</a> в мейл лісті з приводу ліцензії на IPFilter фаєрвол
+           і за ніч написав pf (пакетний фільтр, який є сучасним прототипом-компонентом мережевого стеку
+           всіх BSD ситсем). Святі мають ємність аби собі це дозволити, бидло так не може.
+           Половину всього шо ви знаєте про сучасні UNIX вийшло з благословення Тео: OpenSSH,
+           OpenBGPD, OpenVPN, LibreSSL, strlcat/strlcpy, тощо.</p>
+           
+           <center>
+           <iframe width="560" height="315" src="https://www.youtube.com/embed/a_EYdzGyNWs"
+           title="YouTube video player" frameborder="0"
+           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
+           </iframe>
+           </center>
+
+        <p>Джордан Хаббард, керівник проекту FreeBSD (1993) яка мала на мету проникнення в корпоративний сектор,
+           був запрошений Стівом Джобсом для UNIX-сифікації Mach 3 мікро-ядра яле стало основою xnu/Darwin,
+           та розповсюдження POSIX/UNIX BSD на userland операційної системи. Дуже багато userlang коду NetBSD та FreeBSD
+           і по цей день складає основу macOS (Mac OS X). Джордан Хаббард зараз працює старшим
+           директором по обчислювальному програмному забезпеченні для GPU в nVidia.</p>
+
+        <p>Детально про самі останнії події в NetBSD світі можна дізнатися з цієї презентації Нії Аларії.
+           Хоча там йдеться про CURRENT версію 10.0 все що там говориться є актуальним і для STABLE
+           версії 9.3, про яку йдеться у цій статті.</p>
+
+           <center>
+           <iframe width="560" height="315" src="https://www.youtube.com/embed/fNlxFh43V-w"
+            title="YouTube video player" frameborder="0"
+           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+           </center>
+
+        <h4>Портовуваність</h4>
+
+        <p>Головною метою за завданням NetBSD товариства стало підтримка максимальної кількості
+           архітектур зокрема для збереження культурної спадщини, ретрогеймінга та ретро-компʼютінга загалом.
+           Головним девізом стало гасло "якшо на цій архітектурі можна запустити NetBSD &mdash; вона повинна бути
+           запущена". Завдяки BSD ліцензії, гарній портовуваності та якості NetBSD лягла в основу
+           не тільки багатьох культових продуктів таких як SONY PlayStation 3/4/5, Apple AirPort, RICOH прінтери,
+           але і в основу державних системи таких як NASA Satellite Networks (LewisRC), де вся мережа
+           побудована виключно на TCP/IP NetBSD, де і була придумана схема FACK TCP.</p>
+
+        <h4>Інсталяція та перформанс</h4>
+
+        <p>NetBSD як сучасна операційна система підтримує GPT, а MBR за замовчуванням виключена з ядра.
+           Тому я конвертнув всі свої диски в GPT, і після NetBSD вже поклав MBR на поличку історії
+           в куточок ком'ютерної археології. Хоча експозиція лейбла NetBSD ще не передається в UEIF BIOS,
+           там ви побачите рядок UEFI OS, все виглядає дуже зручно, хоча бутлоадер вміє запускати
+           тільки ядро тільки FFS дисків. Для інталяції бажано підготувати повний фізичний диск розміром в 1ТБ,
+           а не GPT партішин, який в термінології NetBSD називається wedge. Також вам знадобиться
+           зовнішній USB пристрій з якого ви будете інсталювати систему, я використовув
+           Rawrite32 NetBSD Disk Image Tool.</p>
+
+        <figure><img width=600 src="img/netbsd-boot.jpg"></figure>
+
+        <p>NetBSD поки що не підтримує всі Wi-Fi, тому перед інсталяцією попіклуйтеся про
+           твістей пейр кабель. Заплановано портування Wi-Fi стеку з FreeBSD як це зробили
+           в проекті Haiku, можливо це з'явиться в 10 версії, а може і в 11.
+           Прямо в інсталяторі виберіть і наклацайте всі компоненти, разом з вихідними файлами,
+           бо саме для цього ми її ставимо, аби детально прочитати її імплементацію.
+           Інсталяція триватиме певний час, тож на всьо вам знадобиться 1 день, аби в повній мірі насолодитися
+           цим процесом. Після існсталяції, налаштуйте систему бінарних пакетів.</p>
+
+        <figure><code>
+# export PKG_PATH=http://cdn.NetBSD.org/pub/pkgsrc/packages/NetBSD/x86_64/9.3/All/
+# pkg_add neofetch
+        </code></figure>
+
+        <p>Якшо ви не хочете скачувати всі пакети і вихідні файли в процесі інсталяції то це можна
+           зробити пізніше використовуючи такі адреси:</P>
+
+        <figure><code>
+$ ftp -i ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-release-9/tar_files/src/
+$ ftp -i ftp://ftp.NetBSD.org/pub/NetBSD/NetBSD-9.3/source/sets/
+        </code></figure>
+
+        <p>Використовуючи такі команди</p>
+
+        <figure><code>
+> mget *
+> quit
+$ for file in *
+> do
+> tar -xzf $file -C /usr
+> done
+        </code></figure>
+
+        <figure><img width=600 src="img/netbsd-neo.png"></figure>
+
+        <h4>Компіляція ядра</h4>
+
+        <p>На моїй системі X299 неправильно працює MSI-X система налаштування переривань, тому
+           її довелося відключити в ядрі, яке довелося перезібрати,  nvme_pci_force_intx змінилося з 0 на 1,
+           а також, що те саме nvme_pci_mq з 1 на 0:</p>
+
+        <figure><code>
++sys/dev/pci/nvme_pci.c:67:int nvme_pci_force_intx = 1;
++sys/dev/pci/nvme_pci.c:69:int nvme_pci_mq = 0;
+        </code></figure>
+
+        <p>Загалом білд система ядра не мінялася десятиріччя і виглядає так:</p>
+
+        <figure><code>
+# tar zxf syssrc.tgz
+$ cp GENERIC SYNRC
+$ vi SYNRC
+$ config SYNRC
+$ cd ../compile/SYNRC
+$ make depend
+$ make
+$ cd /usr/src
+$ ./build.sh -u kernel=SYNRC
+# mv /netbsd /last
+# mv netbsd /
+# shutdown -r now
+> boot last -s
+# fsck /
+# mount /
+# mv last netbsd
+# reboot
+        </code></figure>
+
+        <p>Не забудьте включити в ядрі підтримку KGDB, підтримку всіх типів Wedge, статистику SYSCALL,
+           NTFS файлову систему (якшо треба), а також VMX/SVM менеджер віртуалізації NVMM. Для цього перед
+           made depent поредагуйте і дослідіть конфігураційний файл ядра:</p>
+
+        <figure><code>
+# vi /usr/src/sys/arch/amd64/conf/SYNRC
+        </code></figure>
+
+        <figure><img width=600 src="img/netbsd-x.jpg"></figure>
+
+        <h4>ZFS</h4>
+
+         <p>Незважаючи на те, що ZFS повністю присутня в інсталяції тільки FreeBSD, на NetBSD теж показує себе стабільно.
+            Реальний даунгрейд перформенса на сучасних NVMe пристроях складає 3х, тобто на дисках з
+            теоретичною пропускною здатністю 1ТБ/с в raidz пулі ви отримаєте 300МБ/с. Це не добре і не погано,
+            з урахуванням того, що ZFS є супернадійною, реально працюючою розподіленою системою, яка охоплює весь
+            спектр апаратури і операційних систем та є міжсистемно-сумісною.</p>
+
+        <figure><code>
+# zpool create synrc raidz /dev/ld1 /dev/ld2 /dev/ld3
+# zfs mount synrc
+# zpool status
+# zfs list
+# zpool iostat
+        </code></figure>
+
+        <figure><img width=600 src="img/zfs.png"></figure>
+
+        <h4>UVM</h4>
+
+        <p>Одна з особливостей NetBSD є її менеджер віртуальної пам'яті написаний як докторська дисертація
+           Чарльза кренора. UVM використовується також у проекті OpenBSD. FreeBSD ж використовує похідну
+           реалізацію проекта Mach 3. UVM вже стала канонічною MMU реалізацією менеджера віртуальної пам'яті,
+           однак NetBSD потребує ще однієї, не MMU версії для запуска на процесорах без цією апаратної підсистеми,
+           так як в uLinux. Ця задача до цих пір відкрита в NetBSD трекері. В 2019 році відбулася значна
+           оптимізація UVM менеджера для SMP систем, що призвело до загальної стабільності та продуктивності системи вцілому.</p>
+
+        <figure><img width=600 src="img/uvm.png"></figure>
+
+        <h4>NVMM</h4>
+
+        <P>NVMM &mdash; це гіпервізор типу 2 і платформа гіпервізора, яка забезпечує підтримку
+           апаратно-прискореної віртуалізації. API віртуалізації постачається в libnvmm і дозволяє
+           існуючим емуляторам, таким як Qemu, легко створювати віртуальні машини та керувати ними через NVMM.
+           NVMM був розроблений у 2018 році та спочатку підтримував NetBSD як основну ОС.
+           У 2021 році остання версія NVMM була перенесена на DragonFlyBSD,
+           і тоді DragonFlyBSD стала основною ОС, яку підтримує NVMM. NVMM може підтримувати до 128 віртуальних
+           машин, кожна з яких має максимум 128 VCPU і 128 ГБ оперативної пам’яті. Він працює
+           як з процесорами x86 AMD, так і з процесорами x86 Intel. NVMM має унікальні конструктивні
+           властивості, яких зараз немає в інших рішеннях гіпервізорах, таких як xhyve (macOS),
+           bhyve (FreeBSD), VMD (OpenBSD), HAXM (NetBSD). Хоча автор каже шо в NetBSD версія NVMM
+           застаріла, і основна розробка перенеслася в DragonflyBSD, в мене все працює стабільно.
+           Причина в тому, що автор посварився з командою NetBSD, і тепер код NVMM з'являється в дереві
+           NetBSD лише як бекпорт з основної гілки DragonflyBSD. Страсті і мелодрами
+           у світі розробки це нормально!</p>
+
+        <figure><img width=600 src="img/netbsd-screen.png"></figure>
+
+        <h4>CTWM</h4>
+
+        <p>Починаючи з 2020 року, дефаултний віндов менеджер в NetBSD є CTWM, це фактично
+           класичний TWM тільки з підтримкою віртуальних десктопів. Мотивація такого вибору є його висока
+           портовуваність і простота, що співпадає з мотивацією NetBSD, тому не просіть в NetBSD навіть XFCE,
+           це занадто жирні штуку. Хоча ви все одно поставите Firefox і з ним приїде половину GTK,
+           тільки CTWM дасть вам відчути справжній спартанський мінімалізм ЮНІКСІВ минулого.</p>
+
+        <figure><img width=600 src="img/x-init.jpg"></figure>
+
+        <figure><img width=600 src="img/x-hp.jpg"></figure>
+
+        <h4>SYNRC N2O</h4>
+
+        <p>SYNRC стек працює на всьому, де є Erlang.
+           Для того аби почати працювати з Erlang стеком SYNRC достатньо
+           поставити Erlang (в NetBSD 9.3 це 25.1.2) та скомпілювати rebar3:</p>
+
+        <figure><code>
+# pkg_add erlang
+# git clone git@github.com:erlang/rebar3 && cd rebar3
+# ./bootstrap
+        </code></figure>
+
+        <p>Після цього одразу можна переходити до SYNRC SAMPLE прикладу, який побудований на PubSub брокері SYN,
+           веб-фреймворку NITRO, WebSocket сервері N2O, базі даних MNESIA, та представляє собою чат додаток
+           з кімнатами та завантаженням файлів, всьо по веб-сокет протоколу та з використанням природнього
+           (для Erlang) серіалізатора BERT (що швидше на стороні браузера навіть від JSON!), який
+           дозволяє не використовувати на сервері взагалі ніяких додаткових перетворень,
+           для економії серверного часу, що в масштабі мільйонів клієнтів коштує до 10% грошей.</p>
+
+        <figure><code>
+# git clone git@github.com:synrc/sample && cd sample
+# rebar3 get-deps
+# rebar3 shell
+1> application:which_application().
+[{sample,"SAMPLE WebSocket application","4.11.0"},
+ {cowboy,"Small, fast, modern HTTP server.","2.8.0"},
+ {ranch,"Socket acceptor pool for TCP protocols.","1.7.1"},
+ {cowlib,"Support library for manipulating Web protocols.", "2.9.1"},
+ {syn,"A global Process Registry and Process Group manager.", "2.1.1"},
+ {nitro,"NITRO Nitrogen Web Framework","7.4.0"},
+ {n2o,"N2O MQTT TCP WebSocket","8.11.0"},
+ {mnesia,"MNESIA  CXC 138 12","4.20.1"},
+ {kvs,"KVS Abstract Chain Database","9.4.2"},
+ {inets,"INETS  CXC 138 49","7.5"},
+ {ssl,"Erlang/OTP SSL application","10.6.1"},
+ {public_key,"Public key infrastructure","1.11.3"},
+ {asn1,"The Erlang ASN1 compiler version 5.0.17","5.0.17"},
+ {crypto,"CRYPTO","5.0.5"},
+ {stdlib,"ERTS  CXC 138 10","3.17"},
+ {kernel,"ERTS  CXC 138 10","8.2"}]
+        </code></figure>
+
+        <p>Детальніше про SYNRC стек читайте на сторінках <a href="https://n2o.dev/ua/">N2O.DEV</a>.</p>
+
+
+        <figure><img width=600 src="img/n2o.png"></figure>
+
+        <h4>PKGSRC</h4>
+
+        <p>Для публікації нових пакетів в NetBSD (NetBSD Package Release Engineering)
+           використовується така схема:</p>
+
+        <figure><code>
+# git clone git@github.com:NetBSD/pkgsrc
+# git clone git@github.com:NetBSD/pkgsrc-wip
+# mv pkgsrc-wip pkgsrc
+# cd pkgsrc/pkgsrc-wip/be
+# unset PKG_PATH
+# make distinfo
+# make
+        </code></figure>
+
+        <h4>Варіанти курсового завдання</h4>
+
+    <p>Апарат:</p>
+    <hr>
+
+    <p>  [1]. <a href="https://netbsd.org">NetBSD.org</a>.<br>
+         [2]. <a href="https://arxiv.org/ftp/arxiv/papers/1605/1605.05810.pdf">Sung-Won Chung. The Design of the NetBSD I/O Subsystems</a>.<br>
+         [3]. <a href="https://www.netbsd.org/docs/guide/download/netbsd-en.pdf">The NetBSD Guide</a>.<br>
+         [4]. <a href="https://download.freebsd.org/doc/en/books/design-44bsd/design-44bsd_en.pdf">The Design and Implementation of the 4.4BSD Operating System</a>.<br>
+         [5]. <a href="https://chuck.cranor.org/p/diss.pdf">Charles D. Cranor. Design and implementation of the UVM virtual memory system</a>.<br>
+         [6]. <a href="https://www.amazon.com/Joy-Architecture-Window-System/dp/1906860009">The Joy of X</a>.<br>
+         [7]. <a href="https://docs.oracle.com/cd/E23824_01/pdf/821-1448.pdf">Oracle® Solaris Administration: ZFS File Systems</a>.<br>
+         [8]. <a href="http://www.bitsavers.org/pdf/hp/9000_hpux/9.x/B1171-90064_Using_the_X_Window_System_Aug92.pdf">HP-UX. Using the X Window System</a>.<br>
+         [9]. <a href="https://www.x.org/releases/current/doc/libXt/intrinsics.pdf">X Toolkit Intrinsics &mdash; C Language Interface</a>.<br>
+         [10]. <a href="https://www.x.org/releases/current/doc/xproto/x11protocol.pdf">X Window System Protocol, Version 11, Release 6.8</a>.<br>
+
+    </p>
+
+</section>
+</main>
+<footer>Максим Сохацький</footer>
+</body>
+</html>

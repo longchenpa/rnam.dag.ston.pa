@@ -1,0 +1,582 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2022-11-01 Структура веб-фреймворків</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2022-11-01</a>
+</nav>
+<main>
+    <section>
+        <h3>EXO: Сторінка створення клієнтів</h3>
+
+        <p>TL;DR Як написати свій перший сайт та свою першу сторінку на веб фреймворку N2O</font></p>
+
+        <figure><img src="img/clients.png"></figure>
+
+        <p>Ця стаття показує загальну структуру усіх веб фреймворків і на прикладі фреймворку
+           N2O показує як створювати активні сторінки та сайти на платформі Erlang/OTP та мові
+           програмування Elixir. До прикладу береться система тарифікації споживачів EXO (для мови Elixir),
+           або клієнт-банк FIN (подібний приклад для мови Erlang) та доповнюється сторінкою
+           користувачів системи. <p>
+
+        <p>Репозиторій <a href="https://github.com/erpuno/exo">EXO</a> реалізує ідіоматичний приклад &mdash; білінгову систему для
+           телекомунікаційних операторів та операторів електро-енергії. Користувачі в цій системі бувають двох видів:
+           1) адміністратори, хто формує тарифні моделі та створює облікові записи користувачів та 
+           2) споживачі, хто замовляє послуги на споживання згідно тарифним моделям.</P>
+
+        <p>У існуючому шаблонному додатку ми створимо:
+           1) статичний контейнер HTML (файл domains.htm);
+           2) модель користувача #client{} (файл client.hrl);
+           3) дві форми: для вводу користувача та його табличного відобраєження (модулі Client.Form та Client.Row);
+           4) контролер сторінки з реакцією на кнопки та первинною ініціалізацією сторінки (модуль EXO.Domains).
+           Та підключимо це все в існуючий шаблон додатку (папки config, include, lib, priv/static).</p>
+
+        <h3>Загальна структура веб-фреймворків</h3>
+
+        <p>Веб-фреймворки можна умовно розділити на два великі класи:
+           1) клієнтські фреймворки, які будують сторінку виключно на клієнті,
+              а по каналам передаються виключно дані та бізнес-об'єкти;
+           2) серверні фреймворки, які будуть сторінку або частини сторінки
+              на сервері та пересилають по каналах зв'язку вже відрендерені форми.
+        NITRO веб-фреймворк відноситься до другого класу.</p>
+
+        <p>Безвідносно до класів фреймворків, всі вони мають спільний стек,
+           або архітектурні рівні, які відповідають рівням ISO 42010:
+           1) рівень даних,
+           2) рівень логіки,
+           3) рівень презентації,
+           4) рівень валідації. Умовно ці рівні зводять до двох: фронт-енд і бек-енд.</p>
+
+        <p><b>Дизайн (фронт-енд)</b></p>
+
+        <p>— Загальні стилі сторінки (BLANK.CSS)<br>
+           — Стилі полів та форм (FORM.CSS)<br>
+           — Стилі меню та сторінок адміністратора (ADMIN.CSS)</p>
+
+        <p><b>Веб-стек (фронт-енд)</b></p>
+
+        <p>— Статичний та динамічний роутер (N2O)<br>
+           — Парсер URL параметрів (N2O)<br>
+           — Сесійний рівень (серверний та клієнтський контексти) N2O<br>
+           — Рівень контроллера (логіка веб сторінки NITRO)<br>
+           — Презентаційний рівень (мова HTML елементів NITRO)<br>
+           — Рівень представлення бізнес-об'єктів (мова X-FORMS)<br>
+        </p>
+
+        <p><b>Сховище та бізнес-логіка (бек-енд)</b></p>
+
+        <p>
+           — Рівень моделі даних (KVS, MNESIA, SQL, Erlang HRL файли)<br>
+           — Рівень бізнес-процесів (BPE)<br>
+           — Рівень розмежування прав доступа (ABAC)<br>
+        </p>
+
+        <p>Для кожного архітектурного рівня модель N2O.DEV пропонує
+           свою бібліотеку. Так для рівня схеми даних використовується
+           бібліотека KVS, яка абстрагується над реляційними базами даних (MNESIA, SQL)
+           та базами даних з єдиним простором ключів (RocksDB, Riak, Cassandra). 
+           Для презентаційного рівня (або модель UI) використовується NITRO бібліотека
+           яка реалізує семантику HTML5 та пропонує свій спосіб визначення нових контрольних елементів.
+           Для рівня валідації даних на рівні полів та автоматичної побудови форм використовується
+           бібліотека FORM. Всі мережеві з'єднання та повідомлення в системі контролюються бібліотекою N2O.
+           Для бізнес логіки використовується бібліотека BPE яка реалізує стандарт BPMN ISO 19510.
+           Для розмежування прав доступу використовується бібліотека ABAC яка реалізує стандарт NIST на розмежування прав.</p>
+
+        <p>NOTE: Рівень розмежування прав доступу не використовується у цьому прикладі EXO.
+           Рівень бізнес логіки використвується тільки в Адміністраторі BPE.
+           Рівень дизайну використовується але не пояснюється,
+           для детального огляду моделі CSS дивіться
+           <a href="https://n2o.dev/articles/css.htm">сторінку документації по стилям</a>.</p>
+
+        <h3>Створення сторіники користувачів у прикладі EXO</h3>
+
+        <h4>1. Створення статичного HTML контейнеру</h4>
+
+        <p>Кожна сторінка веб-фреймворку NITRO/N2O містить стандартну прелюдію,
+           яка підключає CSS файли стилів та JavaScript частину
+           бібліотек N2O/NITRO/FORM. Зазвичай ця частина спільна для усіх сторінок.</p>
+
+        <figure><code>
+&lt;!DOCTYPE html>
+&lt;html>
+&lt;head>
+    &lt;meta charset="utf-8" />
+    &lt;meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    &lt;meta name="description" content="" />
+    &lt;title>LOGIN&lt;/title>
+    &lt;link rel="stylesheet" href="css/blank.css" />
+    &lt;link rel="stylesheet" href="css/forms.css" />
+    &lt;link rel="stylesheet" href="css/admin.css" />
+&lt;/head>
+&lt;body>
+    &lt;nav>&lt;a href='login.htm'>LOGIN&lt;/a>&lt;/nav>
+    &lt;aside>&lt;/aside>
+    &lt;main>&lt;/main>
+    &lt;script src='https://ws.n2o.dev/priv/utf8.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/bert.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/heart.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/ieee754.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/n2o.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/ftp.js'>&lt;/script>
+    &lt;script src='https://nitro.n2o.dev/priv/js/nitro.js'>&lt;/script>
+    &lt;script>host = location.hostname; port = 8051;&lt;/script>
+    &lt;script>protos = [$bert]; N2O_start();&lt;/script>
+&lt;/body>
+&lt;/html>
+</code></figure>
+
+        <p>Такі сторінки називаються статичними ресурсами які можуть
+           віддаватися статичним HTTP сервером або через CDN. Після того
+           як сторінка завантажилась, вона запускає функію N2O_start,
+           яка створює WebSocket з'єднання та спілкується з
+           сервером (бек-ендом) відповідно до протоколу N2O/NITRO,
+           згідно якого клієнт (веб-браузер) виконує команди сервера, які
+           модифікують сторінку (додають, змінюються або видаляють DOM елементи).</p>
+
+        <p>На цьому етапі придумуються унікальні імена DOM елементів (виділено
+           червоним) на статичній HTML сторінці, які у подальшому
+           будуть використовуватися в логіці контролера сторінки для їх модифікації.</p>
+
+        <figure><code>
+&lt;main>
+  &lt;article>
+    &lt;section>
+	&lt;h2>КОРИСТУВАЧІ&lt;/h2>
+        &lt;p>Додати користувачів в систему.&lt;/p>
+        &lt;br>
+        &lt;div id=<font color=red>ctrl</font>&lt;/div>
+        &lt;div id=<font color=red>frms</font>&lt;/div>
+        &lt;br>
+    &lt;/section>
+        &lt;div class="table">
+	    &lt;div id=<font color=red>tableHead</font> class="trGroup"> &lt;/div>
+            &lt;div id=<font color=red>tableRow</font>  class="trGroup"> &lt;/div>
+        &lt;/div>
+    &lt;br>
+  &lt;/article>
+&lt;/main>
+</code></figure>
+
+        <p>Тут ми розміщуємо одну панель div для кнопки яка буде відкривати форму вводу клієнта ctrl,
+           одну панель div для самої форми вводу. І дві панелі для шапки та тіла таблиці клієнтів.</p>
+
+        <h4>2. Підключення контролера сторінки в роутер</h4>
+
+        <p>Основне завдання роутера довільного веб-фреймворку &mdash; це визначити контролер сторінки
+           який буде обробляти запит за наданою URL адресою звернення.
+           Роутер визначається на рівні бібліотеки N2O та повинен містит дві
+           обов'язкові фунції init та finish які будуть викликатися при кожному
+           зверненні по URL в браузері. Задача функції init покласти в
+           контекст N2O (об'єкт N2O.cx) ім'я модуля яке визначажться по URL запиту path за
+           допомогою функції route. Зверніть увагу що запити можуть здійснюватися як по
+           протоколу HTTP так і по протоколу WebSocket (які йдуть з префіксом /ws), тому
+           ми додатково це перевіряємо у фунції url.</p>
+
+        <figure><code>
+defmodule <font color=red>EXO.Route</font> do
+  require N2O
+  require Logger
+
+  def finish(state, ctx), do: {:ok, state, ctx}
+  def init(state, context) do
+      %{path: path} = N2O.cx(context, :req)
+      {:ok, state, N2O.cx(context, path: path, module: url(path))}
+  end
+
+  def url(<<"/ws/",p::binary>>), do: route(p)
+  def url(<<"/",   p::binary>>), do: route(p)
+  def url(p),                    do: route(p)
+
+  def route(<<"app/backoffice/domains", _::binary>>), do: <font color=red>EXO.Domains</font>
+  def route(<<"app/login",              _::binary>>), do: EXO.Login
+  def route(""),                                      do: EXO.Login
+  def route(_) ,                                      do: EXO.Login
+
+end
+</code></figure>
+
+        <h4>3. Створення контроллера сторінки</h4>
+
+        <p>Тепер треба створити контролер з іменем EXO.Domains який повинен містити
+           лише одну обов'язкову функцію event, параметр якої і є повідомленням,
+           отриманим з веб сторінки.</p>
+
+        <figure><code>
+defmodule <font color=red>EXO.Domains</font> do
+  require EXO
+  require BPE
+  require NITRO
+
+  def event(<font color=red>:init</font>), do: []
+  def event(<font color=red>:create</font>), do: []
+  def event(<font color=red>{:"CreateClient", _}</font>), do: []
+  def event(<font color=red>{:"Close",[]}</font>), do: []
+  def event(_), do: :ok
+end
+</code></figure>
+
+        <p>Тут придумуюємо три додаткових протокольних повідомлення:
+           1) :create &mdash; постбек для кнопки "Новий", що знаходить в панелі ctrl;
+           2) {:"CreateClient",_} &mdash; постбек для кнопки "Створити" на формі, що знаходиться в панелі frms.
+           3) {:"Close",[]} &mdash; постбек для кнопки "Відміна" на формі, що знаходиться в панелі frms. </p>
+
+        <p>Тут придумуємо також що при натисненні на кнопку "Новий" ми ховаємо панель ctrl
+           і показуємо форму, що вже побудована на панелі frms при ініціалізації сторінки (повідомлення :init),
+           та була прихована до натиску на кнопку "Новий". Після натиску на кнопку "Створити" або "Відміна" ми
+           ховаємо форму frms, та знову показуємо кнопку "Новий" на панелі ctrl.</p>
+
+        <h4>4. Створення бізнес-об'єктів та ініціалізація схеми</h4>
+
+        <p>Перед тим як створювати форми необхідно визначити модель обʼєкту,
+           який буде відображатися на формі. N2O.DEV та ERP.UNO використовують
+           HRL файли на мові Erlang для визначення типової інформації полів бізнес-обʼєктів.
+           Це дає змогу використовувати моделі як для проектів на мові Erlang так
+           і для проектів на мові Elixir. Крім того наявність бізнес-моделей у HRL
+           форматі дозволяє безпосередньо зберігати дані у рідному для Erlang/OTP сховищі Mnesia.</p>
+
+        <p>Для детальної специфікації мови, яка може бути використана
+           всередині HRL файлі дивіться офіційну документацію мови Ерланг,
+           розділ <a href="https://www.erlang.org/doc/reference_manual/typespec.html">TypeSpec</a>.</p>
+
+        <figure><code>-ifndef(CLIENT_HRL).
+-define(CLIENT_HRL, "client_hrl").
+
+-record(<font color=red>client</font>, {
+        <font color=red>id</font> = kvs:seq([],[]),
+        next = [],prev = [],
+        bank = [],
+        iban = [],
+        local = [],
+        <font color=red>type</font> = consumer,
+        status = online,
+        <font color=red>program</font> = [],
+        amount = [],
+        default_account,
+        accounts = "/exo/:bank/:id/accounts",
+        default_card = [],
+        cards = "/exo/:bank/:id/cards",
+        <font color=red>phone</font> = <<>>,
+        tax = [],
+        <font color=red>names</font> = <<>>,
+        <font color=red>surnames</font> = <<>>,
+        date = [],
+        display_name = [],
+        registration = [] }).
+
+-endif.</code></figure>
+
+        <p>Після визначення бізнес-обʼєкту його необхідно підключити в загальну схему метаінформації,
+           яка є спільною для таких бібліотек як KVS та FORM. Для цього ми створюємо файл schema.ex,
+           де будемо перелічувати (@schema) усі HRL файли в каталозі include, для яких будуть ініціалізовані
+           таблиці. Це відбувається в процесі компіляції, і рекорди з Erlang імпортуються в Elixir
+           автоматично за допомогою макроса Record.extract_all, що звертається до файлової системи
+           в момент компіляції. Для кожного файлу в каталозі include буде викликатися цей макрос.
+           Обовʼязкова функція metainfo буде викликатися кожного разу при старті і містить
+           метаінформацію KVS.table для всіх таблиць перелічених в @schema.</p>
+
+        <figure><code>defmodule <font color=red>EXO</font> do
+defmodule <font color=red>EXO</font>
+  require KVS
+  require FORM
+  require Record
+
+  @schema [ :account, <font color=red>:client</font>, :card,
+            :transaction, :currency, :phone, :field, :program ]
+
+  def metainfo(), do: KVS.schema( name: :exo, tables: exo())
+  def exo(), do: :lists.map(fn x -> table(x) end, @schema)
+
+  def table(name) do
+      exo_fields = :application.get_env(:exosculat, :exo_fields, [])
+      {a,b} = :lists.unzip(:proplists.get_value(name, exo_fields, []))
+      KVS.table(name: name, fields: a, instance: b)
+  end
+end
+</code></figure>
+
+        <p>Зазвичай ви не змінюєте логіку schema.ex, а лише міняєте перелік HRL файлів у @schema.
+           Тут ми показуємо, що ми добавили в цей список імʼя нашого бізнес-обʼєкту у вигляді атома :client.</p>
+
+        <figure><code>
+$ mix clean
+$ iex -S mix
+> require EXO
+> EXO.client()
+</code></figure>
+
+         <p>Для перевірки гіпотез та вивчення та інтроспекції функції зручно використовувати
+            Ерланг консоль. У ній можна писати коротки вирази на мові Еліксір,
+            не визначаючи повністю модулі. Наприклад аби подивитися як виглядає бізнес-об'єкт в консолі
+            потрібно виконати require EXO після чого можна викликати функції модуля які повертають
+            інстанси бізнес об'єктів.</p>
+
+        <h4>5. Створення форми вводу, налаштування postback та sources</h4>
+
+        <p>Форма &mdash; це візуальне представлення бізнес-обʼєкту, яких може бути декілька:
+           для вводу інформаці, для редагування, для пошуку, для read-only перегляду, та для
+           відображення у вигляді рядка для табличного представлення. Повний перелік видів
+           форм згідно бібліотеки FORM такий: none, create, edit, search, view.</p>
+
+        <p>Кожен веб-фреймворк,
+           який реалізує специфікацію X-FORMS повинен містити специфікацію на метаінформацію
+           форм, необхідну для їх рендерінгу. Наприклад: влкючене чи виключене поле, значення за замовчуванням,
+           ширина поля, тип поля, ім'я, модуль на сервері з логікою, фід де зберігаються можливі
+           значення цього поля для словників, тошо.
+           </p>
+
+        <p>Модель FORM визначена в каталозі include відповідної бібліотеки та містить
+           FORM.document (форма), FORM.but (кнопки), FORM.field (поля). Сама форма-документ FORM.document
+           містить чотири головні частини: імʼя, перелік секції, перелік кнопок, перелік полів у сексіях.</p>
+
+        <p>Коли ми хочемо зробити елемнти форми, такі як кнопки чи поля активними, тобто такими,
+           які будуть певні свої події (як onclick) передавати на сервер, ми визначаємо для цього
+           елементу форми властивість postback. Саме це значення буде попадати в визначений до цього
+           контролер сторінки при виникненні цієї події. При відсиланні на сервер повідомлення-постебеку
+           {:"CreateClient",_} будуть також передані всі значення полів форми,
+           що знаходились в цей момент в контексті браузера, перелічені в полі sources.
+           Імена sources мають трьохкомпонентну структуру X_Y_Z, де X &mdash; це імʼя
+           поля, Y &mdash; імʼя бізнес-обʼєкту, Z &mdash; тип форми (none, create, edit, search, view).
+           У даному прикладі використовуються форма без модифікаторів (none).</p>
+
+        <p>Зверніть увагу, що id властивості елемнтів FORM.field повинні відповідати полям визначеним
+           в бізнес-обʼєкті EXO.client, інакше рендерер форми не зможе знайти інформацію про типи.
+           Кожна форма повинна визначати три обовʼязкові функції:
+           1) doc, яка повертає просто рядок пояюснюючий одним реченням для чого написана ця форма;
+           2) new, яка має три параметри: імʼя форми, бізнес-обʼєкт який потрібно візуалізувати,
+              та можливі опції і повертає FORM.document і описом всіх полів, кнопок та секції;
+           3) id, яка повертає еталонний одиничний бізнес-обʼєкт за замовчуванням.
+
+
+        <figure><code>
+defmodule <font color=red>Client.Form</font> do
+  require EXO
+  require NITRO
+  require FORM
+  require BPE
+  def doc(), do: "Форма вводу користувача системи"
+  def id, do: EXO.client()
+  def new([], _, _), do: []
+  def new(name, _client, _) do
+      :erlang.put(:type_client_none, :consumer)
+      FORM.document(
+        name: :form.atom([:client,name]),
+        sections: [
+            FORM.sec(name: ["Створити користувача: " ])],
+        buttons: [
+            FORM.but(id: :decline,
+                     name: :decline,
+                     title: "Відміна",
+                     class: [:cancel],
+                     <font color=red>postback</font>: <font color=red>{:"Close",[]}</font> ),
+            FORM.but(id: :proceed,
+                     name: :proceed,
+                     title: "Створити",
+                     class: [:button,:sgreen],
+                     <font color=red>sources</font>: [<font color=red>:surnames_client_none, :names_client_none,
+                               :phone_client_none, :type_client_none</font>],
+                     <font color=red>postback</font>: <font color=red>{:"CreateClient", :form.atom([:client,name])}</font>)],
+        fields: [
+            FORM.field(id: <font color=red>:surnames</font>,
+                     name: :surnames,
+                     type: :string,
+                     title: "Прізвища:",
+                     labelClass: :label),
+            FORM.field(id: <font color=red>:names</font>,
+                     name: :names,
+                     type: :string,
+                     title: "Імена",
+                     labelClass: :label),
+            FORM.field(id: <font color=red>:phone</font>,
+                     name: :phone,
+                     type: :string,
+                     title: "Телефон",
+                     labelClass: :label),
+            FORM.field(
+                     id: <font color=red>:type</font>,
+                     name: :type,
+                     title: "Тип:",
+                     type: :select,
+                     default: :consumer,
+                     options: [
+                         FORM.opt(name: :consumer, checked: true, title: "Споживач"),
+                         FORM.opt(name: :admin, title: "Адміністратор"),] ) ] )
+     end
+end
+</code></figure>
+
+        <h4>6. Створення табличної форми</h4>
+
+        <p>Якщо бізнес-об'єкт потрібно швидко відобразити в таблиці, можна не використовувати FORM,
+           а напряму створити відображення використовуючи HTML DSL, де ви конструюєте елменти за
+           допомогою відповідних Ерланг записів (records). З другого параметру функції new,
+           де передбачається EXO.client ми екстрагуємо поля phone, names, surnames, type, status, date,
+           і показуємо їх в панелі з 5 колонками.</p>
+
+        <figure><code>
+def header() do
+    NITRO.panel(id: :header,
+                class: :th,
+                body: [ NITRO.panel(class: :column20, body: "ПІБ"),
+                        NITRO.panel(class: :column20, body: "Тип"),
+                        NITRO.panel(class: :column20, body: "Дата"),
+                        NITRO.panel(class: :column20, body: "Телефон"),
+                        NITRO.panel(class: :column10, body: "Статус") ] )
+end
+</code></figure>
+
+        <p> Заголовок таблиці дивіться як функцію header в модулі
+           контролера сторінки EXO.Domains. Зверніть увагу, що класи для панелей однакові для колонок заголовка та рядків таблиці.</p>
+
+        <figure><code>
+defmodule <font color=red>Client.Row</font> do
+  require EXO
+  require NITRO
+  def doc(), do: "Форма-рядок для відображення користувача системи."
+  def id(), do: EXO.client()
+  def new(name, client, _) do
+      phone = EXO.client(client, :phone)
+      names = EXO.client(client, :names)
+      surnames = EXO.client(client, :surnames)
+      type = EXO.client(client, :type)
+      status = EXO.client(client, :status)
+      date = EXO.client(client, :date)
+
+      NITRO.panel(id: :form.atom([:tr,name]), class: :td, body: [
+        NITRO.panel(class: :column20,
+            body: NITRO.link(href: "user.htm?p=" <> :nitro.to_binary(phone),
+                             body: names <> " " <> surnames)),
+        NITRO.panel(class: :column20,  body: :nitro.to_binary type),
+        NITRO.panel(class: :column20,  body: :nitro.compact date),
+        NITRO.panel(class: :column20,  body: :nitro.compact phone),
+        NITRO.panel(class: :column10,  body: :nitro.to_binary status)
+       ])
+  end
+end
+</code></figure>
+
+        <p>Зазвичай табличні форми не містять активних елементів з postback і sources,
+           як у цьому прикладі.</p>
+
+        <h4>7. Налаштування конфігурації</h4>
+
+        <p>Після того як ми визначили контейнер, контролер, форми, бізнес-об'єкт,
+           потрібно тепер це всьо підключити в нашу систему за допомогою конфігураційного файлу config.exs.
+           Сторінки ми просто кладемо в папку priv/static, роутер прописуємо в змінну n2o.routes,
+           а форми додаємо в змінну form.registry. Модуль схеми, який реалізує функцію metainfo
+           ми додаємо в схему даних, змінну kvs.schema. Інші змінні залишаємо як є.</p>
+
+        <figure><code>
+config :n2o,
+  pickler: :n2o_secret,
+  app: :exosculat,
+  mq: :n2o_syn,
+  port: 8051,
+  tables: [:cookies, :file, :caching, :async],
+  protocols: [:n2o_heart, :nitro_n2o, :n2o_ftp],
+  routes: <font color=red>EXO.Route</font>
+
+config :kvs,
+  dba: :kvs_rocks,
+  dba_st: :kvs_st,
+  schema: [:kvs, :kvs_stream, :bpe_metainfo, <font color=red>EXO</font>]
+
+config :form,
+  module: :form_backend,
+  registry: [<font color=red>Client.Row,Client.Form</font>]
+</code></figure>
+
+        <p>Якшо є необхідність перевизначити конфігураційні змінні без перезапуску сервера,
+           коли зазвичай воні всі читаються, можна скористатися функцією application.set_env:</p>
+
+<figure><code>
+> :application.set_env :form, :registry, [Client.Row,Client.Form]
+> :application.get_env :form, :registry
+{:ok, [Client.Row, Client.Form]}
+</code></figure>
+
+        <h4>8. Протокол init контролера сторінки</h4>
+
+        <figure><code>
+def event(<font color=red>:init</font>) do
+  :nitro.clear(:tableHead)
+  :nitro.clear(:tableRow)
+  :nitro.insert_top(:tableHead, header())
+  :nitro.clear(:frms)
+  :nitro.clear(:ctrl)
+  mod = Client.Form
+  :nitro.insert_bottom(<font color=red>:frms</font>,
+      :form.new(mod.new(mod,mod.id(), []), mod.id(), []))
+  :nitro.insert_bottom(:ctrl,
+      NITRO.link(id: :creator,
+                 body: "Новий",
+                 postback: :create,
+                 class: [:button, :sgreen]))
+  :nitro.hide(<font color=red>:frms</font>)
+    :lists.map(fn x -> :nitro.insert_top(:tableRow,
+        Client.Row.new(:form.atom([:row, EXO.client(x, :id)]), x, [])) end,
+       :kvs.all('/exo/clients'))
+end
+</code></figure>
+
+        <h4>9. Реакції на кнопки Закрити та Створити</h4>
+
+        <figure><code>
+def event(<font color=red>{:"Close",[]}</font>) do
+  :nitro.hide(:frms)
+  :nitro.show(:ctrl)
+end
+</code></figure>
+
+        <figure><code>
+def event(<font color=red>{:"CreateClient", _}</font>) do
+  date = :calendar.now_to_datetime :erlang.timestamp
+  type = :nitro.q(<font color=red>:type_client_none</font>)
+  names = :nitro.q(<font color=red>:names_client_none</font>)
+  phone = :nitro.q(<font color=red>:phone_client_none</font>)
+  surnames = :nitro.q(<font color=red>:surnames_client_none</font>)
+  id = :kvs.seq([],[])
+
+  client = EXO.client(id: id, phone: phone, names: names,
+                      surnames: surnames, status: :online,
+                      type: type, date: date)
+
+  nitro = :form.new(
+     Client.Row.new(
+        :form.atom([:row,id]), client, []), client, [])
+
+  :kvs.append client, '/exo/clients'
+  :nitro.insert_top(<font color=red>:tableRow</font>, nitro)
+  :nitro.hide(:frms)
+  :nitro.show(:ctrl)
+end
+</code></figure>
+
+        <h4>10. Direct повідомлення</h4>
+
+        <figure><code>
+> direct(tuple(atom('Close'),nil()))
+</code></figure>
+
+        <h4>11. Публікація додатку в пакетний менеджер hex</h4>
+
+        <figure><code>
+$ mix hex.publish
+</code></figure>
+
+
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2022</footer>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2023-03-06 Salesforce Apex vs Synrc FormalTalk</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2023-03-06</a>
+</nav>
+<main>
+    <section>
+
+        <h3>Salesforce Apex vs Synrc FormalTalk</h3>
+
+        <h4>[Biased] порівняльна характеристика Salesforce Apex та FormalTalk.</h4>
+
+        <figure><img style="margin-top:10px;margin-bottom:20px; border: 0;" src="FT-23.svg"></figure>
+
+      <h4>Мова для CRM/ERP системи</h4>
+
+        <p>Якщо класифікувати FormalTalk, як мову згідно номенклатури, яка використовується
+           в моій <a href="https://groupoid.github.io/languages/">Енциклопедії Мов
+           Програмування</a>, то FormalTalk займає місце
+           серед когорти мов які використовуються для промислових ERP систем. Візьме до
+           прикладу Salesforce Apex (не путати з Oracle Apex, але якшо взяти і його,
+           то нічого в статті не зміниться) і порівняємо її повністю
+           імперативну мову Apex з вбудованою підмовою даних SOQL (щось подібне до LINQ).</p>
+
+        <p>Основне завдання цих недолугих мов, які не є мовами програмування загального
+           призначення полягає в управлінні типовими специфікаціями та логікою складних
+           продуктів з важкими рантаймами, а не для створення продуктів та їх лінковки
+           в більш низькорівневій та загальній манері.</P>
+
+<p><b>Salesfore Apex разом з вбудованим SOQL</b></p>
+<figure><code>
+  Contact[] cc = [SELECT Id FROM Contact LIMIT 2];
+  Task[] tt = [SELECT Id FROM Task WHERE WhoId IN :cc];
+  String[] ss = new String[]{'a', 'b'};
+  Account[] aa = [SELECT Id FROM Account WHERE AccountNumber IN :ss];
+
+  String myString1 = 'aaa', myString2 = 'bbb', myString4 = 'ccc';
+  Integer myInt3 = 11, myInt5 = 22;
+
+// A SOSL query with binds in all possible clauses
+
+  List<List<SObject>> searchList = [FIND :myString1 IN ALL FIELDS RETURNING 
+         Account (Id, Name WHERE Name LIKE :myString2 LIMIT :myInt3), 
+             Contact, Opportunity, Lead WITH DIVISION =:myString4 
+                                                 LIMIT :myInt5];
+</code></figure>
+
+         <p>При розробці FormalTalk враховувалась 10-річна практика програмування
+            на бібліотеках N2O, яка формалізована у вигляді математичної моделі
+            в System-F та MLTT як специфікація <a href="https://n2o.dev/ua/pro/index.html">N2O.PRO</a>.
+            Оскільки N2O.PRO покриває модель Закмана, то і мова FormalTalk є
+            своєрідним офіційним скриптом який розповсюджується на усі рівні ISO 42010.</p>
+
+<p><b>Synrc FormalTalk ISO 42010 BPE</b></p>
+<figure><code>
+  record routeProc
+  begin id = [] : list
+      | operation = [] : [] + atom
+      | feed = [] : [] + binary
+      | type = [] : atom
+      | folder = [] : binary
+      | users = [] : binary + list
+      | folderType = "personal" : binary
+      | callback = [] : [] + function
+      | reject = false : false + boolean
+      | options = [] : [] + list end
+
+  fun action request to=Archive
+  begin newDoc = proc.docs.hd | newProc = proc | newProc.docs = [newDoc]
+      | unindexUrgent proc newDoc | newState = actionGen req proc newProc
+      | result [ general req newState newDoc | stop ] newState reply proc.executors end
+
+  route routeTo
+  begin (Cr,R):R,[] | (R,gwND):O,R | (gwND,Det):D,[] | (*,InC):A,To
+      | (gwC,I):A,To,toExecutors | (*,G):G,[];P,M | (*,A):A,[] end
+</code></figure>
+
+      <h4>Відмінності між мовами</h4>
+
+      <p>На відміну від Salesforce Apex, FormalTalk є декларативною мовою, що означає
+         що ви кажете, що ви хочете дістати (навіть якщо це послідовність операцій),
+         а не що робити в якій послідовності. Однак для практики, а саме для перепакування
+         змінних та мінімального набору утилітарних фунцій роботи з записами, списками, словниками, мапами.
+         Мова містить єдиний імперативний оператор присвоювання та обмежені можливості виклику функцій
+         з повним контролем рекурсії.</p>
+
+      <h4>Мотивація скриптових мов для облікових систем</h4>
+
+      <p>Головна мотивація, якою користуються компанії при розробці таких мов програмування для
+         масивних ран-таймів &mdash; це уніфікація інтерфейсів і повний контроль над усіма перетвореннями,
+         які можуть знадобитися в подальшому (наприклад трансляція в інші мови), а також
+         спосіб перебудовування графічного інтерфейсу та моделі даних системи в реальному часі,
+         що є невід'ємною умовою на тендерах ERP/CRM систем, що було започатковано в таких система як BAAN.<p>
+
+      <p>Ці мови є недолугими тому, що вони є в сутності обгортками над реальною системою,
+         і повинні бути зрозумілі операторам, бажано з примітивними синтаксиами. Але LISP та спеціалізовані
+         мови погано продаються, тому будь-яка проста мова для працюючого продукту може виявитися
+         більш ефективною ніж трата часу для пошуку найоптимальнішої мови чи робота у її відсутності.</p>
+
+       <p>Контроль над подальшими транформаціями з мови FormalTalk у формальні лямюда мови як System F або фібраційні мови CoC або MLTT,
+          а також обмеження та контроль рекурсії та всіх викливів є такою однією з
+          головних технічних мотивацій, що призведе до драматичного усунення помилок при програмуванні логіки.
+          Перше &mdash; транформації &mdash; є тим, що відкриває ворота для матаметатичної верифікації декларативної логіки
+          яка записана на мові FormalTalk. Друге &mdash; контрольовані виклики та рекурсія &mdash; є тим, що
+          дозволяє більш безпосередньо транслювати програми у формальні фібраційні мови.</P>
+
+      <h4>Мова для веб-фреймворку</h4>
+
+     <p>Мова FormalTalk може бути одночасно прокласифікована як спеціалізована мова для побудови сайтів,
+        тобто DSL для веб-фреймворка зі своїм лексером та парсером, у цьому сенсі її можна порівняти з UrWeb.</p>
+
+<p><b>UrWeb</b></p>
+<figure><code>
+let main () =
+    let
+        fun create r =
+            id &lt;- nextval s;
+            room &lt;- Room.create;
+            dml (INSERT INTO t (Id, Title, Room) VALUES ({[id]}, {[r.Title]}, {[room]}));
+            main ()
+    end
+</code></figure>
+
+<p>У попередній статті ми розказали про BPE, FORM, KVS підмови FormalTalk, а тут покажемо як виглядає класичний приклад N2O.SAMPLE
+   на мові FormalTalk</p>
+
+<p><b>Synrc FormalTalk ISO 42010 NITRO</b></p>
+<figure><code>
+module Sample.Index nitro
+
+fun room []:list   begin ret '/root' end
+fun room []:binary begin ret '/root' end
+fun room begin end
+
+fun chat message
+begin nx = n2o:session :room
+    | room = call room nx
+    | user = n2o:user
+    | x = kvs:writer room
+    | y = KVS.writer{args={:msg,kvs:seq,user:var,message:var}}
+    | z = kvs:add y
+    | w = kvs:save z
+    | n2o:send {:topic,room} N2O.client{data={user,message}} end
+
+fun display {:msg,_,user:var,message:var}
+begin nitro:wire NITRO.jq{target=:message,method=[:focus,:select]}
+    | jse = nitro:jse message
+    | nitro:insert_top :history NITRO.message{body=[NITRO.author{body=user:var},jse]} end
+
+fun event :logout     begin n2o:user [] | nitro:redirect "/app/login.htm" end
+fun event :chat      begin message = nitro:q :message | call chat message end
+fun event {:client,{user,message}} begin call display {:msg,user,message} end
+fun event :init
+begin nx = n2o:session :room
+    | room:var = call room nx
+    | kvs:ensure KVS.writer{id=room}
+    | n2o:subscribe {:topic,room}
+    | n2o:subscribe {n2o.sid}
+    | nitro:update :upload  NITRO.upload
+    | nitro:update :heading NITRO.h2{id=:heading,body=room}
+    | nitro:update :logout  NITRO.button{id=:logout,body="Logout",postback=:logout}
+    | nitro:update :send    NITRO.butto{id=:send,body="Chat",postback=:chat,source=[:message]}
+    | messages = kvs:all room
+    | lists:map messages display end
+</code></figure>
+
+      <p></p>
+          
+   <br><center>&dot;</center>
+
+        <figure><img style="border: 0;" src="ERP.svg"></figure>
+
+   <br><center>&dot;</center>
+
+   <div id="utterances" class="utterances" > </div>
+   <script src="https://utteranc.es/client.js" repo="5HT/tonpa.guru" issue-number="22" theme="github-light" crossorigin="anonymous" async> </script>
+
+</section>
+</main>
+<footer>Максим Сохацький</footer>
+</body>
+</html>

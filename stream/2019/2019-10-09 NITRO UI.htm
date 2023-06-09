@@ -1,0 +1,202 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Namdak Tonpa" />
+    <title>2019-10-09</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="https://tonpa.guru/journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2019-10-09</a>
+</nav>
+<main>
+  <article>
+    <section>
+     <h3>NITRO: comboLookup</h3>
+
+      <p><b>Категорії: дизайн та імплементація контрольних елементів NITRO,
+            технічне завдання.</b></p>
+
+      <p>Покажемо на прикладі <b>#comboLookup</b> як створювати контрольні елементи
+         у середовищі N2O NITRO. <b>#comboLookup</b> — це контрольний
+         елемент для пошуку та відображення результатів в універсальних
+         гетерогенних персистентних віддалених послідовностях,
+         з порціонною видачею результатів та підтримкою персональних
+         курсорів.</p>
+
+     <h4>Дизайн</h4>
+
+     <p><b>Скафолдінг контрольного елементу</b></p>
+     <p>Контрол стандартно постачається у 3—4 файлах:</p>
+     <p>— priv/css/comboLookup.css — CSS частина<br/>
+        — priv/js/comboLookup.js — JavaScript частина<br/>
+        — include/comboLookup.hrl — спільний код для Erlang та Elixir<br/>
+        — src/comboLookup.erl або lib/comboLookup.ex<br/></p>
+     <p><b>Розробка компонент</b></p>
+     <p>Контрол структурується як: 1) поле вводу для пошуку по зовнішньому віддаленому сервісу;
+     2) контейнер для результатів пошуку; 3) елементи результатів пошуку (насправді
+     спеціалізовані редактори вводу відповідних елементів списку результатів пошуку);
+     4) управляючі елементи: кнопка пошуку та кнопка вібірни наступної порції даних
+     через серверний курсор пошуку.</p>
+     <figure><img src="ent/comboLookup.png" width="400"/></figure>
+     <p>Кожна компонента 1—4 повинна бути окремим DOM елементом,
+        а елементи результатів пошуку (4) повинні мати свої Erlang або Elixir визначення,
+        так як ці форми відображають безпосередньо дані пошукових фідів,
+        і таким чином є обов'язковими.</p>
+     <p><b>Розробка протоколу</b></p>
+     <p>За основу пропонується взять наступний протокол управління контрольним елементом:</p>
+     <p>— <b>#comboKeyup{value=[],dom=[],feed=20}</b>, де value — це введені користувачем символи
+             для повнотекстового або довільного пошуку по фіду на сервері. Серверний код
+             цього повідомлення повинен виконати lookup по базі даних та пересунути курсор
+             на кількіть елементів у первій видачі.<br/><br/>
+        — <b>#comboNext{pos=[],count=[],feed=[]}</b>, повторний запит на видачу результатів
+             попередньо виконаного пошуку, або просто видача даних з пересуненням курсору
+             на кількість елементів виданій у цьому запиту.</b></p>
+     <p>Як і кожне повідомлення протоколу NITRO, результати обробки протоколу контрольних
+        елементів повинні бути IO повідомленнями <b>{io,Code,Data}</b>, де <b>Code</b> — це
+        JavaScript з відрендереними на сервері HTML та JavaScript частинами форми,
+        які вбудовують результати видачі у контейнер (2). Тому у тілі функції протоколу
+        контрольного елементу ми формуємо actions (які будуть скинуті в сокет
+        протколом NITRO в повідомленні IO) за допомогою <b>:nitro.wire</b>,
+        або іншої функції з побічними ефектами які генерують JavaScript
+        в контексті Erlang процесу.</p>
+
+     <h4>Імплементація</h4>
+
+     <p><b>Визначення бізнес-об'єкту</b></p>
+
+     <p>Для можливості користуватися одночасно Erlang та Elixir,
+        контрольний елемент на базі HTML5 (ELEMENT_BASE) повинен визначатися в HRL файлі.</p>
+
+     <figure><code>
+ $ cat include/comboLookup.hrl
+
+ -record(comboInit,   { name=[], feed=[]}).
+ -record(comboSearch, { prefix=[]}).
+ -record(comboNext,   { pos=[],  count=[]}).
+ -record(comboLookup, { ?ELEMENT_BASE(nx_comboLookup),
+                        feed="/erp/people",
+                        reader=[],
+                        chunk=20 }).
+     </code></figure>
+     <p>Де "/erp/people" — адреса фіду на сервері (можна подивитися за допомогою <b>:kvs.all</b>)</p>
+     <p><b>Рендер, бінд та налаштування івентінгу</b></p>
+     <p>Оскільки контрольні елементи породжують HTML та JavaScript,
+        рендер контрольного елементу по module полю — це саме те місце,
+        де зазвичай підключаються шаблонізатори, як то: DTL, JSP, ASP, PHP.
+        У нашому випадку ми рекурсивно використовуємо бібліотеку
+        контрольних елментів NITRO, поки повний рендер починаючи з
+        верхнього не буде завершено, або природній Erlang
+        шаблонізатор з мовою Erlang (або Elixir).</p>
+     <figure><code>
+$ cat src/nx_comboLookup.erl
+
+-module(nx_comboLookup).
+-include("comboLookup.hrl").
+-include("erp.hrl").
+-include_lib("nitro/include/nitro.hrl").
+-include_lib("nitro/include/event.hrl").
+-export([render_element/1,proc/1]).
+
+render_obj(#'Person'{cn=CommonName,type=Type}=Person) ->
+   #panel{ body=[ #image { src  = "default.png" },
+                  #h1    { body = CommonName },
+                  #p     { body = Type } ] }.
+
+render_element(#comboLookup{}=Record) ->
+   nitro:wire("console.log(\"Hello comboLookup!\");"),
+   "&lt;input id=\"comboContainer\" type=\"comboLookup\"&gt;&lt;/input&gt;".
+     </code></figure>
+     <p><b>Імплементація протоколу</b></p>
+     <p>Завдання написати найбільш компактну імплементацію
+        з індивідуальними курсорами для кожного екземпляру
+        контрольного елементу на стороні клієнта.</p>
+     <figure><code>
+proto(#comboInit{feed=Feed,name=Name}) ->
+   kvs:save(kvs:reader(Feed)),
+   n2o:session(Name,Feed),
+   ok;
+proto(#comboSearch{prefix=Name}) ->
+   Feed = n2o:session(Name),
+   lists:map(fun (X) -> nitro:insert_top(comboContainer, render_obj(X)) end,
+       lists:all(fun(#process{name=N}) -> N == Name end, kvs:all(Feed))),
+   ok;
+proto(#comboNext{pos=Pos,count=Count}) ->
+   Reader = kvs:reader(Feed),
+   ok.
+     </code></figure>
+     <p><b>Підключення протоколу до модулю сторінки:</b></p>
+     <p>Позаяк протокол сторінки — це кінцева точка усіх
+        клієнтських повідомлень NITRO протоколу, аби
+        доставити повідомлення в модуль контрольного елементу
+        потрібно підключити протокол comboLookup в модуль сторінки
+        з відповідними форвардами.</p>
+     <figure><code>
+$ cat src/container.erl
+
+event(#comboInit{}  =X) -> nx_comboLookup:proto(X);
+event(#comboSearch{}=X) -> nx_comboLookup:proto(X);
+event(#comboNext{}  =X) -> nx_comboLookup:proto(X).
+     </code></figure>
+     <p><b>Розробка клієнтської частини</b></p>
+     <p>Мінімальне публічне API контрольного елементу.</p>
+     <figure><code>
+$ cat priv/js/comboLookup.js
+
+function direct(term)  { ws.send(enc(tuple(atom('direct'),term))); }
+function comboId()     { return localStorage.getItem("comboLookup-1218297")||'';};
+function comboInit()   { direct(tuple(atom('comboInit'),string(comboId()))); }
+function comboSearch() { direct(tuple(atom('comboSearch'),'Maxi')); }
+function comboNext()   { direct(tuple(atom('comboNext'),1,1)); }
+     </code></figure>
+
+     <p><b>Специфікація на стилі</b></p>
+
+     <figure><code>
+$ cat priv/css/comboLookup.css
+     </code></figure>
+
+     <p>Для самостійного опрацювання.</p>
+
+     <h4>Додаток 1</h4>
+
+     <p>Перелік функцій на стороні JavaScript для реалізаціі
+        мінімального клієнта N2O NITRO протоколу:</p>
+
+     <p>token() — поточний токен сесії<br/>
+        qi(name) — DOM елемент по існуючому id<br/>
+        qs(name) — пошук DOM елементу<br/>
+        qn(name) — створення нового DOM елементу<br/>
+        is(x, num, name)<br/>
+        co(name) — отримання cookies (застаріло, використувуємо localStorage)<br/>
+        querySource(name) — отримання преформатованої змінної поля value<br/>
+        validateSources(list) — провалідувати поле value для списку елементів<br/>
+        N2O_start() — створення веб-сокет каналу<br/>
+        $bert — реалізація бінарного берт протоколу на JavaScript<br/>
+        $io — IO протокол (евалуатор та помилки)<br/>
+        $file — FTP протокол (трансфер великих файлів до 100ГБ)<br/>
+        $ws — вебсокет транспорт<br/>
+        transports — транспорти<br/>
+        protos — протоколи<br/>
+        </p>
+
+        <br/>
+        <hr/>
+        <br/>
+
+     <p>— <a href="https://n2o.dev/deps/nitro/man/ua/index.html">NITRO</a> — Загальна інформація про веб-фреймворк NITRO<br/>
+        — <a href="https://n2o.dev/deps/n2o/man/ua/index.html">N2O</a> — Опис контейнера протоколів та сервісів N2O<br/>
+        — <a href="https://n2o.dev/deps/n2o/man/ua/n2o_nitro.htm">N2O NITRO</a> — Опис протоколу веб-фреймворку<br/>
+        — <a href="https://n2o.dev/deps/n2o/man/ua/bert.js.htm">BERT.JS</a> — Опис бінарного протоколу<br/></p>
+    </section>
+  </article>
+</main>
+<footer>Namdak Tonpa <span class="heart"> ❤ </span> SYNRC</footer>
+</body>
+</html>

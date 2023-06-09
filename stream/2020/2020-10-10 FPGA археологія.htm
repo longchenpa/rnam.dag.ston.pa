@@ -1,0 +1,246 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2020-10-10 FPGA археологія</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="https://tonpa.guru/journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2020-10-10</a>
+</nav>
+<main>
+    <section>
+
+       <h3>FPGA археологія</h3>
+
+       <p>Це стаття про репліки FPGA ретро-комп'ютерів 70-х і 80-х років 20 століття.
+          Дослідження архаїчних систем називається комп'ютерною археологією.
+          Головна проблема колекціонування побутової електроніки того часу — це
+          ветхість обладнання. Конденсатори здуваються, пливуть стародавні РК-дисплеї,
+          окислюються контакти, перестає працювати практично все. Софтверні
+          емулятори (зазвичай розташовані на базі Raspberry Pie) не достатньою
+          мірою надихають колекціонерів, які хочуть володіти повною реплікою
+          стародавнього мікропроцесора, нехай навіть у вигляді VHDL. Тому
+          заслужену популярність викликали проекти за створенням SoC (повні
+          репліки не тільки процесора, але й його периферії, сумісної з сучасними
+          моніторами, клавіатурами та мишами) для процесорів FPGA (Altera, Xilinx, Intel),
+          які реалізують популярні ігрові платформи демосцени минулого.</p>
+
+       <p>У якості прикладу, які процесори входять в мою сферу інтересів,
+          як колекціонера, я б привів наступні платформи: Apple II/ПРАВЕЦ-8,
+          Sega, NES, Atari 2600/800XL/ST, MSX2+/КУВТ2, C64, ZX, 8085, HC08,
+          HC016, PDP-11/БК-0010. Тут же, в статті хочу розповісти про один
+          іспанський магазин стародавніх реплік на FPGA та інших проектах,
+          які я б рекомендував як напрямки або продукти, для яких існує
+          багато програм, і навіть деякі актуальні проекти ентузіастів.
+          Я помацав трохи — старі пердуни ще не вмерли і паяють все для дітей,
+          щоб, по-перше, мали можливість вчити електроніку по дідівським
+          лекалам, а по-друге, отримали чудовий освітній інструмент
+          зі своїм мінімалістичним середовищем розробки для 8-бітних
+          і 16-бітних бітних процесорів, який покриває максимальну
+          кількість платформ для експериментів. Рекомендую такий практичний
+          курс з електроніки українських для шкіл, 9-11 класів. Просто на
+          першому курсі вже пора напряму керувати контролером NVMe з
+          юзерленду, тому можна було б і з 5-го начати, краще з цим не затягувати.</p>
+
+       <p>Так, я хочу розповісти про свою колекцію FPGA-репліків ретро-комп'ютерів:
+          32-бітний Atari Falcon, 8-бітний Commodore C64, 16-бітний SEGA Genesis,
+          16-бітний DEC PDP-11/70, MSX-комп'ютер Sony HB-F1XV HitBit MSX2+,
+          легендарний Sinclair Research ZX Spectrum 48K+ (в порядку зменшення ціни);
+          що знаходяться у відкритому доступі для прошивки чіпів FPGA, для яких
+          створюються плати, які можна купити та замовити. Тиражі колекційні,
+          як і весь ретро-комп'ютер. Відновлення цієї колекції вам обійдеться в тисячі євро.</p>
+
+       <h4>ZX Spectrum 48K+ на ZX UNO XL</h4>
+
+       <p>ZX - це справжній народний простий комп'ютер, який кожен
+        міг спаяти самостійно, його схеми ходили в журналах, на відміну від Японії, Іспанії,
+        де переважали більш потужні версії MSX з графічним відеопроцесором VDP,
+        ZX був розповсюджений в іншій Європі. Це самий простий комп'ютер,
+        приблизно рівня Apple II. Навіть Commodore C64/6502 вважався просунутою
+        мультимедійною платформою, у відмінності від більш народної ZX/Z80.
+        Цей процесор настільно народний, що довго ставився ще в клавіатурі,
+        калькуляторах, телефонах і ставиться до цих пор. Аналоги за номенклатурою Intel — це 8080, 8085.</p>
+
+        <figure><img width=600 src="https://oldcraporg.files.wordpress.com/2017/11/fullsizeoutput_119b.jpeg?w=1000&h="></figure>
+
+        <p>Що сказати, любителям спартанської платформи ZX повезло, у них існує культова
+           плата <a href="https://www.8bits4ever.net/product-page/zx-uno-xl">ZX UNO XL (Issue 4)</a>
+           (випуск 4) на Xilinx Spartan XC6SLX9 вартістю всього 100 євро,
+           яка крім самої платформи ZX Spectrum 48K підтримує також Sam Coupe, Jupiter ACE,
+           Apple II, VIC 20, Sega Master System, NES, Atari 800XL, MSX1, C64 і ще парочку.
+           Такий багатий набір емульованих платформ ставить цю плату в топ огляду.
+           Більше того ця плата підходить в оригінальний корпус ZX Spectrum 48K — я думаю, це максимальний подарунок.</p>
+
+        <figure><img width=600 src="img/zx-uno-xl.png"></figure>
+
+       <h4>Sony HB-F1XV MSX2+ на SX-1</h4>
+
+        <p>Перший MSX Yamaha я побачив в Кам'янці-Подільському, в педагогічному університеті.
+           У місті був завод Електроніка всесоюзного значення, тому діти працюючих там
+           інженерів цікавилися комп'ютерами. У місті були Sony і КУВТ2 версії MSX. Були
+           комп'ютерні клуби, у дворі у двох були самозібрані ZX спектруми, у мене був
+           Atari 800XE (7-й клас), в клубах були корвети з сервером на БК. В школі
+           вчителі писали самопальні мережеві протоколи. Всі клони геймбоїв можна
+           було купити чи не в магазині, де продавали спінінги. Про архитектуру MSX
+           мені вперше розповідали в 9-му класі, коли у мене вже був 486. З 4-го класу
+           у нас прямо в домашньому класі стояв ряд ПРАВЕЦ-8, а починаючи з 5-го був
+           допуск до класу IBM PC/AT 286. (В основному мене цікавили F1, Prince of
+           Persia, LHX, Turbo Pascal 5.5).</p>
+
+           <figure><img width=600 src="img/MSX2+.jpg"></figure>
+
+        <p>Спектрумівські іграшки ZX не були такими просунутими, як MSX із-за
+           наявності апаратного графічного сопроцесора на платформі MSX, що
+           перетворило його в реальну двопроцесорну консоль. Графічний процесор
+           VDP умів рендерити лінії алгоритмом Брезенхема, робити біт-бліттинг,
+           вертикальні та горизонтальні копії та скани та інші штуки. MSX — це
+           один з японських стандартів на комп'ютери, такий як PC, який став
+           IBM PC/XT або стандарт на ОС реального часу TRON. Yamaha, Panasonic,
+           Sony, Philips, все це на eBay коштує від 500 доларів. Konami Metal
+           Gear Solid вперше був написаний для MSX. Не знаю, що робили ігрові
+           консолі КУВТ2 в університетах, але саме там мій учитель програмування
+           навчився писати іграшки, так як в Microsoft BASIC-MSX, які за стандартом
+           були прошиті в кожному ПЗУ, є механізм колізії спрайтів і апаратний
+           бітблітінг і управління спрайтами. Писати іграшки было простіше.
+           Моя улюблена гра на Atari, MSX і Z80 — <a href="http://tv-games.ru/wiki/Games/MontezumasRevenge.html">це Montezuma's Revenge</a>,
+          доступна в емуляторі <a href="https://webmsx.org">webmsx.org</a>.
+
+       <figure><figcaption>Команди Yamaha VDP-V9938</figcaption><table cellspacing=10>
+       <thead>
+       <th>Команда</th><th>Опис</th><th>Регістри</th>
+       </thead>
+       <tbody>
+       <tr><td>HMMC</td><td>Fill VRAM From CPU</td><td>36-46</td></tr>
+       <tr><td>YMMM</td><td>Fast Copy (Y axis)</td><td>34-39,42-26</td></tr>
+       <tr><td>HMMM</td><td>Fast Copy</td><td>32-46</td></tr>
+       <tr><td>HMMV</td><td>Fill</td><td>36-46</td></tr>
+       <tr><td>LMMC</td><td>Logical Fill VRAM From CPU</td><td>36-46</td></tr>
+       <tr><td>LMCM</td><td>Logical transfer data to CPU</td><td>32-35,40-46</td></tr>
+       <tr><td>LMMM</td><td>Logical Vram to VRAM</td><td>32-46</td></tr>
+       <tr><td>LMMV</td><td>Logical Fill</td><td>36-46</td></tr>
+       <tr><td>LINE</td><td>Line</td><td>36-46</td></tr>
+       <tr><td>SRCH</td><td>Search (X axis)</td><td>32-36,44-46</td></tr>
+       <tr><td>PSET</td><td>Pset</td><td>36-39,44-46</td></tr>
+       <tr><td>POINT</td><td>Read Point</td><td>32-36,44-46</td></tr>
+       <tr><td>STOP</td><td>Async Cancel</td><td>46</td></tr>
+       </tbody></table></figure>
+
+       <figure><figcaption>Формат команди VDP-V9938</figcaption><table cellspacing=10>
+       <thead>
+       <th>CMD</th><th>ARG</th><th>COLOR</th><th>NUM-Y</th><th>NUM-X</th><th>DST-Y</th><th>DST-X</th><th>SRC-Y</th><th>SRC-X</th>
+       </thead>
+       <tbody>
+       <tr><td>46</td><td>45</td><td>44</td><td>42-43</td><td>40-41</td><td>38-39</td><td>36-37</td><td>34-35</td><td>32-33</td></tr>
+       </tbody></table></figure>
+
+        <p>З 2000 року один німець розробляє операційну систему SymbOS для всіх
+           8-розрядних платформ, в тому числі і для MSX, зауважте, що він почав
+           це після смерті платформи і робить до цих пор. Якщо порівняти SymbOS
+           з Atari TOS, DeskView, Windows 1 або навіть з Palm, то цілком нічого,
+           є WGET, NETSTAT! Усі наркомани, які до цих пор на цьому пишуть,
+           понятна справа живуть у Нідерландах <a href="http://map.grauw.nl/articles/">http://map.grauw.nl/articles/</a>.
+           ОС можна прямо зараз запустити в емуляторі WebMSX по прямому посиланню
+           <a href="https://webmsx.org/symbos/">https://webmsx.org/symbos/</a>.
+           Компілятор Small Device C прекрасно можна використовувати для створення ОС,
+           рантаймів і своїх бібліотек для MSX/Z80, але багато хто пише на чистому
+           асемблері, яких теж є кілька. На цій платформі існують dBase II, Turbo
+           Pascal 3.0, CP/M, кілька DOS-ов і файлових менеджерів. В якості єдиного
+           ресурсу з програмування ретропроцесорів я рекомендую <a href="https://www.assemblytutorial.com/">assemblytutorial.com</a>.</p>
+
+        <p>У якості репліки FPGA MSX я вибрав собі материнську плату SX-1 формату Mini-ITX
+           з чіпом FPGA Altera, які виробляють іспанці з 8bit4ever. Працює з PS/2
+           і USB клавами, SD, картриджами, VHD фірмовими відкритими соурсами. Вартість 130 євро.</p>
+
+           <figure><img width=600 src="img/sx-1.png"></figure>
+
+           <figure><img width=600 src="img/SX1.png"></figure>
+
+       <h4>DEC PDP-11/70 на Arty A7</h4>
+
+        <p>На жаль бренда, який би просував культовий PDP-11/70 немає. Роблять якісь
+           діти іграшки на Raspberry Pie, але як ми вже відзначили, повного
+           задоволення така система не принесе. Тому в даному випадку ми будемо
+           розглядати плату <a href="https://reference.digilentinc.com/reference/programmable-logic/arty-a7/start">Digilent Arty A7</a> на базі процесора FPGA XC7A35 ($130)
+           або XC7A100 ($250), яка сумісна з відкритою версією VHDL PDP-11/70
+           <a href="https://github.com/wfjm/w11">github.com/wfjm/w11</a>. VHDL
+           реалізує майже всю периферію (крім FPU) — це дозволяє запускати
+           перші UNIX: System V і 2.11BSD, а також оригінальні операційні
+           системи DEC: RT-11 і RSX-11M. Для цих систем були написані перші
+           компілятори С, і колонкова БД MUMPS, яка отримала стандарт ISO.
+           Існували радянські клони PDP-11 БК-0010, клон RT-11 ОС ДЕМОС і клон MUMPS системи ДІАМС.</p>
+
+        <figure><img width=600 src="https://saccade.com/writing/projects/PDP11/PanelInCase_Side.jpg"></figure>
+
+        <p>Не варто думати, що наявність UNIX допоможе розвернутися, це не
+           сучасний Ubuntu, в 16-бітній системі середовище буде спартанським
+           і нагадувало організацію 8-бітної системи. Зато побачите, як старі працювали.</p>
+
+        <figure><img width=600 src="https://reference.digilentinc.com/_media/reference/programmable-logic/arty/arty-0.png"></figure>
+
+        <p>Для любителів мінімалізму існує PDP-11/70 на Intel Cyclone:</p>
+
+        <figure><img width=600 src="https://pdp2011.sytse.net/wordpress/wp-content/uploads/2020/04/D85_6251.jpg"></figure>
+
+       <h4>SEGA Genesis на Mega Sg</h4>
+
+       <p>Бідна SEGA пережила кілька фейлів перед ставшими легендарними SEGA MegaDrive/Genesis,
+          які запущені в FPGA компанії Analogue. Так у 1983 році SEGA вийшла з SG-1000, в той же день,
+          що і набагато потужніша NES (Маріо, Донкі Конг). У 1986 році SEGA випустила Master System,
+          тоді як у Nintendo вже був Super Mario. У підсумку SEGA вирішила повністю запустити
+          Genesis на 16-бітній платформі: пам'ять, процесор, відео. У Genesis були такі іграшки,
+          як Mortal Kombat (1992), Sonic The Hedgehog (1991), Super Monaco GP (1991),
+          Street Figher (1992), Dune: The Battle For Arrakis (1994), Lemmings (1992),
+          Flashback: The Quest for Identity (1993), Virtua Racing (1994). У 1994 році
+          SEGA вдалося зняти продажі з Nintendo. SEGA Dreamcast на SH-4 була третім і останнім фейлом SEGA.</p>
+
+        <figure><img width=600 src="https://images.analogue.co/6-store/store-megasg-jpn.jpg?auto=format&w=1466&s=239cf54e6488ebab35ab016dc8c69cd8"></figure>
+
+       <h4>Commodore C64 на Mega65</h4>
+
+       <p>C65 — це оновлена версія Commodore 64, яка з'явилася на закате і не встигла
+          вийти на ринок. Museum of Electronic Games & Art зібрав достатню кількість
+          коштів і вже доступні замовлення на дорогі ($1K) набори для розробників (DevKit)
+          створення в FPGA не тільки C64, але і невипущеного C65. У скорому часі вернеться
+          в очікування запуску споживчого продукту. Документація в TeX, добре документована
+          структура VHDL моделі — <a href="https://github.com/mega65/">все на GitHub</a>,
+          відмінний сайт — <a href="https://mega65.org">mega65.org</a>. Сама платформа
+          MEGA65 передбачає подальшу підтримку ATARI ST і AMIGA.</p>
+
+        <figure><img width=600 src="https://mega65.org/assets/images/portfolio/grid-portfolio2.jpg"></figure>
+
+       <h4>Atari Falcon на FireBee</h4>
+
+        <p>Класичні 8-бітні Atari були побудовані на процесорі MOS 6502,
+           як і Commodore 64, Apple II і її болгарський клон ПРАВЕЦ-8.
+           Атарі воювала в цей час на ринку з Commodore, який постачав
+           чіпи для калькуляторів, і з 1981 по 1983 скинула ціну на серію
+           800 майже в 9 разів. У 1985 році Atari перейшла на 32-бітні
+           процесори Motorola 68K і платформу Atari ST. Atari Falcon —
+           це апогей цієї платформи, використаної в <a href="http://acp.atari.org/about.html">Atari FireBee</a> на
+           базі процесора Motorola Coldfire 264MHz. Хоча центральний
+           процесор не емулюється, на платі розміщена FPGA Altera Cyclone
+           за допомогою якої емулюється оригінальна периферія Atari.</p>
+
+           <figure><img width=600 src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Atari_Falcon_030_%28%D0%BE%D0%B1%D1%89%D0%B8%D0%B9_%D0%B2%D0%B8%D0%B4%29_%28crop_tweak%29.jpg/1920px-Atari_Falcon_030_%28%D0%BE%D0%B1%D1%89%D0%B8%D0%B9_%D0%B2%D0%B8%D0%B4%29_%28crop_tweak%29.jpg"></figure>
+
+        <p>Плата FPGA <a href="http://firebee.org">FireBee</a> (560 євро) підтримує майже всі ОС,
+           які існують для Atari ST, і ще їх докидує: MultiTOS, MagiC, EmuTOS, Atari TOS, Geneva;
+           а також графічні середовища: GEM, XaAES, FreeMiNT.</p>
+
+           <figure><img width=600 src="http://acp.atari.org/images/proto_dec09.jpg"></figure>
+
+           <figure><img width=600 src="http://acp.atari.org/images/1680Asmall.jpg"></figure>
+
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2021</footer>
+</body>
+</html>

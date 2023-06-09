@@ -1,0 +1,635 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2022-12-06 Quake</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2022-12-06</a>
+</nav>
+<main>
+    <section>
+
+        <h3>Quake: чверть століття</h3>
+
+        <p><b>Застосовуваність:</b> ця робота може бути використана як дидактичний матеріал курсу комп'ютерна графіка
+           та курсу ігри та спорт кафедри теоретичної інформатики інституту формальної математики.<br>
+           <b>Об'єкт та предмет:</b> комп'ютерна графіка, гра Quake.<br>
+           <b>Мета та завдання:</b> розкриття інтерпретацій, аналіз 25-річного розвитку.</p>
+
+
+        <h4>Інтро</h4>
+
+        <p>Спочатку я хотів написати статтю присвячену технічній частині гри Quake аби
+           заохотити молоде покоління, хто бажає поринути у світ лінійної алегбри і афінних перетворень,
+           а також овертаймів в геймдеві та інших дравбеків. Використати її як дидактичний матеріал
+           для курсу комп'ютерна графіка де побудова подібного шутера могла би бути заліковим проектом.
+           Але потім я вирів розшири її застосовуваність та надати інтерпретації феномену гри Quake
+           в інших галузях людської діяльності. Так, я намагатимусь розкрити Quake в декількох аспектах:
+           з точки зори формальної філософії, як витвір мистецтва, як заліковий проект по курсу
+           комп'ютерна графіку та як спортивну гру.</p>
+
+        <h4>Формальна філософія</h4>
+
+        <p>На мою думку побудова реальності на комп'ютері з клавіатурою і мишкою &mdash; 
+           це спроба глибокого занурення як математика, але є побудовою самсари в самсарі.
+           Це спроба створити ту реальність, яка потрібна в даний момент, це може
+           бути прихистком, це може бути дослідженням.
+           Версія BPS дерев яка застосовувалася в DOOM обмежувала можливості повної свободи у трьох осях,
+           і тільки з появою нової додаткової потужності процесорів Pentium це стало можливим.
+           Джон Кармак переписав декілька імплементацій, це було справжнім дослідженням
+           яке залишилось в його <a href="http://fabiensanglard.net/fd_proxy/doom3/pdfs/johnc-plan_1999.pdf">робочих щоденниках</a>.
+           До цих пір все що використовувалось в Quake окрім сучасних шейдерів використовується і сьогодні у всіх 3D рантаймах,
+           тоді це було значно складніше через обмеженість обчислень.
+        </p>
+
+        <h4>Витвір мистецтва</h4>
+
+        <p><b>Музика</b>: альбом із саундтреком до однойменної відеоігри id Software 1996 року,
+            створеної Трентом Резнором та його індустріальною рок-групою Nine Inch Nails.
+            Він був випущений 22 червня 1996 року. Спочатку надрукований на тому ж диску,
+            що й гра, Quake був комерційно недоступним до виходу на вінілі у вересні 2020 року.
+            Резнор також створив звукові ефекти для гри.</p>
+
+       <p><b>Ігрова механіка</b>: збалансована на референсному рівні. Набір зброї, карти,
+           архітектура рівнів, розстановка персонажів, маршрути, спід рани, перший в світі
+           чемпіонат по кіберспорту &mdash; це все про Quake.</p>
+
+       <p><b>Зброя</b>: Axe, Shotgun, Double Barrell, Nailgun, Perforator, Grenade Launcher, Rocket Launcher, Thunderbolt.</p>
+
+       <p><b>Відновлення</b>: Health Packs, Megahealth, Green Armor, Yellow Armor, Red Armor.</p>
+
+       <p><b>Удосконалення</b>: Biosuit, Pentagram of Protection, Quad Damage, Ring of Shadows.</p>
+
+       <p><b>Вороги</b>: Rottweiler, Grunt, Enforcer, Knight, Death Knight, Rotfish,
+              Zombie, Scrag, Ogre, Spawn, Fiend, Vore, Shambler.</p>
+
+       <p><b>Боси</b>: Chthon, Shub-Niggurath.</p>
+
+        <figure><img src="img/vkquake.jpg"></figure>
+
+        <figure><img src="img/list.PNG"></figure>
+
+        <p>Імплементації які підтримують OpenGL/DirectX та масшабуюьться на сучасних моніторах:</p>
+
+        <p><b>DarkPlaces</b> &mdash; <a href="https://github.com/darkplacesengine/darkplaces">darkplacesengine/darkplaces</a>.</p>
+
+        <p><b>DirectQ</b> &mdash; <a href="https://github.com/AAS/directq">AAS/directq</a>.</p>
+
+        <p><b>QuakeSpasm</b> &mdash; <a href="https://github.com/sezero/quakespasm">sezero/quakespasm</a>.</p>
+
+        <p><b>VkQuake</b> &mdash; <a href="https://github.com/Novum/vkQuake">Novum/vkQuake</a>.</p>
+
+        <p>Я перевірив всі імплементації зі всіма модами і залишився на VkQuake.</p>
+
+        <h4>Пакети або моди</h4>
+ 
+        <p>Для того аби вибрати карту, перейдіть в консоль <b class=sel>`</b>.<br>
+           Потім введіть команду <b class=sel>map ad_azad</b>, наприклад для рівня з Arcane Dimensions,
+           або <b class=sel>map e1m1</b> для першого рівня оригінальних епізодів Quake.</p>
+
+        <p>Корисна команда для того, щоб вивчити карту &mdash; це <b class=sel>noclip</b>,
+           яка дає змогу літати, проходити крізь стіни і побачити рівень зі сторони.</p>
+
+        <p>Для запису проходжень використовуються команди <b class=sel>record</b>, <b class=sel>stop</b>,
+           <b class=sel>playdemo</b> [hipdemo1], <b class=sel>demos</b>.</p>
+
+        <p><b>Original</b> (id1)</p>
+
+<p>Quake — відеогра шутер від першої особи, розроблена компанією id 
+Software і опублікована компанією GT Interactive Software. Роздрібна CD-ROM
+версія (1.01) була випущена 12 липня 1996 року для Microsoft DOS. Через 
+застарілий характер гри користувачам рекомендується переглянути 
+посібники з усунення несправностей.</p>
+
+<p>Найраніша умовно-безкоштовна версія, 0.91, була завершена 21 червня 
+1996 року та випущена наступного дня після того, як її самостійно 
+зібрав Джон Ромеро. Quake 2 було випущено 9 грудня 1997 року. Однак ця 
+гра є продовженням лише за назвою. У Quake також є два офіційних пакети 
+доповнень: Quake Mission Pack 1: Scourge of Armagon і Quake Mission 
+Pack 2: Dissolution of Eternity.</p>
+
+<p>Quake була однією з перших повністю тривимірних шутерів від першої особи.
+Вплив Doom на ігровий процес, дизайн і історію відчувався.
+Наприклад, у Quake є подібний арсенал зброї та телепортів.
+Функції, оригінальні для Quake, як-от консоль,
+пізніше з’явилися в портах Doom. Після публікації офіційного
+коду Quake деякі порти Doom включили частини коду Quake.
+Quake має три режими гри; Один гравець, кооператив
+і Deathmatch, схожі на ігрові режими Doom. Як і Doom, у цій грі були
+демо-версії та спідрани. Однак, незважаючи на те, що це вплинуло на
+стиль гри Doom, це була перша гра від id Software,
+яка містить 3D-моделі порівняно з 2D-спрайтами Doom,
+тут вперше з'явилися рокет джампи і дійсно створилася унікальна атмосфера,
+яку нікому не вдалося повторити та повністю задовільнити фанатів гри,
+окрім як випуском все нових і нових модів, і ремастерінгом існуючих.</p>
+
+        <p>Episode 1: Dimension of the Doomed:
+
+    E1M1: The Slipgate Complex by John Romero,
+    E1M2: Castle of the Damned by Tim Willits,
+    E1M3: The Necropolis by Tim Willits,
+    E1M4: The Grisly Grotto by Tim Willits,
+    E1M5: Gloom Keep by Tim Willits,
+    E1M6: The Door to Chthon by American McGee,
+    E1M7: The House of Chthon by American McGee,
+    E1M8: Ziggurat Vertigo* by American McGee;
+
+           Episode 2: The Realm of Black Magic:
+
+    E2M1: The Installation by John Romero,
+    E2M2: The Ogre Citadel by John Romero,
+    E2M3: The Crypt of Decay by John Romero,
+    E2M4: The Ebon Fortress by John Romero,
+    E2M5: The Wizard's Manse by John Romero,
+    E2M6: The Dismal Oubliette by John Romero,
+    E2M7: The Underearth* by Tim Willits;
+
+           Episode 3: The Netherworld:
+
+    E3M1: Termination Central by John Romero,
+    E3M2: The Vaults of Zin by American McGee,
+    E3M3: The Tomb of Terror by American McGee,
+    E3M4: Satan's Dark Delight by American McGee,
+    E3M5: The Wind Tunnels by Tim Willits,
+    E3M6: Chambers of Torment by American McGee & Tim Willits,
+    E3M7: The Haunted Halls* by American McGee;
+
+           Episode 4: The Elder World:
+
+    E4M1: The Sewage System by Tim Willits,
+    E4M2: The Tower of Despair by Sandy Petersen,
+    E4M3: The Elder God Shrine by Sandy Petersen,
+    E4M4: The Palace of Hate by Sandy Petersen,
+    E4M5: Hell's Atrium by Sandy Petersen,
+    E4M6: The Pain Maze by Sandy Petersen,
+    E4M7: Azure Agony by Sandy Petersen,
+    E4M8: The Nameless City* by Sandy Petersen;
+
+    End: Shub-Niggurath's Pit by John Romero.
+           
+        </p>
+
+        <figure><img src="img/original.PNG"></figure>
+
+        <p><b>Scourge of Armagon</b> (hipnotic)</p>
+
+        <p>Quake Mission Pack 1: Scourge of Armagon — перший офіційний пакет місій для Quake,
+           розроблений Hipnotic Software і випущений 5 березня 1997 року.</p>
+
+<p>Після того, як Рейнджер перемагає Шуб-Ніггурата, він повертається додому,
+          щоб побачити, що Армагон перебрав сили Квейка та планує знищити
+          Землю за допомогою Розлому. Тому герой повинен знову вирушити
+         в темні царства Квейка і перемогти армії зла.</p>
+
+        <p>Episode 1: Fortress of the Dead: HIP1M1: The Pumping Station, HIP1M2: Storage Facility,
+           HIP1M3: The Lost Mine, HIP1M4: Research Facility,
+           HIP1M5: Military Complex, HIP2M1: Ancient Realms;
+           Episode 2: Dominion of Darkness: HIP2M2: The Black Cathedral, HIP2M3: The Catacombs,
+           HIP2M4: The Crypt, HIP2M5: Mortum's Keep,
+           HIP2M6: The Gremlin's Domain;
+           Episode 3: The Rift: HIP3M1: Tur Torment,
+           HIP3M2: Pandemonium,
+           HIP3M3: Limbo,
+           HIP3M4: The Gauntlet,
+           HIPDM1: The Edge of Oblivion;
+           HIPEND: Armagon's Lair.</p>
+
+        <figure><img src="img/hipnotic.PNG"></figure>
+
+        <p><b>Dissolution of Eternity</b> (rouge)</p>
+
+<p>Quake Mission Pack 2: Dissolution of Eternity — другий офіційний пакет місій,
+   випущений для Quake, розроблений Rogue Entertainment і випущений 19 березня 1997 року.</p>
+
+<p>Перемігши Армагона, герой повертається на Землю. Однак все виглядає дуже
+   неправильно - очевидно, Quake започаткував ще одну темну схему підкорити
+   наш світ, змінивши хід часу. Герой сповнений рішучості покінчити з Квейком
+   раз і назавжди, а тому сміливо знову вирушає в темні царства для останнього
+   протистояння, щоб покінчити з усім злом раз і назавжди.</p>
+
+        <p>Episode 1: Hell's Fortress: R1M1: Deviant's Domain,
+                   R1M2: Dread Portal,
+    R1M3: Judgement Call,
+    R1M4: Cave of Death,
+    R1M5: Towers of Wrath,
+    R1M6: Temple of Pain,
+    R1M7: Tomb of the Overlord;
+
+Episode 2: The Corridors of Time:
+
+    R2M1: Tempus Fugit,
+    R2M2: Elemental Fury I,
+    R2M3: Elemental Fury II,
+    R2M4: Curse of Osiris,
+    R2M5: Wizard's Keep,
+    R2M6: Blood Sacrifice,
+    R2M7: Last Bastion,
+    R2M8: Source of Evil.</p>
+
+        <figure><img src="img/rouge.PNG"></figure>
+
+        <p><b>Dimensions of The Past</b> (dopa)</p>
+
+        <p>Dimension of the Past (скорочено «DOPA») — це додатковий 
+епізод для Quake, розроблений MachineGames на честь 20-річчя гри. Його 
+можна завантажити безкоштовно, а також було включено до сучасного
+порту Quake.</p>
+
+<p>Незважаючи на те, що цей епізод не розроблявся самим id Software,
+епізод офіційно випущений у випуску 2021 року, розробляється іншою
+компанією, що належить Zenimax, яка раніше співпрацювала з id Software,
+а також з Nightdive Studios. Епізод також містить багато алюзій і
+зворотних посилань до Quake, таких як повторна поява пасхального
+яйця Dopefish, а також фінальний рівень епізоду, який майже ідентичний
+Ямі Шуб-Ніггурата.</p>
+
+        <p>E5START: Dimension of the Past,
+           E5M1: The Military Base,
+           E5M2: The Power Supply,
+           E5M3: The Dark Days,
+           E5M4: The Catacombs,
+           5SM1: The Forgotten Castle,
+           E5M5: The Stronghold,
+           E5M6: The Underworld,
+           E5M7: The Otherworld,
+           E5SM2: The House of Doom,
+           E5END: The Year Zero.
+         </p>
+
+        <figure><img src="img/dopa.PNG"></figure>
+
+        <p><b>Abyss of Pandemonium</b> (impel)</p>
+
+       <p>Abyss of Pandemonium — це неофіційна комерційна часткова конверсія для Quake,
+          розроблена командою розробників Impel і опублікована Perfect Publishing.
+          Він був випущений 14 квітня 1998 року і включає 16 нових рівнів (10 одиночних
+          матчів/6 смертельних матчів), шість нових ворогів, чотири нові види зброї та 1 посилення.</p>
+
+<p>    AOP1M1: Gates of Abyss,
+    AOP1M2: Core Reactor,
+    AOP1M3: The Power Station,
+    AOP1M4: The Moon Temple,
+    AOP1M5: The Dark Palace,
+    AOP1M6: The Forgotten One,
+    AOP2M1: Heresy,
+    AOP2M2: Carnage Castle,
+    AOP2M3: Central Complex,
+    AOPEND: Legonds of Quake;
+
+Multiplayer Maps:
+
+    AOPDM1: The Absolution,
+    AOPDM2: Runic Raging,
+    AOPDM3: Mental Overlord,
+    AOPDM4: Mental Overlord II,
+    AOPDM5: Midnight Darkness,
+    AOPDM6.</p>
+
+        <figure><img src="img/ab.PNG"></figure>
+
+        <p><b>Arcane Dimensions</b> (ad)</p>
+
+<p>Arcane Dimensions створювався великою командою дизайнерів рівнів,
+   художників і програмістів протягом багатьох років. Мод містить
+   понад 30 деталізованих та унікальних тематичних середовищ для
+   дослідження та цілу нову армію монстрів, щоб перевірити ваші
+   навички та рефлекси на цьому шляху. Початок мода сповнений
+   порталів у всіх напрямках, які візуально оформлені тим, що
+   лежить за їхніми чорними зоряними покривалами. Немає фіксованого
+   порядку чи бажаного шляху до того, як ви досліджуєте цей мод, вибір за вами.</p>
+
+<p>
+   ad_sepulcher: The Forgotten Sepulcher by Giftmacher and Sock,
+   ad_azad: The Realm of Enceladus by mfx,
+   ad_necrokeep: The Necromancer’s Keep by Scampie and Lunaran,
+   ad_swampy: Foggy Bogbottom by mfx,
+   ad_zendar: The City of Zendar by Sock,
+   ad_tfuma: Terror Fuma by FifthElephant and Ericw,
+   ad_magna8. Leptis Magna by Ionous and PuLSaR,
+   ad_e2m: Ogre Bastille by Sock,
+   ad_end. Final destination for AD travellers by mfx.
+   ad_dm1: Place of Many Deaths by FifthElephant,
+</p>
+
+        <figure><img src="img/ad.PNG"></figure>
+
+        <p><b>Dimensions of The Machine</b> (mg1)</p>
+
+<p>Dimension of the Machine — це абсолютно новий епізод розширення для Quake,
+   випущений 19 серпня 2021 року. Епізод поділено на п’ять «підепізодів»,
+   кожен з яких містить два або три рівні. Наприкінці гравець знову повинен битися з Хтоном.
+   Самі рівні набагато деталізовані та мають збільшену кількість ворогів.</p>
+
+
+        <p>Realm of the Machinists:
+
+    MGE1M1: The Pain Drain,
+    MGE1M2: The Wishing Well,
+    MGE1M3: Sandy's Room (Secret Level);
+
+Realm of the Blacksmiths:
+
+    MGE2M1: Acid Sanctuary,
+    MGE2M2: Fading Embers;
+
+Realm of the Stonemasons:
+
+    MGE3M1: Down the Waste,
+    MGE3M2: Hell or Dark Water;
+
+Realm of the Cultists:
+
+    MGE4M1: Grave Machine,
+    MGE4M2: A Grave Mistake;
+
+Realm of the Astrologers:
+
+    MGE5M1: Nazard Terminal,
+    MGE5M2: Too Deep, Too Greedy;
+
+Final Level:
+
+    MGEND: Chthon's Vengeance;
+
+Deathmatch Levels:
+
+    MGMD1: Art of the Condemned,
+    MGMD2: The Bad Space,
+    MGMD3: The Mustard Factory,
+    MGMD4: The Boiler.
+</p>
+
+        <figure><img src="img/mg1.PNG"></figure>
+
+        <p><b>Capture The Flag</b> (ctf)</p>
+
+        <p>Мультіплеєр карти доступні в ремастерінгу 2021 року.</p>
+
+        <p>CTF1: McKinley Base,
+    CTF2: McKinley Station,
+    CTF3: Spill the Blood,
+    CTF4: Gloom Castles,
+    CTF5: Capturephobopolis,
+    CTF6: Vertigo,
+    CTF7: The Strongbox,
+    CTF8: Chthon's Capture House,
+    CTF9: Da Ancient War Grounds.</p>
+
+        <h4>Мова програмування</h4>
+
+        <p><b>Quake C</b> &mdash; <a href="https://github.com/id-Software/quake-rerelease-qc">id-Software/quake-rerelease-qc</a> &mdash;
+        мова програмування яка була створена для скриптування рівнів: поведінки, колізій, ефектів, нові види зброї, тощо.
+        Репозиторій містить всі модифікаціє цієї мови, які були випущені для всіх останніх ремастерингів. Приклад еволюції цієї
+        мови у пізніх рантаймах Quake III.</p>
+
+<figure><code>
+case OP_NEGI:
+     EmitString( "F7 1F" );    // neg dword ptr [edi]
+     break;
+case OP_ADD:
+     EmitString( "8B 07" );    // mov eax, dword ptr [edi]
+     EmitString( "01 47 FC" ); // add dword ptr [edi-4],eax
+     EmitString( "83 EF 04" ); // sub edi,4
+     break;
+case OP_SUB:
+     EmitString( "8B 07" );    // mov eax, dword ptr [edi]
+     EmitString( "29 47 FC" ); // sub dword ptr [edi-4],eax
+     EmitString( "83 EF 04" ); // sub edi,4
+     break;
+case OP_DIVI:
+     EmitString( "8B 47 FC" ); // mov eax,dword ptr [edi-4]
+     EmitString( "99" );       // cdq
+     EmitString( "F7 3F" );    // idiv dword ptr [edi]
+     EmitString( "89 47 FC" ); // mov dword ptr [edi-4],eax
+     EmitString( "83 EF 04" ); // sub edi,4
+     break;
+</code></figure>
+
+        <h4>Комп'ютерна графіка</h4>
+
+        <p><b>Лінійні перетворення</b></p>
+
+        <p>Трансформація точки, наприклад, із світового простору у простір перегляду,
+           є однією з найбільш часто використовуваних операцій FP у 3-D у реальному часі.
+           Концептуально перетворення — це не що інше, як три скалярних добутку та три
+           додавання. Тут йдеься про підмножину загальної матриці перетворення 4x4,
+           де четвертий рядок завжди неявно [0 0 0 1]. Цієї обмеженої форми достатньо
+           для звичайних трансформацій і вона виконує на 25 відсотків менше роботи,
+           ніж повна трансформація 4x4. Перетворення розраховується як:</p>
+
+        <figure><code>
+     v1 = m11 m12 m13 m14 u1
+     v2 = m21 m22 m23 m24 u2
+     v3 = m31 m32 m33 m34 u3
+      1   0   0   0   1   1
+</code></figure>
+
+<p>або</p>
+
+        <figure><code>
+     v1 = m11u1 + m12u2 + m13u3 + m14
+     v2 = m21u1 + m22u2 + m23u3 + m24
+     v3 = m31u1 + m32u2 + m33u3 + m34.
+</code></figure>
+
+        <p>На 100 МГц Pentium теоретично можливо виконати майже 3 000 000 перетворень за секунду,
+           хоча це чисто гіпотетичне число через ефекти кешу та витрати на налаштування.
+           Тим не менш, більше 1 000 000 перетворень за секунду, безумовно, можливо;
+           при частоті кадрів 30 Гц це вражаючі 30 000 трансформацій на кадр.</p>
+
+        <figure><code>
+        fld      [vec0+0]
+        fmul     [matrix+0]
+        fld      [vec0+0]
+        fmul     [matrix+16]
+        fld      [vec0+0]
+        fmul     [matrix+32]
+        fld      [vec0+4]
+        fmul     [matrix+4]
+        fld      [vec0+4]
+        fmul     [matrix+20]
+        fld      [vec0+4]
+        fmul     [matrix+36]
+        fxch     st(2)
+        faddp    st(5),st(0)
+        faddp    st(3),st(0)
+        faddp    st(1),st(0)
+        fld      [vec0+8]
+        fmul     [matrix+8]
+        fld      [vec0+8]
+        fmul     [matrix+24]
+        fld      [vec0+8]
+        fmul     [matrix+40]
+        fxch     st(2)
+        faddp    st(5),st(0)
+        faddp    st(3),st(0)
+        faddp    st(1),st(0)
+        fxch     st(2)
+        fadd     [matrix+12]
+        fxch     st(1)
+        fadd     [matrix+28]
+        fxch     st(2)
+        fadd     [matrix+44]
+        fxch     st(1)
+        fstp     [vec1+0]
+        fstp     [vec1+8]
+        fstp     [vec1+4]
+</code></figure>
+
+        <p><b>Структури даних BSP та VSD</b></p>
+
+        <p>Найкращі речі не стаються ні легко, ні швидко, але коли вони стаються, увесь піт стає невід’ємним.
+           З точки зору графіки, Quake відповідає DOOM, як DOOM був для свого попередника Wolfenstein 3-D.
+           Quake додає справжній довільний 3-D (ви можете дивитися вгору-вниз, нахилятися і навіть падати
+           на бік), детальне освітлення та тіні, а також 3-D монстрів і гравців замість спрайтів DOOM.
+           Тривимірною проблемою Quake полягала у визначенні видимої поверхні (малювання правильної
+           поверхні на кожному пікселі), і його близьких, вибракування (відкидання невидимих полігонів
+           якомога швидше, спосіб прискорення визначення видимої поверхні). Для стислості я буду
+           використовувати абревіатуру VSD для визначення як видимої поверхні, так і вибракування.</p>
+
+        <p>Чому я вважаю VSD найважчим 3-D завданням? Хоча питання растеризації, такі як
+           відображення текстури, є захоплюючими та важливими, вони є завданнями відносно
+           обмеженого обсягу, і вони переміщуються в апаратне забезпечення, коли з’являються
+           тривимірні акселератори; Крім того, вони масштабуються лише зі збільшенням роздільної
+           здатності екрана, яке є відносно скромним.</p>
+
+        <p>Навпаки, VSD є відкритою проблемою, і зараз використовуються десятки підходів.
+           Ще важливіше те, що продуктивність VSD, виконана нехитрим способом, залежить
+           безпосередньо від складності сцени, яка має тенденцію до збільшення як
+           квадратної чи кубічної функції, тому це дуже швидко стає обмежуючим фактором
+           у відтворенні реалістичних світів. Великий рівень Quake містить близько 10000 полігонів,
+           приблизно втричі більше полігонів, ніж порівнянний рівень DOOM.</p>
+
+        <p>Перш ніж зануритися в VSD, дозвольте мені зауважити, що кожен рівень Quake зберігається
+           як одне величезне 3-D дерево BSP. Це BSP-дерево, як і будь-яке BSP, поділяє простір,
+           у цьому випадку вздовж площин багатокутників. Дерево BSP Quake не зберігає багатокутники
+           у вузлах дерева, як частину площин розбиття, а скоріше в порожніх (несуцільних) листках.
+
+        <p>Правильний порядок малювання можна отримати, малюючи листи в порядку BSP
+           спереду назад або ззаду наперед. Крім того, оскільки листи BSP завжди опуклі,
+           а багатокутники знаходяться на межах BSP, листя, звернені всередину,
+           багатокутники в даному листі ніколи не можуть закривати один одного
+           і можуть бути намальовані в будь-якому порядку. (Це загальна властивість опуклих многогранників.)</p>
+
+        <p>В ідеалі процес побудови VSD працював би так: по-перше, ви б видалили
+           всі багатокутники, які повністю знаходяться за межами кута огляду (піраміда
+           перегляду), і відрізали б нерелевантні частини будь-яких багатокутників,
+           які частково знаходяться за межами. Тоді ви намалюєте лише ті пікселі
+           кожного багатокутника, які фактично видно з поточної точки огляду,
+           не витрачаючи часу на повторне малювання пікселів. Нарешті, в ідеальному
+           світі тести для визначення того, які частини яких багатокутників видно,
+           були б безкоштовними, а час обробки був би однаковим для всіх можливих
+           точок огляду, що давало б грі плавний візуальний потік.</p>
+
+        <p>Як це трапляється, легко визначити, які багатокутники знаходяться за
+           межами всіченої поверхні або частково обрізані, і цілком можливо
+           визначити, які саме пікселі потрібно намалювати. На жаль, світ далекий
+           від досконалості, і ці тести далеко не безкоштовні, тому справжня
+           хитрість полягає в тому, як прискорити або пропустити різні тести
+           і все одно отримати бажаний результат.</p>
+
+         <p>Маючи BSP, легко й недорого ходити по світу в порядку «спереду назад»
+            або «ззаду наперед». Найпростіше рішення VSD, полягає в тому,
+            щоб просто пройти по дереву задом наперед, обрізати кожен
+            багатокутник до всіченої точки та намалювати його, якщо він
+            спрямований вперед, а не повністю обрізаний (алгоритм художника). Чи це адекватне рішення?</p>
+
+         <p>Для відносно простих світів це цілком прийнятно. Однак це не
+            дуже добре масштабується. Одна проблема полягає в тому, що в
+            міру того, як ви додаєте більше багатокутників у світі, потрібно
+            виконувати більше трансформацій і тестів, щоб вилучити багатокутники,
+            які не видно; в якийсь момент це значно знизить продуктивність.</p>
+
+        <figure><code>
+void UpdateWorld()
+{
+   HPALETTE holdpal;
+   HDC hdcScreen, hdcDIBSection;
+   HBITMAP holdbitmap;
+   UpdateViewPos();
+   memset(pDIB, 0, DIBPitch*DIBHeight);
+   TransformVertices();
+   ClipWalls();
+   DrawWallsBackToFront();
+   hdcScreen = GetDC(hwndOutput);
+   holdpal = SelectPalette(hdcScreen, hpalDIB, FALSE);
+   RealizePalette(hdcScreen);
+   hdcDIBSection = CreateCompatibleDC(hdcScreen);
+   holdbitmap = SelectObject(hdcDIBSection, hDIBSection);
+   BitBlt(hdcScreen, 0, 0, DIBWidth, DIBHeight, hdcDIBSection, 0, 0, SRCCOPY);
+   SelectPalette(hdcScreen, holdpal, FALSE);
+   ReleaseDC(hwndOutput, hdcScreen);
+   SelectObject(hdcDIBSection, holdbitmap);
+   ReleaseDC(hwndOutput, hdcDIBSection);
+   iteration++;
+}
+</code></figure>
+
+<P>Концептуально відобразити з дерева BSP дійсно так просто, але реалізація
+   дещо складніша. Повний конвеєр візуалізації, координований UpdateWorld(), такий:</p>
+
+<p>1) Оновити поточне місцезнаходження.<br>
+   2) Перетворіть усі кінцеві точки стін у простір огляду (світ, який видно з поточного місця під поточним кутом огляду).<br>
+   3) Прикріпіть усі стіни до піраміди огляду.<br>
+   4) Спроектуйте вершини стіни в координати екрана.<br>
+   5) Пройдіть по стінах задом наперед і для кожної<br>
+      стіни, яка принаймні частково лежить у піраміді перегляду,
+      виконайте вибракування зворотного боку (пропустіть стіни,
+      спрямовані від глядача), і намалюйте стіну, якщо вона не вилучена.</p>
+
+        <h4>Похідні твори</h4>
+
+        <p><b>Quake III Arena</b></p>
+
+        <p>Багатокористувацький шутер від першої особи, випущений 2 грудня 1999 року.
+           Він відрізняється від інших ігор із серії Quake (не враховуючи Quake Live) тим, що в
+           ньому жертвують режимом для одного гравця, щоб зосередитися на багатокористувацькій грі.
+           Його одиночний сегмент майже ідентичний багатокористувацьким боям, хоча інші гравці замінені ботами.</p>
+
+        <p>Серед відомих особливостей Quake III — мінімалістичний дизайн, відсутність
+           рідко використовуваних предметів і функцій, широке налаштування налаштувань
+           гравця, таких як поле зору, деталізація текстури та модель ворога, а також
+           розширені функції руху, такі як стрейф-джампінг, які дають більшу швидкість
+           із більшою навички на відміну від цифрового дизайну багатьох комп’ютерних
+           ігор «все або нічого».</p>
+
+        <p><b>American McGee's Alice</b></p>
+
+        <p>American McGee's Alice, або просто Alice, — пригодницька відеогра, розроблена Rogue
+          Entertainment і видана Electronic Arts. Він був випущений 6 жовтня 2000 року для ПК
+          і 20 липня 2001 року для Mac.</p>
+
+        <figure><img src="img/alice.png"></figure>
+
+    <p>Апарат:</p>
+    <hr>
+
+<p>[1]. <a href="https://www2.eecs.berkeley.edu/Pubs/TechRpts/1992/CSD-92-708.pdf">S.J.Teller. Visibility Computations in Densely Occluded Polyhedral Environments. University of California, PhD, 1992.</a> <br>
+   [2]. <a href="https://www.cs.princeton.edu/courses/archive/spring01/cs598b/papers/bishop98.pdf">L.Bishop, D.Eberly, T.Whitted, M.Finch, M.Shantz. Designing a PC Game Engine. IEEE CGA, 1998.</a> <br>
+   [3]. <a href="http://171.67.77.70/courses/cs448-00-spring/q3ashader_manual.pdf"> P.Jaquays, B.Hook. Quake III Arena Shader Manual Revision #12. CS448. 1999.</a> <br>
+   [4]. <a href="https://annals-csis.org/Volume_21/drp/pdf/3.pdf">D.Pohl, S.Panneer, D.S.Vembar, C.S.Marshall.  15 Years Later: A Historic Look Back at "Quake 3: Ray Traced". IEEE FEDCSIS. 2020.</a> <br>
+   [5]. <a href="http://www.cs.ucy.ac.cy/courses/EPL426/courses/eBooks/ComputerGraphicsPrinciplesPractice.pdf">J.F.Hughes, A.Van Dam, M.McGuire, D.F.Sklar, J.D.Foley, S.K.Feiner, K.Akeley. Computer Graphics Principles and Practice. 2014.</a> <br>
+   [6]. <a href="https://research.cs.wisc.edu/graphics/Gallery/Stylized/style.pdf">A.Mohr, M.Gleicher. Non-Invasive, Interactive, Stylized Rendering. ACM, 2001.</a> <br>
+   [7]. <a href="http://www.cs.unc.edu/~adyilie/comp238/Final/Final.htm">A.Ilie. Non-Photorealistic Rendering Techniques for a Game Engine. COMP 238, 2008.</a> <br>
+   [8]. <a href="https://arstechnica.com/gaming/2019/12/how-much-of-a-genius-level-move-was-using-binary-space-partitioning-in-doom/">ARS Technica. How much of a genius-level move was using binary space partitioning in Doom? 2019</a> <br>
+   [9]. <a href="https://fabiensanglard.net/b/gebbdoom.pdf">F.Sanglard. Game Engine Black Book. 1992.</a> <br>
+   [10]. <a href="https://www.jagregory.com/abrash-black-book/#chapter-64-quakes-visible-surface-determination">M.Abrash. Michael Abrash’s Graphics Programming Black Book, Special Edition. 1997.</a> <br>
+   [11]. J.D.Foley et al., Computer Graphics: Principles and Practice, Addison Wesley, 1990</br>
+   [12]. <a href="https://quake.fandom.com/wiki/Quake">https://quake.fandom.com/wiki/Quake</a>
+
+ </p>
+
+</section>
+</main>
+<footer>Максим Сохацький</footer>
+</body>
+</html>

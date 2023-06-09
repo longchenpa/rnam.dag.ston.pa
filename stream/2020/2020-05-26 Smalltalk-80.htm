@@ -1,0 +1,205 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2020-05-26</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2020-05-26</a>
+</nav>
+<main>
+    <section>
+    <h3>Smalltalk-80</h3>
+        <p align=right>
+FROM: Максим Сохацкий<br/>
+TO: <a href="https://groupoid.github.io/languages/index.html">Енциклопедія Мов Програмування</a>
+</p>
+
+    <figure><img src="img/Smalltalk80.jpg"/></figure>
+
+    <p>Одразу хочу сказати, що пост буде абсолютно необ'єктивним і ірраціональним,
+       адже мова сьогодні буде йти про ООП. Якщо серйозно говорити про ООП, або намагатися
+       хоча б, то в більшості випадків --- це все, звичайно, треті культурні феномени
+       за винятком лише напевно ООП в залежних типах від Луки Карделлі і, ось, Смолтолк-80.</p>
+
+    <p>Я був народжений у світі, в якому вже існувало функціональне програмування,
+       але ООП ще не було, воно з’явилося на моїх очах. Ми обговорювали в курилці:
+       чи може ООП замінити масиви з типизованими вказівниками на Паскалі чи ні?
+       Коли я нарешті зрозумів нашо воно потрібно, я зрозумів також і те, що ООП радості
+       мені не принесе, і через 5 років робочої практики я втік з ООП, відкотившись
+       до функціонального програмування в 70-і, де і залишився до цих пор, а працюю
+       на віртуальній машині, створеній у 80-х.</p>
+
+    <p>Зараз же я хочу скористатися можливістю пропіарити Смоллтолк-80 і філософію
+       мінімалізму в індустрії програмного забезпечення на його прикладі, хоча,
+       звичайно, ніхто не думав, в той час, що це компактна система.</p>
+
+    <p>Якщо ви пам'ятаєте історію про Стіва Джобса, то за легендою він іде в
+       компанію XEROX PARC (ПКБ АСУ НДІ в Пало Альто), де бачить Smalltalk-80 і починає
+       створення Apple Macintosh. Таким чином, це не тільки одна з перших ООП
+       систем, але і перший у світі промисловий графічний інтерфейс. Алан Кей і
+       рібята, які вже потім підтянулися, так що простіть, згадувати їх не буду.
+       Основний автор книг, популяризатор, комерціализатор і ключова людина
+       проекту — Адель Голберг. Вона не лише офіційний автор мови Smalltalk-80,
+       але й керівник проекту.</p>
+
+    <p>Технічно, Smalltalk-80 представляє собою компактну віртуальну машину з
+       примітивами для виклику повідомлень, управління стеком і реєстрами.
+       Все це лінкується разом із графічним біт-бліттером і безпосереднім
+       обробником вводу-виводу. В умовах елементної бази минулого це все
+       повинно поміститися в 64KB ROM. Поверх цього ядра будується графічний
+       інтерфейс і простір із зліпка файлів програм, які послідовно
+       завантажуються в пам'ять і редагуються в графічному експлорері,
+       який став прототипом для файлових навігаторів NeXT, Mac, OCaml.
+       У цьому об'єктному браузері та воркспейсі ви можете редагувати
+       та виконувати будь-який участок коду системи, включаючи оновлення
+       коду планувальника. У системі завжди доступна можливість вийти в
+       дебаггер, переписати світ і повернутися в контекст, але і його
+       можна змінити. Природньо, підтримується можливість зберегти
+       контекст віртуальної машини і перенести його на іншу платформу — фіча,
+       яка визначає першокультурність середовища хакера або просто сучасного
+       розробника. В такий першокультурний клас системи входять, нажаль,
+       тільки лісп-машини LMI і Symbolics. Навіть Ерланг і APL не дотягнули
+       до цього класу. Фактично, сьогодні такі системи нікому не потрібні,
+       ніхто не інвестує гроші в це (хіба, що в юнікернели, і то у вигляді
+       жалюгідних университетських грантів), це таємне знання, яке передається
+       тільки від майстра учневі.</p>
+
+     <p>При запуску системи ви отримували робочий стіл з віконним менеджером,
+       файловим редактором, дебагером, графічним редактором і базовою бібліотекою.
+       Реалізувавши це все в такому обсязі, можна вмістити всю реалізацію на одному диску,
+       базовий "образ", який представляє собою варіацію архіву tar
+       розміром 1,5 МБ (у цей час бобіна) у PLAIN TEXT Smalltalk-80.</p>
+
+     <p>Довший час колишні співробітники XEROX інвестували свій час спочатку в
+        Squeak, потім почали в Pharo, але ці системи перероблені вже значно,
+        не володіли автентичністю XEROX і запустити оригінальні образи було
+        ні в чому. У карантині 2020 року Ден Банай вирішив написати свою осучаснену імплементацію
+        Smalltalk-80, яка здатна запустити оригінальний смолтолківський образ від науково-дослідного інституту XEROX PARC
+        та доступний прямо на Github — Smalltalk-80! Тепер ІТ-археологи можуть
+        запустити оригінальне першокультурне робоче середовище та переглянути,
+        яким воно було в 1980 році, не лише на Tektronix 4406, але й на Windows,
+        Linux і Mac. Можливо навіть зклепати на Ардуїно мікрокомп'ютер з
+        відеоадаптером, який буде крутити виключно Smalltalk-80.</p>
+
+     <p>У той момент я думав, що операційні системи минулого потрібно
+        навчати з BeOS, а юнікернели тільки з Erlang (LING) і OCaml (Mirage), але зараз
+        бачу, що Smalltalk-80 цілком міг би стати опорною базою для
+        уніфікованого середовища, яке могло б створити конкуренцію
+        на ринку юнікернелів (ну або як мінімум класифікуватися таким чином).
+        Все в цій імплементації і красиво і на своєму місці,
+        цілком допускаю, що робив дуже близький по духу автор, автор який говорить,
+        що, хоча писав по "Синій Книзі", бачимо його таку глибоку імперсоніфікацію,
+        що його сміливо можна назвати співавтором віртуальної машини. Стріпнутий
+        бінарник на маці мінімум 120КБ, а на вінді всі 300КБ. З поправкою
+        на релокейшин таблиці в 64-бітних платформах цілком допускаю,
+        що на 8-бітній платформі можна засунути реалізацію в 64 КБ.
+        Ну ось ERP на Smalltalk-80 можна писати прямо зараз :-) Всі,
+        хто так або інакше хоче познайомитися з першокультурним ООП,
+        пропоную завантажити і збілдити Smalltalk-80 з гітхаба, і приділити
+        пру днів вихідним файлам.</p>
+
+       <h3>Граматика</h3>
+
+    <figure><code style="font-size:8pt;">
+  Character = ? Any Unicode character ?;
+  WhitespaceCharacter = ? Any space, newline or horizontal tab character ?;
+  DecimalDigit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+  Letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M"
+         | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
+         | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m"
+         | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z";
+  CommentCharacter = Character - '"';
+  Comment = '"', {CommentCharacter}, '"';
+  OptionalWhitespace = {WhitespaceCharacter | Comment};
+  Whitespace = (WhitespaceCharacter | Comment), OptionalWhitespace;
+  LetterOrDigit = DecimalDigit | Letter;
+  Identifier = (Letter | "_"), {(LetterOrDigit | "_")};
+  Reference = Identifier;
+  ConstantReference = "nil" | "false" | "true";
+  PseudoVariableReference = "self" | "super" | "thisContext";
+  ReservedIdentifier = PseudoVariableReference | ConstantReference;
+  BindableIdentifier = Identifier - ReservedIdentifier;
+  UnaryMessageSelector = Identifier;
+  Keyword = Identifier, ":";
+  KeywordMessageSelector = Keyword, {Keyword};
+  BinarySelectorChar = "~" | "!" | "@" | "%" | "&#38;" | "*" | "-" | "+" | "=" | "|" | "\" | "&#60;" | "&#62;" | "," | "?" | "/";
+  BinaryMessageSelector = BinarySelectorChar, [BinarySelectorChar];
+  IntegerLiteral = ["-"], UnsignedIntegerLiteral;
+  UnsignedIntegerLiteral = DecimalIntegerLiteral | Radix, "r", BaseNIntegerLiteral;
+  DecimalIntegerLiteral = DecimalDigit, {DecimalDigit};
+  Radix = DecimalIntegerLiteral;
+  BaseNIntegerLiteral = LetterOrDigit, {LetterOrDigit};
+  ScaledDecimalLiteral = ["-"], DecimalIntegerLiteral, [".", DecimalIntegerLiteral], "s", [DecimalIntegerLiteral];
+  FloatingPointLiteral = ["-"], DecimalIntegerLiteral, (".", DecimalIntegerLiteral, [Exponent] | Exponent);
+  Exponent = ("e" | "d" | "q"), [["-"], DecimalIntegerLiteral];
+  CharacterLiteral = "$", Character;
+  StringLiteral = "'", {StringLiteralCharacter | "''"}, "'";
+  StringLiteralCharacter = Character - "'";
+  SymbolInArrayLiteral = UnaryMessageSelector - ConstantReference | KeywordMessageSelector | BinaryMessageSelector;
+  SymbolLiteral = "#", (SymbolInArrayLiteral | ConstantReference | StringLiteral);
+  ArrayLiteral = ObjectArrayLiteral | ByteArrayLiteral;
+  ObjectArrayLiteral = "#", NestedObjectArrayLiteral;
+  NestedObjectArrayLiteral = "(", OptionalWhitespace,
+        [LiteralArrayElement, {Whitespace, LiteralArrayElement}], OptionalWhitespace, ")";
+  LiteralArrayElement = Literal - BlockLiteral | NestedObjectArrayLiteral | SymbolInArrayLiteral | ConstantReference;
+  ByteArrayLiteral = "#[", OptionalWhitespace,
+        [UnsignedIntegerLiteral, {Whitespace, UnsignedIntegerLiteral}], OptionalWhitespace,"]";
+  FormalBlockArgumentDeclaration = ":", BindableIdentifier;
+  FormalBlockArgumentDeclarationList = FormalBlockArgumentDeclaration, {Whitespace, FormalBlockArgumentDeclaration};
+  BlockLiteral = "[", [OptionalWhitespace, FormalBlockArgumentDeclarationList, OptionalWhitespace, "|"],
+        ExecutableCode, OptionalWhitespace, "]";
+  Literal = ConstantReference | IntegerLiteral | ScaledDecimalLiteral  | FloatingPointLiteral
+          | CharacterLiteral | StringLiteral | SymbolLiteral | ArrayLiteral | BlockLiteral;
+  NestedExpression = "(", Statement, OptionalWhitespace, ")";
+  Operand = Literal | Reference | NestedExpression;
+  UnaryMessage = UnaryMessageSelector;
+  UnaryMessageChain = {OptionalWhitespace, UnaryMessage};
+  BinaryMessageOperand = Operand, UnaryMessageChain;
+  BinaryMessage = BinaryMessageSelector, OptionalWhitespace, BinaryMessageOperand;
+  BinaryMessageChain = {OptionalWhitespace, BinaryMessage};
+  KeywordMessageArgument = BinaryMessageOperand, BinaryMessageChain;
+  KeywordMessageSegment = Keyword, OptionalWhitespace, KeywordMessageArgument;
+  KeywordMessage = KeywordMessageSegment, {OptionalWhitespace, KeywordMessageSegment};
+  MessageChain = UnaryMessage, UnaryMessageChain, BinaryMessageChain, [KeywordMessage]
+               | BinaryMessage, BinaryMessageChain, [KeywordMessage] | KeywordMessage;
+  CascadedMessage = ";", OptionalWhitespace, MessageChain;
+  Expression = Operand, [OptionalWhitespace, MessageChain, {OptionalWhitespace, CascadedMessage}];
+  AssignmentOperation = OptionalWhitespace, BindableIdentifier, OptionalWhitespace, ":=";
+  Statement = {AssignmentOperation}, OptionalWhitespace, Expression;
+  MethodReturnOperator = OptionalWhitespace, "^";
+  FinalStatement = [MethodReturnOperator], Statement;
+  LocalVariableDeclarationList = OptionalWhitespace, "|", OptionalWhitespace,
+        [BindableIdentifier, {Whitespace, BindableIdentifier}], OptionalWhitespace, "|";
+  ExecutableCode = [LocalVariableDeclarationList], [{Statement, OptionalWhitespace, "."}, FinalStatement, ["."]];
+  UnaryMethodHeader = UnaryMessageSelector;
+  BinaryMethodHeader = BinaryMessageSelector, OptionalWhitespace, BindableIdentifier;
+  KeywordMethodHeaderSegment = Keyword, OptionalWhitespace, BindableIdentifier;
+  KeywordMethodHeader = KeywordMethodHeaderSegment, {Whitespace, KeywordMethodHeaderSegment};
+  MethodHeader = UnaryMethodHeader | BinaryMethodHeader | KeywordMethodHeader;
+  MethodDeclaration = OptionalWhiteSpace, MethodHeader, ExecutableCode;
+     </code></figure>
+
+    <br/>
+    <hr>
+    <br/>
+
+    <p> [1]. <b><a href="http://sdmeta.gforge.inria.fr/FreeBooks/BitsOfHistory/BitsOfHistory.pdf">Smalltalk-80. Bits of History, Words of Advice</a></b>. Glenn Krasner. 1984.<br/>
+        [2]. <b><a href="http://stephane.ducasse.free.fr/FreeBooks/BlueBook/Bluebook.pdf">Blue Book. Smalltalk-80: The language and its implementation</a></b>. <br/> Adele Goldberg and David Robson. 1983.<br/>
+        [3]. <b><a href="https://moritzfuerst.net/projects/smalltalk-type">Moritz F. Fürst. Smalltalk Type. 2023</a><br/>
+        [4]. <b><a href="https://github.com/dbanay/Smalltalk">Dan Banay. Smalltak-80. 2021</a>
+    </p>
+
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2021</footer>
+</body>
+</html>

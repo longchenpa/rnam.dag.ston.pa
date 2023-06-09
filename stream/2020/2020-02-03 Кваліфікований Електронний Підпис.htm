@@ -1,0 +1,134 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2020-02-03</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2020-02-03</a>
+</nav>
+<main>
+    <section>
+        <h3>Кваліфікований Електронний Підпис</h3>
+
+        <p>Кваліфікований Електронний Підпис, або Кваліфіклована Електронна Печатка ---
+           це набір стандартів криптографічного захисту ДСТУ 4145,
+           та міжнародних стандартів які визначають його конверт: X.501, X.509, X.511, X.520.</p>
+
+        <p>Серія міжнародних стандартів X.500, групується по категоріям, кожна
+           з яких має свій перелік ASN.1 файлів. Аби підключити усі визначення необхідні
+           для КЕП використані наступі компоненти стандартів (виділені болдом):
+            X.501 ---
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x501/2019/BasicAccessControl.html"><b>BasicAccessControl</b></a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x501/2019/InformationFramework.html"><b>InformationFramework</b></a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x501/2019/UsefulDefinitions.html"><b>UsefulDefinitions</b></a>;
+X.509 ---
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x509/2019/ExtensionAttributes.html">SpkmGssTokens</a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x509/2019/PkiPmiExternalDataTypes.html">PkiPmiExternalDataTypes</a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x509/2019/AttributeCertificateDefinitions.html">AttributeCertificateDefinitions</a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x509/2019/AlgorithmObjectIdentifiers.html">AlgorithmObjectIdentifiers</a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x509/2019/AuthenticationFramework.html"><b>AuthenticationFramework</b></a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x509/2019/CertificateExtensions.html"><b>CertificateExtensions</b></a>;
+X.511 ---
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x511/2019/SpkmGssTokens.html">SpkmGssTokens</a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x511/2019/DirectoryAbstractService.html"><b>DirectoryAbstractService</b></a>,
+X.520 ---
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x520/2019/PasswordPolicy.html">PasswordPolicy</a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x520/2019/UpperBounds.html"><b>UpperBounds</b></a>,
+<a href="https://www.itu.int/ITU-T/formal-language/itu-t/x/x520/2019/SelectedAttributeTypes.html"><b>SelectedAttributeTypes</b></a>.
+         Можно було би винести необхідні визначення одразу в <a href="https://github.com/synrc/ca/blob/master/priv/kep/KEP.asn1">KEP.asn1</a>, однак
+         цим хотілося підкреслити сумісність з міжнародними стандартами. Окрім серії
+         протоколів X.500, КЕП ще визначає також запити та відповіді OCSP, також у ASN.1 форматі.
+         </p>
+
+         <p>На відміну від самого алгоритму КЕП, який визначено ДСТУ 4145,
+            конверти визначаються не стандартами, а наказами міністерства юстиції:
+         <a href="http://www.dsszzi.gov.ua/dsszzi/control/uk/publish/article?art_id=77726">Проект наказу Адміністрації Держспецзв'язку та Держкомінфоматизації (2009)</a>,
+         <a href="https://zakon.rada.gov.ua/laws/show/z1401-12">Наказ Міністерства юстиції України 1236/5/453</a>.
+         Керуючись цими нормативними документами було створено файл <a href="https://github.com/synrc/ca/blob/master/priv/kep/KEP.asn1">KEP.asn1</a>,
+         який є одним з трьох top-level файлів необхідниї для компіляції ASN.1 компілятором.
+         </p>
+
+         <p>Існує небагато безкоштовних та повних компіляторів (генераторів парсерів)
+            ASN.1 специфікацій. Erlang є прикладом системи, до складу якої входить
+            першокласний безкоштовний з відкритою ліценцією ASN.1 компілятор, де
+            файли в ASN.1 нотації можуть бути зкомпільовані безпосередньо Erlang компілятором:</p>
+         <figure><code> $ erlc AuthenticationFramework.asn1
+ $ erlc InformationFramework.asn1
+ $ erlc KEP.asn1</code></figure>
+         <p>Створити файл підпису PKCS-7 можна за допомогою будь якої програми сертифікованої в Україні.
+            Найпростіше отримати свою КЕП печатку будучи клієнтом ПриватБанку. За допомогою
+            "Користувача ЦСК" компанії ІІТ ви можете підписувати файли використовуючи безкоштовну
+            форму приватного ключа у вигляді звичайного файлу.</p>
+         <p>Щоб показати як користуватися КЕП, та прочитати атрибутивну інформацію з сертифікату,
+            який вшитий в PCKS-7 повідомлення з криптографічним підписом, покажемо 5 функцій:</p>
+         <figure><code>
+  Record.defrecord(:certAttrs,
+     serial: "", cn: "", givenName: "", surname: "",
+     o: "", title: "", ou: "", c: "", locality: "")
+
+  def extract(code, person) do
+    case :lists.keyfind(code, 2, person) do
+      false -> ""
+      {_, _, {:printable, str}} -> str
+      {_, _, {:utf8, str}} -> str
+    end
+  end
+
+  def parseSignData(bin) do
+    {_, {:ContentInfo, _, ci}} = :KEP.decode(:ContentInfo, bin)
+    {:ok, {:SignedData, _, alg, x, c, x1, x2}} = :KEP.decode(:SignedData, ci)
+    parseSignDataCert({alg,x,c,x1,x2})
+  end
+
+  def parseSignDataCert({_,_,:asn1_NOVALUE,_,_}), do: []
+  def parseSignDataCert({_,_,[cert],_,_}), do: parseCert(cert)
+
+  def parseCert(cert) do
+    {:Certificate, a, _, _} = cert
+    {:Certificate_toBeSigned, _, _, _, issuer, _, issuee, _, _, _, _} = a
+    person = :lists.flatten(:erlang.element(2, issuee))
+    ca = :lists.flatten(:erlang.element(2, issuer))
+    {parseAttrs(person),parseAttrs(ca)}
+  end
+
+  def parseAttrs(attrs) do
+    certAttrs(
+      o: extract({2, 5, 4, 10}, attrs),
+      ou: extract({2, 5, 4, 11}, attrs),
+      title: extract({2, 5, 4, 12}, attrs),
+      cn: extract({2, 5, 4, 3}, attrs),
+      givenName: extract({2, 5, 4, 42}, attrs),
+      surname: extract({2, 5, 4, 4}, attrs),
+      locality: extract({2, 5, 4, 7}, attrs),
+      serial: extract({2, 5, 4, 5}, attrs),
+      c: extract({2, 5, 4, 6}, attrs)
+    )
+  end
+</code></figure>
+         <p>У результаті отримуємо наступний високорівневий інтерфейс:</p>
+         <figure><code> > {:ok,bin} = :file.read_file("priv/5HT.p7s")
+ > KEP.parseSignData bin
+ {{:certAttrs, "1786046", "СОХАЦЬКИЙ МАКСИМ ЕРОТЕЙОВИЧ",
+   "МАКСИМ ЕРОТЕЙОВИЧ", "СОХАЦЬКИЙ",
+   "СОХАЦЬКИЙ МАКСИМ ЕРОТЕЙОВИЧ",
+   "Електронна печатка", "", 'UA', "КИЇВ"},
+  {:certAttrs, "UA-14360570-2018", "АЦСК АТ КБ «ПРИВАТБАНК»",
+   "", "",
+   "АКЦІОНЕРНЕ ТОВАРИСТВО КОМЕРЦІЙНИЙ БАНК «ПРИВАТБАНК»",
+   "", "АЦСК", 'UA', "Київ"}}</code></figure>
+    </section>
+    <p>Даний код можна знайти як частину нашої <a href="https://github.com/synrc/ca">synrc/ca</a> бібліотеки:
+   🛡️ CA: Certificate Authority — <a href="https://ca.erp.uno">ca.erp.uno</a></p>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2021</footer>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2018-11-13</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2018-11-13</a>
+</nav>
+<main>
+    <section>
+        <h3>Новая версия REVIEW 1.10</h3>
+        <p>
+Как вы знаете у нас после 5 лет осталось всего 2 поддерживаемых
+демонстрационных приложения для N2O — это SAMPLE (трехстрочечная
+страница которая генерируется вместе с приложением с помощью скафолдинга MAD)
+и REVIEW (тоже чат, но с загрузкой файлов по вебсокетам и значительно
+больше как приложение).
+        </p><p>
+Год назад, после анонса N2O TT (Telemetry Transport), первого в мире
+веб-фреймворка способного работать без веб сервера (например чистый
+MQTT over TCP/TLS для мобильных клиентов и с автоматическим прокси
+через WebSockets если нада), мы обновили и REVIEW приложение, которое
+с минимальными модификациями было запущено поверх MQTT протокола
+(появилась новая клиентская библиотека для работы поверх Paho — mq.js).
+        </p><p>
+Наличие MQTT брокера позволило выбросить целые слои N2O, такие как
+слой абстрагирования над MQ библиотеками (SYN, GPROC), сессии (так
+как MQTT брокер сам управляет сессиями, а сам MQTT протокол является
+протоколом сессионного уровня и может работать даже поверх UDP), URI парсер, и т.д.
+Поэтому хоть наличие MQTT брокера делает N2O решение более тяжеловесным, зато
+в тоже время, делает его и более зрелым. Сама задача по унифицации RCP over MQ
+вместе с одноканальной/однотопиковой схемой подключения вебсокетов помогла
+значительно переработать тракт N2O и сделать его действительно легковесным и гибким. 
+        </p><p>
+Как известно N2O — это унифицированый роутер для встраивания в HTTP, TCP или MQTT сервера.
+Первая версия REVIEW MQTT работала одновременно с mochiweb (для автоматического проксирования TCP по WebSockets)
+и cowboy (для отгрузки статики). Новая версия REVIEW MQTT отвязано полностью
+от cowboy (статика сервится через mochiweb), а также включена в скафолдинг MAD,
+теперь создать mqtt приложение просто:
+        </p>
+        <figure><code>
+ $ mad app mqtt review && cd review
+ $ mad dep com pla rep
+        </code></figure>
+        <p>
+Осталось отвязать esockd, emqttd и emd_dashbord (минимальный комплект поставки сервера EMQ)
+от lager, gen_logger, goldrush, таким образов уменьшив комплектацию REVIEW еще на 3 библиотеки.
+        </p><p>
+Также в связи с рефакторингом REVIEW немного измелась сама странца N2O TT.
+Обновленные страницы:
+        </p><p>
+<a href="https://review.n2o.dev">https://review.n2o.dev</a>
+        </p>
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2019</footer>
+</body>
+</html>

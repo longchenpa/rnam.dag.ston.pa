@@ -1,0 +1,771 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2023-02-01 FormalTalk: ERP/1 Compiler</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2023-02-01</a>
+</nav>
+<main>
+    <section>
+
+        <h3>FormalTalk-23: ERP <b class=select>/1</b> Compiler</h3>
+
+        <h4>Декларативна мова <br>
+            з обмеженими імперативними властивостями<br>
+            для програмування «МІА: Документообіг» 1.0</b></h4>
+
+        <h3>Передмова</h3>
+
+        <p>Колись в мене була мрія зробити ERP систему зі своєю мовою програмування, це
+           означало би, що ERP система достатньо формалізована і стабільна.
+           Ця мова бачилася мені максимально обмеженою і простою, на рівні конфігураційних скриптів.
+           Головним чином мова створена для реконфігурації маршрутів документів по папках,
+           для чого потрібна рекомпіляція ерланг модулів. Також мова анонсує поки що єдиний
+           імперативний оператор, що дозволяє перепаковувати документи та їх поля.
+           В майбутньому — це повноцінна мова для модулів бізнес-процесів BPE, схем даних KVS,
+           та візуальних форм.
+           </p>
+
+
+        <figure><img style="margin-top:10px; border: 0;" src="FT-23.svg"></figure>
+
+        <p align=right>м.Вишневе, 2023</p>
+
+        <h3>Анотація</h3>
+
+        <p>Основна ідея та мотивація — створити DSL навколо бібліотек ERP/1 [KVS,BPE,NITRO,FORM]
+           з повним контролем над оператором <b class=sel>call</b>, а також нерекурсивним
+           імреративним оператором присвоювання <b class=sel>assign</b>. Інші синтаксичні
+           конструкції — декларативні, що відображені в операторах <b class=sel>route</b>,
+           <b class=sel>result</b>, <b class=sel>document</b>, <b class=sel>notify</b>.
+           Окремі частини (преамбули) синтаксичних конструкцій <b class=sel>form</b> і <b class=sel>event</b>
+           можуть містити імперативну прелюдію для підготування змінних, яка складається
+           з послідовності імперативних операторів.
+        </p>
+
+        <p>Мова підтримує маніпуляцію списками, деконструкцію структур, паттерн-мачінг,
+         систему аксесорів до структур, система типів — мінімально-необхідна для
+         компіляції в BEAM байт-код та унаслідована від системи типів Erlang AST.
+         У мові відсутні синитаксичні конструкції циклів, умовних операторів та
+         неконтрольованої рекурсії. Однак, неконтрольовану рекурсію можна створити
+         в BPMN дефініціях (як корекурсивний процес), тому верифікатор моделей BPE який
+         перевіряє FormalTalk BPE файл містить детектор циклів в call-графах.</p>
+
+        <p>У статті представлена конфігурація системи «МІА: Документообіг» на
+           анонсованій мові програмування «FormalTalk» або <b class=sel>ft</b>.
+           Розкажемо тут тільки
+           як компілювати патерн-мачінг правила для функцій routeTo та routeFrom,
+           які використовуються для визначення папок користувачів, які отримають посилання
+           на поточний документ на певній стадії обробки.</p>
+
+        <h3>Нотація Бекуса-Наура</h3>
+
+        <p>Мова підтримує три типи файлів: KVS, FORM, BPE. Кожен модуль може містити
+           наступні синтаксичні конструкції: <b class=sel>import</b> (нефункіональна); <b class=sel>record</b>,
+           <b class=sel>event</b>, <b class=sel>route</b>, <b class=sel>form</b>,
+           <b class=sel>notice</b> (функціональні).
+           Кожна синтаксична функціональна конструкція містить свій обмежений спосіб компіляції патерн-мачінга
+           для певного класу функцій, що використовуються в МІА:Документообіг.</p>
+
+        <figure><code>mod     := 'module' name spec clauses
+spec    := 'kvs' | 'bpe' | 'form'
+name    := word | binary | string
+args    := [] | name args
+clause  := 'import' name
+         | 'record' name args dec
+         | 'notice' name args dec
+         | 'event'  name args dec
+         | 'route'  name args dec
+         | 'form'   name args dec
+
+dec     := 'begin' decls 'end'
+clauses := clause | clause clauses
+decls   := decl | decl '|' decls
+decl    := word '=' args ':' union
+         | word '=' args
+         | args
+         | 'document' word word '[' buttons ']' '[' fields ']'
+         | 'result' '[' conts ']' args
+
+union   := args | args '+' union
+conts   := args | args '|' conts
+fields  := args | args '|' fields
+buttons := args | args '|' buttons
+</code></figure>
+
+        <h3>Слова мови</h3>
+
+        <p>Будь-яка послідовність слів мови розділених пробілом
+           трактується як імʼя функції і її аргументи:<p>
+
+        <figure><code>args := [] | word args</code></figure>
+
+        <p>Якщо <b class=sel>args</b> використовується в декларативних конструкціях,
+           то всі слова означаються параметри, якщо ж args використовуються
+           в імперативних конструкціях <b class=sel>decls</b>, то перший
+           аргумент означає імʼя функції, як в <b class=sel>call</b>, <b class=sel>assign</b>. </p>
+
+        <p>Оскільки мотивація <b class=sel>ft</b> — це мінімізація
+           неконтрольованої рекурсії, всі викливи функцій повинні бути
+           контрольованими або бібліотечними, а сам компілятор
+           повинен знаходити та ідентифікувати цикли в call-графах.
+           Тому компілятор <b class=sel>ft</b> розуміє тільки
+           вручну додані схеми компіляції для певного словника вбудованих
+           чи розширюваних функцій.</p>
+
+        <p>Слова, які входять до складу <b class=sel>args</b> можуть бути типізованими
+           або нетипізованими. Якщо в середині слова зустрічається символ <b class=sel>:</b>,
+           то таке слово типізоване.</p>
+
+        <figure><code>terminal := binary | list | atom | int
+    word := terminal—':'—terminal | terminal </code></figure>
+
+        <p>Друге слово <b class=sel>terminal</b> після <b class=sel>:</b>
+           визначає наступні скорочення:</p>
+
+        <figure><code>"\"...\"" — binary
+"'...'" — list
+":..." — atom
+"..." — var
+</code></figure>
+
+        <p>Приклади:</p>
+
+        <figure>
+        <code>123:integer
+commit:atom == :commit
+'commit' == commit:list
+commit == commit:var</code></figure>
+
+        <h3>Аксесори структур</h3>
+
+        <p>Аксесор крапка <b class=sel>.</b> є синтаксичною
+        конструкцією доступу до іменованих структур полів.
+        Якщо слово мови містить аксесор <b class=sel>.</b> —
+        це означає, що слово зліва повинно містити типову специфікацію,
+        яка містить словник всіх полів, з яким буде звірятися слово справа.</p>
+
+        <p>Аксесор тільда <b class=sel>~</b> є синтаксичною конструкцією
+        доступу до іменованих структур обʼєктів, які не містять типової
+        інформації, такі як <b class=sel>map</b>, <b class=sel>dict</b>. </p>
+
+        <p>У випадку коли аксесор тільда <b class=sel>~</b> застосовується
+        до елементів типів-структур — застосовується схема компіляції :kvs.getfield, :kvs.setfield.
+        У випадку коли аксесор крапка <b class=sel>~</b> застосовується
+        до елементів типів-структур — застосовується схема компіляції
+        безпосередньої маніпуляції зі структурами <b class=sel>{</b>,
+        <b class=sel>}</b>, описаними в наступному параграфі. </p>
+
+        <h3>Списки та структури</h3>
+
+        <p>Якщо слово містить на свому початку та кінці символи
+           <b class=sel>[</b> і <b class=sel>]</b>, воно визначає
+           синтаксичну конструкцію формування списків <b class=sel>list</b>,
+           <b class=sel>dict</b> та <b class=sel>map</b>. Елементи
+           списків — окремі слова — перелічуються через кому <b class=sel>,</b>.
+           Вони можуть бути: змінними, словами з аксесорами,
+           типізованими змінними та контстантами. Колои елементи списку
+           містять рівність <b class=sel>=</b> вони формують структуру <b class=sel>dict</b>.
+           Коли елементи списку містять <b class=sel>-></b> вони формують
+           структуру <b class=sel>map</b>. Приклади:</p>
+
+        <figure>
+        <code>[x] — cons(x,[])
+[a=1,b=2] — dict([{a,1},{b,2}])
+[a=>1,b=>2] — map([{a,1},{b,2}])
+[x.id,y.cat] — cons(access(id,x),
+               cons(access(cat,y),[])
+</code></figure>
+
+        <p>Якщо слово мови містить в кінці символ <b class=sel>}</b>,
+        а також символ <b class=sel>{</b> в середині або на початку,
+        то таке слово визначає конструктор стркутури або її паттерн-мачінг (деконструктор).
+        Якщо символ <b class=sel>{</b> зустрічається в середині
+        слова, то символи від початку до нього визначають тип структури-конструктора
+        або змінну цього типу, як показано в прикладах:</P>
+
+        <figure>
+        <code>{x,y} — tuple([x,y])
+ERP.Person{x=a,y=b} — record("ERP.Person",[{x,a},{y,b}])
+a{x=1} — record(inferType("a"),[{x,1}])</code></figure>
+
+        <h3>Конфігурація «МІА: Документообіг»</h3>
+
+        <p>Тут показана конфігурація «Вхідного Документа» та всіх необхідних
+           файлів для компіляції цієї частини <a href="https://crm.erp.uno">CRM.ERP.UNO</a>.</p>
+
+        <h4>KVS модулі</h4>
+
+        <p>KVS модулі призначені для визначення метанінформації бізнес-обʼєктів,
+           детального опису типів їх полів.</p>
+
+        <figure><code><b>module</b> routeProc <b class=se>kvs</b>
+<b>record</b> routeProc
+<b>begin</b> id = [] : list
+    | operation = [] : [] + atom
+    | feed = [] : [] + binary
+    | type = [] : atom
+    | folder = [] : binary
+    | users = [] : binary + list
+    | folderType = "personal" : binary
+    | callback = [] : [] + function
+    | reject = false : false + boolean
+    | options = [] : [] + list <b>end</b></code></figure>
+
+        <p>Щоб побачити внутрішнє представлення цього модуля, наберіть в Elixir консолі наступну команду:</p>
+
+        <figure><code>
+> :ft.console ['parse','file','priv/kvs/routeProc.kvs' ]
+{:ok,
+ {:module, "routeProc", :kvs,
+  [
+    {:record, {:name, "routeProc"}, [],
+     [
+       {:field, "id", ["[]"], {:type, ["list"]}},
+       {:field, "operation", ["[]"], {:type, ["[]", "atom"]}},
+       {:field, "feed", ["[]"], {:type, ["[]", "binary"]}},
+       {:field, "type", ["[]"], {:type, ["atom"]}},
+       {:field, "folder", ["[]"], {:type, ["binary"]}},
+       {:field, "users", ["[]"], {:type, ["binary", "list"]}},
+       {:field, "folderType", ["personal"], {:type, ["binary"]}},
+       {:field, "callback", ["[]"], {:type, ["[]", "function"]}},
+       {:field, "reject", ["false"], {:type, ["false", "boolean"]}},
+       {:field, "options", ["[]"], {:type, ["[]", "list"]}}
+     ]}
+  ]}}
+</code></figure>
+
+
+        <h4>FORM модулі</h4>
+
+        <p>FORM модулі призначені для визначення структури форм які репрезентують
+           певні бізнес-обʼєкти, що повинні бути визначені до цього в модулях KVS.</p>
+
+        <figure><code>
+<b>module</b> inputForm <b class=se>form</b>
+
+<b>fun</b> id begin ERP.inputOrder end
+
+<b>form</b> new name doc:ERP.inputOrder options
+<b>begin</b> pid = options.pid
+    | user = options.user
+    | regBind = orgPath user
+    | pid = options.pid
+    | corrOpt = options
+    | corrOpt.postback = postback
+    | corrOpt.required = true
+    | coorOpt = dict
+    | coorOpt.users = doc.coordination
+    | document "inputOrder" name
+    [ butOk title { postback :inputOrder doc.id pid }
+    | butCancel  "Скасувати" { :cancel postback :inputOrder doc.id pid }
+    | butTemplate "Шаблон" { :templates :create :inputOrder } on postback=:create ]
+    [ project comboLookup "Відхилено з коментарем"
+    | urgent bool "Терміново" required
+    | id string 'Номер документа'
+    | seq_id string "Унікальний номер"
+    | to comboLookupVec "Первинний розгляд" CRM.Forms.Person regBind
+    | nomenclature comboLookup "Номенклатура" CRM.Forms.DeedCat '/crm/deeds'
+    | document_type string "Вид документа"
+    | signed string "Підписав"
+    | generic corr controlTask corrOpt
+    | date calendar "Дата документа"
+    | dueDate calendar "Термін виконання" min=:erlang.date()
+    | note textarea "Примітка"
+    | add_sheets number 'К-ть аркушів додатків'
+    | bizTask_initiator comboLookupVec CRM.Forms.Person "/acc"
+    | modified_by comboLookupVec CRM.Forms.Person "/acc"
+    | registered_by comboLookup "Реєстратор" required CRM.Forms.Person regBind
+    | generic topic controlTask corrOpt
+    | generic coordination doc.coordination ] <b>end</b>
+</code></figure>
+
+        <p>Щоб побачити внутрішнє представлення цього модуля, наберіть в Elixir консолі наступну команду:</p>
+
+<figure><code>
+> :ft.console ['parse','file','priv/form/input.form' ]
+{:ok,
+ {:module, "inputForm", :form,
+  [
+    {:event, {:name, "id"}, [], [call: ["ERP.inputOrder"]]},
+    {:form, {:name, "new"}, {:args, ["name", "doc:ERP.inputOrder", "options"]},
+     [
+       {:assign, "pid", {:args, ["options.pid"]}},
+       {:assign, "user", {:args, ["options.user"]}},
+       {:assign, "regBind", {:args, ["orgPath", "user"]}},
+       {:assign, "pid", {:args, ["options.pid"]}},
+       {:assign, "corrOpt", {:args, ["options"]}},
+       {:assign, "corrOpt.postback", {:args, ["postback"]}},
+       {:assign, "corrOpt.required", {:args, ["true"]}},
+       {:assign, "coorOpt", {:args, ["dict"]}},
+       {:assign, "coorOpt.users", {:args, ["doc.coordination"]}},
+       {:document, "\"inputOrder\"", "name",
+        {:buttons,
+         [
+           {:button, "butOk", "title",
+            ["{", "postback", ":inputOrder", "doc.id", "pid", "}"]},
+           {:button, "butCancel", "Скасувати",
+            ["{", ":cancel", "postback", ":inputOrder", "doc.id", "pid", "}"]},
+           {:button, "butTemplate", "Шаблон",
+            ["{", ":templates", ":create", ":inputOrder", "}", "on",
+             "postback=:create"]}
+         ]},
+        {:fields,
+         [
+           {:field, "project", "comboLookup",
+            ["Відхилено з коментарем"]},
+           {:field, "urgent", "bool", ["Терміново", "required"]},
+           {:field, "id", "string", ["Номер документа"]},
+           {:field, "seq_id", "string", ["Унікальний номер"]},
+           {:field, "to", "comboLookupVec",
+            ["Первинний розгляд", "CRM.Forms.Person", "regBind"]},
+           {:field, "nomenclature", "comboLookup",
+            ["Номенклатура", "CRM.Forms.DeedCat", "/crm/deeds"]},
+           {:field, "document_type", "string", ["Вид документа"]},
+           {:field, "signed", "string", ["Підписав"]},
+           {:field, "generic", "corr", ["controlTask", "corrOpt"]},
+           {:field, "date", "calendar", ["Дата документа"]},
+           {:field, "dueDate", "calendar",
+            ["Термін виконання", "min=:erlang.date()",
+             "default=FormatDate.add_days(29)"]},
+           {:field, "note", "textarea", ["Примітка"]},
+           {:field, "add_sheets", "number",
+            ["К-ть аркушів додатків"]},
+           {:field, "bizTask_initiator", "comboLookupVec",
+            ["CRM.Forms.Person", "/acc"]},
+           {:field, "modified_by", "comboLookupVec",
+            ["CRM.Forms.Person", "/acc"]},
+           {:field, "registered_by", "comboLookup",
+            ["Реєстратор", ...]},
+           {:field, "generic", "topic", [...]},
+           {:field, "generic", "coordination", ...}
+         ]}}
+     ]}
+  ]}}
+</code></figure>
+
+        <h4>BPE модулі</h4>
+
+        <p>BPE модулі призначені для визначення логіки бізнес-процесів,
+           опису маршрутів документів routeTo, routeFrom та notify.</p>
+
+        <figure><code>
+<b>module</b> input <b class=se>bpe</b>
+<b>import</b> kvs/**/*
+
+<b>fun</b> action broadcastEvent begin result [ ] proc stop <b>end</b>
+<b>fun</b> action messageEvent payload={:next,*} begin output.bpe.action msg proc <b>end</b>
+<b>fun</b> action messageEvent name=DocumentStatistics payload=payload
+<b>begin</b> personal_stat proc.id executed payload | result [ ] proc stop <b>end</b>
+
+<b>fun</b> action messageEvent name=RemoveDocumentStatistics payload=payload
+<b>begin</b> remove_personal_stat proc.id executed payload | result [ ] proc stop <b>end</b>
+
+<b>fun</b> action request to=Grouping
+<b>begin</b> newDoc = proc.docs.hd | newProc = proc | newProc.docs = [newDoc]
+    | broadcast "Complete" | newProc = actionGen req proc newProc
+    | result [ general req newProc newDoc | stop ] newProc reply proc.executors <b>end</b>
+
+<b>fun</b> action request from=gwRejected to=Implementation
+<b>begin</b> newDoc = proc.docs.hd | newProc = proc | newProc.docs = [newDoc]
+    | broadcast "ImplementationRejected" | newProc = actionGen req proc newProc
+    | result [ general req newProc newDoc | stop ] newProc reply proc.executors <b>end</b>
+
+<b>fun</b> action request to=Archive
+<b>begin</b> newDoc = proc.docs.hd | newProc = proc | newProc.docs = [newDoc]
+    | unindexUrgent proc newDoc | newState = actionGen req proc newProc
+    | result [ general req newState newDoc | stop ] newState reply proc.executors <b>end</b>
+
+<b>route</b> routeTo
+<b>begin</b> (Cr,R):R,[] | (R,gwND):O,R | (gwND,Det):D,[] | (*,InC):A,To
+    | (gwC,I):A,To,toExecutors | (*,G):G,[];P,M | (*,A):A,[] <b>end</b>
+
+<b>route</b> routeFrom
+<b>begin</b> (R,gwND):R,[] | (Det,InC):D,[] | (InC,I):A,To,fromExecutors
+    | (I,gwC):A,To,fromExecutors | (gwR,I):G,[] | (*,G):A,To
+    | (*,A):G,[];O,R;U,RTo;R,[];D,[] <b>end</b>
+</code></figure>
+
+        <p>Щоб побачити внутрішнє представлення цього модуля, наберіть в Elixir консолі наступну команду:</p>
+
+<figure><code>
+> :ft.console ['parse','file','priv/bpe/input.bpe' ]
+{:ok,
+ {:module, "input", :bpe,
+  [
+    {:import, {:name, "kvs.*"}},
+    {:event, {:name, "action"}, {:args, ["broadcastEvent"]},
+     [{:result, [], {:args, ["proc", "stop"]}}]},
+    {:event, {:name, "action"},
+     {:args, ["messageEvent", "process", "userStarted=system:string"]},
+     [{:result, [], {:args, ["proc", "stop"]}}]},
+    {:event, {:name, "action"}, {:args, ["messageEvent", "name=TaskCreated"]},
+     [
+       {:assign, "newdoc", {:args, ["proc.docs.hd"]}},
+       {:assign, "doc.modified_by",
+        {:args, ["[doc.modified,msg.payload.notify]"]}},
+       {:assign, "proc.docs", {:args, ["[doc]"]}},
+       {:result, [], {:args, ["proc", "stop"]}}
+     ]},
+    {:route, {:name, "routeTo"}, [],
+     [
+       call: ["(Cr,R):R,[]"],
+       call: ["(R,gwND):O,R"],
+       call: ["(gwND,Det):D,[]"],
+       call: ["(*,InC):A,To"],
+       call: ["(gwC,I):A,To,toExecutors"],
+       call: ["(*,G):G,[];P,M"],
+       call: ["(*,A):A,[]"]
+     ]},
+    {:route, {:name, "routeFrom"}, [],
+     [
+       call: ["(R,gwND):R,[]"],
+       call: ["(Det,InC):D,[]"],
+       call: ["(InC,I):A,To,fromExecutors"],
+       call: ["(I,gwC):A,To,fromExecutors"],
+       call: ["(gwR,I):G,[]"],
+       call: ["(*,G):A,To"],
+       call: ["(*,A):G,[];O,R;U,RTo;R,[];D,[]"]
+     ]}
+]}}
+</code></figure>
+
+   <p>В модулях BPE дозволяється використовувати скорочені назви задач, папок та полів:</p>
+
+<figure><code>$ cat stages.csv
+CODE;TASK
+I;Implementation
+IC;ImplementationControl
+gwC;gwConfirmation
+gwS;gwSigned
+gwA;gwAgreed
+gwR;gwRejected
+gwV;gwConverted
+C;Certification
+S;SignatureImposition
+Se;Send
+S2;Sending
+D;Development
+Ag;Agreement
+A;Archive
+gwND;gwNeedsDetermination
+gwNC;gwNeedsCertification
+Cr;Created
+R;Registration
+InC;InitialConsideration
+Det;Determination
+Cv;Convert
+E;Execution
+
+$ cat fields.csv
+CODE;FIELD
+R;registered_by
+M;modified_by
+BI;bizTask_initiator
+I;initiator
+E;executor
+A;approvers
+T;target
+S;signatory
+To;to
+Tn;target_notify
+
+$ cat folders.csv
+CODE;FOLDER
+G;grouping
+P;processed
+C;certification
+O;out
+I;created
+U;urgently
+S;signing
+T;tasks
+A;agreement
+V;approval
+D;determination
+Se;sending
+Rp;rejectedPersonal
+R;resolutions
+E;execution
+</code></figure>
+
+   <h3>LEEX/YECC консоль</h3>
+
+   <p>Після генерації лексичних та синтаксичних парсерів</p>
+
+<figure><code>
+$ erlc lexer.xrl
+$ erlc parser.yrl
+</code></figure>
+
+   <p>зразу корисно написати функції доступу до згенерованих модулів:</p>
+
+<figure><code>
+-module(console).
+-export([fst/1, snd/1, read/1, lex/1, parse/1, file/1, a/1, unicode/0, errcode/1]).
+
+unicode()          -> io:setopts(standard_io, [{encoding, unicode}]).
+errcode({ok,_})    -> 0;
+errcode({error,_}) -> 1.
+
+fst({X,_}) -> {ok,X}.
+snd({_,X}) -> {ok,X}.
+file(F)    -> lex(read(F)).
+a(F)       -> parse(file(F)).
+
+read(F) ->
+  case file:read_file(F) of
+    {ok,B} -> {ok,unicode:characters_to_list(B)};
+    {error,E} -> {error,{file,F,E}} end.
+
+lex({error,S}) -> {error,S};
+lex({ok,S}) ->
+  case lexer:string(S) of
+    {ok,T,_} -> {ok,T};
+    {error,{L,A,X},_} -> {error,{lexer,L,A,element(2,X)}} end.
+
+parse({error,T}) -> {error,T};
+parse({ok,F}) ->
+  case parser:parse(F) of
+    {ok,AST}        -> {ok,AST};
+    {error,{L,A,S}} -> {error,{parser,L,A,S}} end.
+
+console([]) ->
+  io:format("~s ~s~n~n",
+   [ proplists:get_value(copyright,module_info(attributes)),
+     proplists:get_value(vsn,module_info(attributes))]),
+  io:format("   Usage := :ft.console [ args <filename> ] ~n"),
+  io:format("    args := command | command args ~n"),
+  io:format(" command := parse | lex | read | fst | snd | file ~n~n~n"),
+  io:format(" Sample: :ft.console ['parse','file','priv/form/input.form' ] ~n~n"),
+  0;
+
+console(S) ->
+  lists:foldr(fun(I,Errors) -> R = lists:reverse(I),
+    lists:foldl(fun(X,A) ->
+      console:(list_to_atom(lists:concat([X])))(A) end,hd(R),tl(R)),
+    end, 0, string:tokens(S,[","])).
+
+</code></figure>
+
+        <h3>Компілятор</h3>
+
+        <p>Так як Erlang та Elixir, FormalTalk використовує Erlang AST для
+           паттерн-мачінг компіляції, яка охоплює всі 20 стадій компіляції мови Erlang.
+           Фактично, це --- не компілятор (як і Elixir), а швидше
+           звичайна AST транформація з мови більше вужчої та бідної (FormalTalk)
+           в тюрінг-повну мову числення процесів (Erlang AST).
+           </P>
+
+<figure><code>
+  # Erlang AST definitions
+
+  def cons([]), do: {:nil,1}
+  def cons([x|t]), do: {:cons,1,x,cons(t)}
+  def mod(name), do: {:attribute,1,:module,name}
+  def compile_all(), do: {:attribute,1,:compile,:export_all}
+  def string(val), do: {:string,1,val}
+  def integer(val), do: {:integer,1,val}
+  def binary(val), do: {:bin,1,[{:bin_element,1,string(val),:default,[:utf8]}]}
+  def var(val), do: {:var,1,latom(val)}
+  def atom(val) when is_atom(val), do: {:atom,1,val}
+  def atom(val) when is_list(val), do: {:atom,1,latom(val)}
+  def fun(mod,name,arity), do: {:fun,1,{:function,mod,name,integer(arity)}}
+
+  # Imported module records
+
+  def record(recname,fields) do
+      recfields = :lists.map(fn {name,defx,type} ->
+          default = case defx do
+              [] -> cons([])
+              x when is_integer(x) -> integer(x)
+              x when is_list(x) -> string(x)
+              x when is_binary(x) -> binary(blist(x))
+          end
+          {:typed_record_field,{:record_field,1,atom(name),default},type}
+          end, fields)
+      {:attribute,1,:record,{recname,recfields}}
+  end
+
+  # routeProc{} onstructor invocation generation
+
+  def routeProcInvoke(folder,users,folderType,{mod,fun}) do
+      usrs = :lists.map fn x -> atom(x) end, users
+      ft = case folderType do
+          [] -> var('FT')
+          x when is_binary(x) -> binary(blist(x))
+      end
+      args = [{:folder,binary(folder)},
+              {:folderType,ft},
+              {:users,cons(usrs)},
+              {:callback,fun(atom(mod),atom(fun),2)}]
+      fields = :lists.map fn {name,val} -> {:record_field,1,atom(name),val} end, args
+      {:record,1,:routeProc,fields}
+  end
+
+  # Route clause generator
+
+  def routeClause(src,dst,commands) do
+      cmds = :lists.map fn {folder,users,folderType,callback} ->
+             routeProcInvoke(folder,users,folderType,callback) end, commands
+      {:clause,1,[{:tuple,1,[atom(:request),string(src),string(dst)]},
+                  var('FT')],[],[cons(cmds)]}
+  end
+
+  # Route function generator
+
+  def routeFun(name,clauses) do
+      routeClauses = :lists.map fn {s,d,cmds} -> routeClause(s,d,cmds) end, clauses
+      {:function,1,name,2,routeClauses}
+  end
+
+  # Compile AST form to disk and reload
+
+  def compileForms(ast, out \\ 'priv/out/') do
+      :filelib.ensure_dir out
+      case :compile.forms ast, [:debug_info,:return] do
+         {:ok,name,beam,_} ->
+           :file.write_file out ++ alist(name) ++ '.beam', beam
+           :code.purge name
+           :code.load_file name
+           {name,beam}
+         _ ->
+           {[],[]}
+      end
+  end
+</code></figure>
+
+   <h4>Тестування компілятора</h4>
+
+<figure><code>
+  def testFile() do
+      [
+        mod(:inputProc),
+        compile_all(),
+        record(:routeProc,
+            [{:id,[],{:type,1,:list,[]}},
+             {:operation,[],{:type,1,:term,[]}},
+             {:feed,[],{:type,1,:term,[]}},
+             {:type,[],{:type,1,:term,[]}},
+             {:folder,[],{:type,1,:term,[]}},
+             {:users,[],{:type,1,:term,[]}},
+             {:folderType,[],{:type,1,:term,[]}},
+             {:callback,[],{:type,1,:term,[]}},
+             {:reject,[],{:type,1,:term,[]}},
+             {:options,[],{:type,1,:term,[]}}
+            ]),
+        routeFun(:routeTo,
+            [{'gwConfirmation','Implementation',
+            [{'approval', ['to'], [], {'Elixir.CRM.KEP','toExecutors'}}
+            ]}]),
+      ]
+  end
+
+</code></figure>
+
+   <p>Новостворений BEAM модуль в папці priv/out/ повинен містити скомпільовану функцію routeTo,
+      яка повертає список обʼєктів ERP.routeProc.</p>
+
+<figure><code>
+  def test() do
+      testFile() |> compileForms
+      [{:routeProc, [], [], [], [], "approval", [:to], [], _, [], []}]
+        = :inputProc.routeTo {:request, 'gwConfirmation', 'Implementation'}, []
+      :ok
+  end
+</code></figure>
+
+    <p>Структура папки <b class=sel>priv/erp.uno/</b>:</p>
+
+<figure><code>
+├── bpe
+│   ├── input.bpe
+│   ├── internal.bpe
+│   ├── org.bpe
+│   ├── output.bpe
+│   └── resolution.bpe
+├── csv
+│   ├── fields.csv
+│   ├── folders.csv
+│   ├── policies.csv
+│   ├── rules.csv
+│   └── stages.csv
+├── form
+│   └── input.form
+├── kvs
+│   ├── assistant.kvs
+│   ├── assistantMark.kvs
+│   ├── dict.kvs
+│   ├── inputOrder.kvs
+│   ├── location.kvs
+│   ├── organization.kvs
+│   ├── person.kvs
+│   ├── project.kvs
+│   └── routeProc.kvs
+└── nitro
+    └── sample.nitro
+</code></figure>
+
+    <p>Скомпільовані BEAM файли в папці <b class=sel>priv/out/</b>:</p>
+
+<figure><code>
+$ ls priv/out
+bpe.input.beam     bpe.resolution.beam     kvs.dict.beam          kvs.person.beam
+bpe.internal.beam  form.inputForm.beam     kvs.inputOrder.beam    kvs.project.beam
+bpe.org.beam       kvs.assistant.beam      kvs.location.beam      kvs.routeProc.beam
+bpe.output.beam    kvs.assistantMark.beam  kvs.organization.beam  nitro.sample.beam
+</code></figure>
+
+     <p>Присвячую мову програмування <b class=sel>ft</b> Ліліані Левицькій
+        та всім держслужбовцям України.</p>
+
+<h3>Бібліографія</h3>
+
+<p>Хоча для створення мови достатньо знання Erlang AST та його компіляції,
+   а також бібліотек N2O.DEV, не можна сказати що на автора не вплинула наступна
+   класична небагата бібліографія по декларативних мовах:</p>
+
+<hr>
+
+<p>
+[1]. J.W.Lloyd. Practical Advantages of Declarative Programming. GULP-PRODE 1994.<br>
+[2]. E.Murru. Hands-on Low-code Application Development with Salesforce. 2020<br>
+[3]. P.Padawitz. Deduction and Declarative Programming. Cambridge. 1992.<br>
+[4]. H.Schwichtenberg,S.S.Wainer. Proofs and Computations. ASL, 2012.
+[5]. Krishnamurti,Ramakrishnan. Practical Aspects of Decl. Languages. PAPL, 2002.<br>
+[6]. P.Roy, S.Haridi. Concepts, Techniques, and Models of Computer Programming. Swedish Institute of Compuer Science, 2003.<br>
+</p>
+
+<h3>Матеріали</h3>
+
+<p>Для подальшого ознайомления з компілятором:<br>
+  &mdash; Опис бібліотек KVS, BPE, NITRO, FORM: <a href="https://n2o.dev/ua">N2O.DEV</a><br>
+  &mdash; Опис системи «МІА: Документообіг»: <a href="https://crm.erp.uno">CRM.ERP.UNO</a><br>
+  &mdash; Репозиторій проекту на Github: <a href="https://github.com/erpuno/ft">erpuno/ft</a><br>
+  &mdash; Стаття про мову: <a href="https://tonpa.guru/stream/2023/2023-02-01%20FormalTalk.htm">FormalTalk: декларативна мова програмування з обмеженими імперативними властивостями. 2023.</a> <br>
+</p>
+
+   <br><center>&dot;</center>
+
+        <figure><img style="border: 0;" src="ERP.svg"></figure>
+
+   <br><center>&dot;</center>
+
+   <div id="utterances" class="utterances" > </div>
+   <script src="https://utteranc.es/client.js" repo="5HT/tonpa.guru" issue-number="22" theme="github-light" crossorigin="anonymous" async> </script>
+
+</section>
+</main>
+<footer>Максим Сохацький</footer>
+</body>
+</html>

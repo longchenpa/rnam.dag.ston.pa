@@ -1,0 +1,102 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2020-01-08</title>
+    <link rel="stylesheet" href="https://n2o.dev/blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2020-01-08</a>
+</nav>
+<main>
+    <section>
+        <h3>Новий ролаут N2O для 2020 року</h3>
+
+        <p>Давайте вже після свят!</p>
+
+        <p>Тож, як ви знаєте, тепер Сохацький працює на МВС України, а саме у <a href="https://infotech.gov.ua">ДП&nbsp;"Інфотех"</a>.
+           Як завжди, команда була сформована завдяки моїй скандальній репутації та безжальному хедхантингу.
+           В результаті, за 3 місяці у нас написано прототип національної системи документообігу,
+           і як наслідок, новий ролаут N2O стеку.</p>
+        
+        <p>Ми використовуємо дві системи релізів: перша - це система релізів HEX.PM, куди ми релізуємо щодня;
+           і друга - це система релізів Github, фактично просто система тегів, тут ми релізимо раз на пів року,
+           і це головним чином впливає на rebar3 і mad зборки, які використовують rebar.config, mix зборки
+           завжди ж використовують лише релізи HEX. Кожен ролаут - це фриз всіх сумісних між собою версій,
+           який ми робимо зазвичай рідко, тому розглядайте це як свято.</p>
+
+        <p>Це перший ролаут, де для <b>кожної</b> ліби:
+           1) прописаний mix.exs файл з повною підтримкою Elixir (ми пишемо на Elixir) та публікацією на HEX,
+           2) прописані Erlang type spec,
+           3) білд перевіряється dialyzer,
+           4) тригериться два CI (Github Action и Travis CI),
+           5) створена папка man з XHTML документацією, яка може бути конвертована в ROFF з допомогою mad.</p>
+
+        <h4>N2O</h4>
+        
+        <p>Нова версія N2O стала ще легшою, вона тепер не містить жодної частини NITRO імплементації Nitrogen Web Framework.
+           Імплементація NITRO протоколу разом із JavaScript companion library переїхала, як і належить, в NITRO.
+           Теперь N2O займає 700 рядків ерланга та 500 рядків джаваскрипту. Пофіксований критичний баг у кодуванні UTF-8 бінарів у BERT.JS.</p>
+
+        <h4>KVS</h4>      
+
+        <p>KVS був повністю переписаний (якщо хтось пам'ятає експериментальну версію KVX), і був назад забекпортований у майстер.
+           Було значно змінено код роботи з курсорами (Ірина Костюк), а із баз тепер підтримуються лише MNESIA і ROCKSDB.
+           Також KVS тепер отримав свою адмінку (поки не зарелізена в ньому самому, щоб не тягти залежність від NITRO)
+           і може бути виставленим у світ через REST бібліотеку Дмитра Бушмельова.</p>
+
+        <h4>BPE</h4>
+
+        <p>Головна новина BPE – це підтримка BPMN 2.0 семантики (паралельні процеси, гейтвеї), підтримка BPMN 2.0 XML формату
+           та анонс поняття групи процесів (для супервіжена). Подяки та гроші на каву можете надсилати на мій патреон,
+           я передам їхньому головному автору цих нововведень Олександру Наумову.</p>
+
+        <h4>NITRO</h4>
+
+        <p>Найбільше нововведень отримала бібліотека NITRO, оскільки наш проект багато в чому залежить від спеціалізованих контрольних елементів.
+           Якщо грамотно провести аналіз вимог, майже будь-яку програму можна закрити двома-трьома складними абстрактними контролами.
+           Такий контрольний елемент, хедлайнер цих нововведень, — це <a href="https://n2o.dev/deps/nitro/man/ua/nx_comboLookup.htm">comboLookup</a>.</p>
+
+        <figure><img src="https://n2o.dev/deps/nitro/man/ua/img/comboLookup.png"></figure>
+
+        <p>Він дозволяє вказувати адресу фіда в базі даних, з якої ви хочете отримувати ітеми по автокомплішину.
+           Ви просто визначаєте функцію стрімінгу на стороні сервера (яка знає рекорди, що зберігаються у фіді) і все.
+           Автор контрольного елемента - Руслан Мороз.
+           Його розширена (мультиселект) векторна версія використовує Sortable.js та адаптована Олександром Наумовим. Наступні версії
+           матимуть більш матурний внутрішній протокол querySource.</p>
+
+        <h4>FORM</h4>
+
+        <p>Бібліотека форм отримала <a href="https://form.n2o.dev/man/form.htm">публічний API</a>, підтримку нових контрольних елементів NITRO,
+           підтримку векторних та скалярних полів, NITRO біндінг (коли nitro:q повертає відразу Erlang терми) та фікси старих контролів (calendar и т.д).
+           Форми форсував Олександр Пальчиковський.</p>
+
+        <p>
+           — <a href="https://github.com/synrc/sample">https://github.com/synrc/sample</a> — 1.1<br>
+           — <a href="https://github.com/synrc/rpc">https://github.com/synrc/rpc</a> — 3.1<br>
+           — <a href="https://github.com/synrc/exe">https://github.com/synrc/exe</a> — 4.1<br>
+           — <a href="https://github.com/synrc/nitro">https://github.com/synrc/nitro</a> — 5.1<br>
+           — <a href="https://github.com/synrc/form">https://github.com/synrc/form</a> — 5.1<br>
+           — <a href="https://github.com/synrc/bpe">https://github.com/synrc/bpe</a> — 5.1<br>
+           — <a href="https://github.com/synrc/fs">https://github.com/synrc/fs</a> — 6.1<br>
+           — <a href="https://github.com/synrc/active">https://github.com/synrc/active</a> — 6.1<br>
+           — <a href="https://github.com/synrc/n2o">https://github.com/synrc/n2o</a> — 7.1<br>
+           — <a href="https://github.com/synrc/kvs">https://github.com/synrc/kvs</a> — 7.1<br>
+           — <a href="https://github.com/synrc/mad">https://github.com/synrc/mad</a> — 7.1<br>
+        </p>
+
+        <figure><img src="https://5ht.co/img/infotech.jpg"></figure>
+
+        <p>Ваш Ерланг відділ ДП "Інфотех".</p>
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2021</footer>
+</body>
+</html>
