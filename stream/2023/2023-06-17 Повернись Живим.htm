@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="" />
     <meta name="author" content="Maxim Sokhatsky" />
-    <title>2023-06-17 Повернись Живим</title>
+    <title>2023-06-17 ПЖ</title>
     <link rel="stylesheet" href="../../blank.css" />
     <link rel="stylesheet" href="../../journal.css?v=1" />
 </head>
@@ -13,14 +13,148 @@
 <nav>
     <a href='../../index.html'>5HT</a>
     <a href='../index.html'>TOP</a>
-    <a href='#'>2023-06-17 Повернись живим</a>
+    <a href='#'>2023-06-17 ПЖ</a>
 </nav>
 <main>
     <section>
 
     <h3>Stable Diffusion + Control Net</h3>
 
-    <p></p>
+    <p>В одному з минулих випусків цього робочого журналу ми познайомилися з
+       одним з видів цифрового мистецтва — Муаром, яке має корені у відомому
+       в графіці жанрі Гільйош, що широко використовується при монетних дворах.
+       Прихована складність арт-обʼєктів підвищує їх вартість і привертає увагу.
+       Сьогодні ми познайомимося зі ще одним видом цифрового мистецтва, жанром, що
+       сформувався недавно (12.06.2023) який поєдную QR коди та генеративну графіку
+       засобами статистичних моделей та градієнтного спуску.
+       Дана стаття представляє роботи українського цифрового
+       художника <a href="https://twitter.com/bookazoid_">bookazoid</a>, ця серія робіт присвячена фонду
+       Повернить Живим, а QR коди представлені у статті ведуть на сторінку підримки цього
+       фонду <a href="https://savelife.in.ua">savelife.in.ua</a>,
+       завдання якого зберегти життя кожного українця.</p>
+
+    <p>Хоча вже створені багато додаткових інструментів, найкращий артистичний результат
+       досягається за допомогою веб-версії Stable Diffusion
+       <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui">AUTOMATIC1111/stable-diffusion-webui</a>,
+       та моделі Control Net, навченої спеціально для мешапа QR коду з ініціальним арт-обʼєктом
+       <a href="Mikubill/sd-webui-controlnet">Mikubill/sd-webui-controlnet</a>. Детальні
+       інструкції надані в науковому апараті. Тут лиш скажемо шо дані результати
+       були отримані за допомогою моделей Control Net V11 F1E TILE для Stable Diffusion 1.5.</p>
+
+<figure><code>
+control_stage_config:
+      target: cldm.cldm.ControlNet
+      params:
+        in_channels: 4
+        hint_channels: 3
+        model_channels: 320
+        attention_resolutions: [ 4, 2, 1 ]
+        num_res_blocks: 2
+        channel_mult: [ 1, 2, 4, 4 ]
+        num_heads: 8
+        use_spatial_transformer: True
+        transformer_depth: 1
+        context_dim: 768
+        use_checkpoint: True
+        legacy: False
+
+unet_config:
+      target: cldm.cldm.ControlledUnetModel
+      params:
+        in_channels: 4
+        out_channels: 4
+        model_channels: 320
+        attention_resolutions: [ 4, 2, 1 ]
+        num_res_blocks: 2
+        channel_mult: [ 1, 2, 4, 4 ]
+        num_heads: 8
+        use_spatial_transformer: True
+        transformer_depth: 1
+        context_dim: 768
+        use_checkpoint: True
+        legacy: False
+</code></figure>
+
+    <p>Ця технологія може бути застосована також і у рекламі для розміщення посилань у
+       відкритих просторах анонсуючи певні події, фільми, ресторани, заходи, рекламуючи
+       певні компанії, витвори мистецтва тощо.</p>
+
+      <p>При використанні веб-інтерфейсу основні параметри для тюнінгу такі:</p>
+
+    <figure><code>
+Resize mode: Just resize
+Sampling method: DPM++2M Karras
+Sampling step: 50
+Width: 768
+Height: 768
+CFG Scale: 7
+Denoising strength: 0.75
+
+Enable: Yes
+Control Type: Tile
+Preprocessor: tile_resample
+Model: control_xxx_tile
+Control Weight: 0.87
+Starting Control Step: 0.23
+Ending Control Step: 0.9
+    </code></figure>
+
+    <p>Використання дифʼюзерів без веб-інтерфейсу може виглядати так:</p>
+
+    <figure><code>
+pip -q install diffusers transformers accelerate torch xformers
+
+import torch
+from PIL import Image
+from diffusers import StableDiffusionControlNetImg2ImgPipeline
+from diffusers import ControlNetModel
+from diffusers import DDIMScheduler
+from diffusers.utils import load_image
+
+controlnet = ControlNetModel.from_pretrained(
+    "DionTimmer/controlnet_qrcode-control_v1p_sd15",
+    torch_dtype=torch.float16)
+
+pipe = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
+    "runwayml/stable-diffusion-v1-5",
+    controlnet=controlnet,
+    safety_checker=None,
+    torch_dtype=torch.float16)
+
+pipe.enable_xformers_memory_efficient_attention()
+pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+pipe.enable_model_cpu_offload()
+
+def resize_for_condition_image(input_image: Image, resolution: int):
+    input_image = input_image.convert("RGB")
+    W, H = input_image.size
+    k = float(resolution) / min(H, W)
+    H *= k
+    W *= k
+    H = int(round(H / 64.0)) * 64
+    W = int(round(W / 64.0)) * 64
+    img = input_image.resize((W, H), resample=Image.LANCZOS)
+    return img
+
+source_image = load_image("source.png")
+init_image = load_image("initial.jpeg")
+condition_image = resize_for_condition_image(source_image, 768)
+init_image = resize_for_condition_image(init_image, 768)
+generator = torch.manual_seed(123121231)
+image = pipe(prompt="PDP-11 backplane",
+             negative_prompt="ugly, disfigured, lofi",
+             image=init_image,
+             control_image=condition_image,
+             width=768,
+             height=768,
+             guidance_scale=20,
+             controlnet_conditioning_scale=1.5,
+             generator=generator,
+             strength=0.9,
+             num_inference_steps=150)
+
+image.images[0]
+    </code></figure>
 
     <table><tr><td><img src="qr/FywENqvWAAA42c5.jpg" width=600></td><td>
     <img src="qr/Fy12gl9WwAEyAHD.png" width=600></td></tr><tr><td>
@@ -35,9 +169,15 @@
     <img src="qr/Fy2M_2MXwAAm5VW.jpg" width=600></td><td>
     <img src="qr/Fya3a_oXwAE3zaX.png" width=600></td></tr></table>
 
+<hr>
+
+[1]. <a href="https://stable-diffusion-art.com/qr-code/">stable-diffusion-art.com/qr-code/</a><br>
+[2]. <a href="https://stable-diffusion-art.com/controlnet/">stable-diffusion-art.com/controlnet/</a><br>
+[3]. <a href="https://huggingface.co/DionTimmer/controlnet_qrcode-control_v1p_sd15">DionTimmer/controlnet_qrcode-control_v1p_sd15</a>
     </section>
+
 </main>
-<footer><a href="https://instagram.com/5HT/">Намдак Тöнпа</a> <span class="heart">&nbsp;❤&nbsp;</span> </footer>
+<footer><a href="https://twitter.com/bookazoid_">Буказоїд</a> <span class="heart">&nbsp;❤&nbsp;</span> </footer>
 </body>
 </html>
 
