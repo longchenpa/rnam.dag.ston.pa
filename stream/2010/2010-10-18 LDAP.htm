@@ -206,16 +206,15 @@
         [] -> {error,instance}
     end.
             </code></figure>
-            <p>...В виде эрланг рекордов:</p>
+            <p>...У вигляді ерланг-кортежів (рекордів):</p>
    <figure><code>
  -record('ContactRecord', {cn, givenName, mail}).
             </code></figure>
             <p>Відкомпілював це:</p>
 
-   <figure><code>
- erlc +debug_info -o ebin src\LDAP.erl src\eds.erl src\roster.erl
+   <figure><code>$ erlc -o ebin src\LDAP.erl src\eds.erl src\roster.erl
             </code></figure>
-            <p>І все!</p>
+            <p>І всьо!</p>
 
             <p>P.S. <a href="https://github.com/synrc/ldap">https://github.com/synrc/ldap</a></p>
     </section>
