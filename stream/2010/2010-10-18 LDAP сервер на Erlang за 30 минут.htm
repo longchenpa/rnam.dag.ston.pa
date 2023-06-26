@@ -5,36 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="" />
     <meta name="author" content="Maxim Sokhatsky" />
-    <title>2010-10-18</title>
+    <title>2010-10-18 LDAP</title>
     <link rel="stylesheet" href="https://n2o.dev/blank.css" />
     <link rel="stylesheet" href="../../journal.css" />
-    <link rel="stylesheet" href="../../black.css" />
 </head>
 <body>
 <nav>
     <a href='../../index.html'>5HT</a>
     <a href='../index.html'>TOP</a>
-    <a href='#'>2010-10-18</a>
+    <a href='#'>2010-10-18 LDAP</a>
 </nav>
 <main>
     <section>
-        <h3>LDAP сервер на Erlang за 30 минут</h3>
-        <p> Вот может кому интересно почему я начал писать SyncML сервер на эрланг.
-            Если кратко, мне понравилось. Если длиннее: я определяю насколько просто
-            писать на компьютерном языке по тому насколько просто прострелить себе
-            ногу написать LDAP сервер. Задача такая: написать приложение которое
-            отвечает Windows Mail/Apple Mail, etc. и возвращает по LDAP протоколу
-            спискок адресатов для автоматической подставновки (inplace search)
-            в адресных полях письма. Т.е. что бы из такого:</p>
+        <h3>LDAP сервер на Erlang за 30 хвилин</h3>
+        <p> Ось може комусь цікаво чому я почав писати SyncML сервер на ерланг.
+            Якщо стисло, мені сподобалося. Якщо довше: я визначаю наскільки
+            просто писати комп'ютерною мовою по тому, наскільки просто прострілити
+            собі ногу (написати LDAP сервер). Завдання таке: написати програму,
+            яка відповідає Windows Mail/Apple Mail, etc. і повертає по LDAP
+            протоколу списки адресатів для автоматичної підстановки (inplace search)
+            в адресних полях листа. Тобто. що б із такого:</p>
 
-        <figure><img src="https://archive.li/NEf94/a2c39ab075841a47c5ba8850d5776ddb424e7e4b.png" width=600></figure>
+        <figure><img src="img/directory.jpg" width=600></figure>
 
-        <p> получить вот такое:</p>
+        <p> дістати ось таке:</p>
 
-        <figure> <img src="https://archive.li/NEf94/b2cb299be73b2d38eff9d831ab7b07ed5e06987b.png" width=600></figure>
-            <p> Прежде все я зашел на <a href="http://www.rfc-editor.org/rfc/rfc4511.txt">http://www.rfc-editor.org/rfc/rfc4511.txt</a>
-                и начал скачивать определение LDAP протокола в ASN.1 нотации.
-                Простая копи паста примерно такого кода:</p>
+        <figure> <img src="img/search.jpg" width=600></figure>
+            <p> Перш за все я зайшов на <a href="http://www.rfc-editor.org/rfc/rfc4511.txt">http://www.rfc-editor.org/rfc/rfc4511.txt</a>
+                і почав завантажувати визначення протоколу LDAP в ASN.1 нотації. Проста копи паста приблизно такого коду:</p>
 
    <figure><code>
  LDAP DEFINITIONS IMPLICIT TAGS ::=
@@ -73,12 +71,12 @@
 
     LDAPString ::= OCTET STRING -- UTF-8 encoded, [ISO10646] characters
             </code></figure>
-            <p>Дальше я с помощью Эрланг сгенерировал парсер этой хуеты. </p>
+            <p>Далі я за допомогою Ерланг згенерував парсер цієї штуки.</p>
    <figure><code>
  > asn1ct:compile("LDAP.asn1").
  ok
             </code></figure>
-            <p>Потом я написал код который отвечает на LDAP запросы:</p>
+            <p>Потім я написав код, який відповідає на LDAP запити:</p>
    <figure><code>
  -module(eds).
  -author('Maxim Sokhatsky ').
@@ -161,7 +159,7 @@
     roster:done(),
     gen_tcp:close(Socket).
             </code></figure>
-            <p>А также библиотеку для работы с контактной книгой</p>
+            <p>А також бібліотеку для роботи з контактною книгою:</p>
 
    <figure><code>
  -module(roster).
@@ -211,16 +209,16 @@
    <figure><code>
  -record('ContactRecord', {cn, givenName, mail}).
             </code></figure>
-            <p>Откомпилировал это:</p>
+            <p>Відкомпілював це:</p>
 
    <figure><code>
  erlc +debug_info -o ebin src\LDAP.erl src\eds.erl src\roster.erl
             </code></figure>
-            <p>И все :)</p>
+            <p>І все!</p>
 
-            <p>P.S. <a href="https://github.com/devaspot/eds">https://github.com/synrc/eds</a></p>
+            <p>P.S. <a href="https://github.com/synrc/ldap">https://github.com/synrc/ldap</a></p>
     </section>
 </main>
-<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2019</footer>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2023</footer>
 </body>
 </html>
