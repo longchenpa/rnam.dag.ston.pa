@@ -95,12 +95,12 @@
        і його обчислення на сторонах кореспондентів комунікації.Суть протоколу зводить до наступниїх рівнянь: </p>
 
     <figure><code> roccoK := private(32)
- roccoP := public(roccoK)
- tonpaK := private(32)
- tonpaP := public(tonpaK)
- tonpaS := shared(tonpaK,roccoP)
- roccoS := shared(roccoK,tonpaP)
- roccoS == tonpaS</figure></code>
+ roccoP = public(roccoK)
+ tonpaK = private(32)
+ tonpaP = public(tonpaK)
+ tonpaS = shared(tonpaK,roccoP)
+ roccoS = shared(roccoK,tonpaP)
+ roccoS = tonpaS</figure></code>
 
       <p>Два учасники мають пару Публічний та Приватний ключі, які генеруються
          функціями <b>puiblic</b> та <b>private</b>, зазвичай приватний ключ
@@ -113,10 +113,8 @@
          Кожна крипто-система на публічних та приватних ключа повинна
          відповідати цим рівнянням.</p>
 
-    <figure><code> outgoing := encrypt(plaintext,tonpaS)
- send(tonpaP, roccoP, outgoing)
- incoming := receive(roccoP, tonpaP)
- plaintext = decrypt(incoming,roccoS)</figure></code>
+    <figure><code> ciphers = encrypt(plaintxt,tonpaS)
+ plaintxt = decrypt(ciphers,roccoS)</figure></code>
 
       <p>Далі використовується симетричні алгоритми шифрування такі як AES в
          різних флейворах CCM, GCM, ECB і т.д. Код на мові Erlang виглядає так: </p>
