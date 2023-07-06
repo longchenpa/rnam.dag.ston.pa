@@ -80,7 +80,68 @@
        стандартах повинен базуватися на цій специфікації. І мій месанжер будується на ції специфікації
        та орієнтується на неї.</p>
 
-    <h3>Дешифрація CMS  повідомлення</h3>
+    <h3>Дешифрація CMS повідомлення</h3>
+
+    <p>Аби продемонструвати технологію CMS, я покажу початок розробки референсного термінального (консольного) клієнта,
+       який буде основою для форків і майбутніх клієнтів на інших платформах. Заодно як ви вже розумієте
+       це буде демонстрацією безапеляційної переваги Erlang, який містить безкоштовний промисловий ASN.1
+       компілятор, що дозволяє генерувати код прямо з законів України та RFC стандартів.</p>
+
+    <h4>Основи сучасної криптографії</h4>
+
+    <p>Перед початком дамо основи сучасної криптографії в одному параграфі. Для створення спільного
+       секретного слова, яким можна було би шифрувати трафік за допомогою симетричного шифру AES
+       використовується математичний протокол обміну публічними ключами Діфі-Хелмана
+       і його обчислення на сторонах кореспондентів комунікації.Суть протоколу зводить до наступниїх рівнянь: </p>
+
+    <figure><code> roccoK := private(32)
+ roccoP := public(roccoK)
+ tonpaK := private(32)
+ tonpaP := public(tonpaK)
+ tonpaS := shared(tonpaK,roccoP)
+ roccoS := shared(roccoK,tonpaP)
+ roccoS == tonpaS
+     </figure></code>
+
+      <p>Два учасники мають пару Публічний та Приватний ключі, які генеруються
+         функціями <b>puiblic</b> та <b>private</b>, зазвичай приватний ключ
+         є псевдовипадковим числом певної розмірності, а публічний ключ
+         утворюється як похідний, який задовільняє умовам рівняння.
+         Існує також функція <b>shared</b>, яка дозволяє побудувати похідний
+         ключ по парі публічного та приватного ключів різних кореспондентів.
+         Якшо попарно схрестити ці дві пари через цю функцію, то отримані
+         ключі будуть співпадати &mdash; це називається протокол Діфі-Хелмана.
+         Кожна крипто-система на публічних та приватних ключа повинна
+         відповідати цим рівнянням.</p>
+
+    <figure><code> outgoing := encrypt(tonpaS)
+ send(tonpaP, roccoP, outgoing)
+ incoming := receive(roccoP, tonpaP)
+ decrypt(incoming)
+      </figure></code>
+
+      <p>Далі використовується симетричні алгоритми шифрування такі як AES в
+         різних флейворах CCM, GCM, ECB і т.д. Код на мові Erlang виглядає так: </p>
+
+    <figure><code>
+    def check_X448_GCM256() do # X488
+        scheme = :x448
+        {roccoP,roccoK} = :crypto.generate_key(:ecdh, scheme)
+        {maximP,maximK} = :crypto.generate_key(:ecdh, scheme)
+        maximS = :binary.part(:crypto.compute_key(:ecdh,roccoP,maximK,scheme),0,32)
+        roccoS = :binary.part(:crypto.compute_key(:ecdh,maximP,roccoK,scheme),0,32)
+        x = encrypt(:aes_256_cbc, "Success!", maximS)
+        "Success!" == decrypt(:aes_256_cbc, x, roccoS)
+        :ok
+    end
+      </figure></code>
+
+     <p>На цьому можна було би зупинитись і почати писати псевдо-захищений
+        месенжер, як всі роблять, але тут дуже багато безпекових н'юансів
+        починаючи від IV педінгів, HKDF і AES-WRAP протоколів, і закінчуючи власне CMS.
+        Тому переходимо до наступного параграфу.</p>
+
+    <h4>Генерація криптографічного повідомлення CMS</h4>
 
     <hr>
 
@@ -88,9 +149,10 @@
      [1]. <a href="https://tonpa.guru/stream/2020/2020-02-03 Кваліфікований Електронний Підпис.htm">Кваліфікований Електронний Підпис України</a><br>
      [2]. <a href="https:///tonpa.guru/stream/2023/2023-06-22 Месенжер.htm">Сохацький пише Месенжер</a><br>
      [3]. <a href="https://chat.erp.uno">SYNRC CHAT</a><br>
-     [4]. <a href="https://soatok.blog/2021/11/17/understanding-hkdf/">Understanding HKDF</a><br>
-     [5]. <a href="https://gist.github.com/5HT/86f25408ed74ddb090d2ed9267b33afb">CMS S/MIME compatible MUA SMTP clients</a><br>
-     [6]. <a href="https://thehackernews.com/2019/04/email-signature-spoofing.html">Over Dozen Popular Email Clients Found Vulnerable to Signature Spoofing Attacks</a><br>
+     [4]. <a href="https://tonpa.guru/stream/2010/2010-10-18 LDAP.htm">Як написати LDAP сервер за 30 хвилин</a><br>
+     [5]. <a href="https://soatok.blog/2021/11/17/understanding-hkdf/">Understanding HKDF</a><br>
+     [6]. <a href="https://gist.github.com/5HT/86f25408ed74ddb090d2ed9267b33afb">CMS S/MIME compatible MUA SMTP clients</a><br>
+     [7]. <a href="https://thehackernews.com/2019/04/email-signature-spoofing.html">Over Dozen Popular Email Clients Found Vulnerable to Signature Spoofing Attacks</a><br>
      </p>
 
     </section>
