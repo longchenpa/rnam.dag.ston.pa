@@ -248,13 +248,13 @@ afj8HEdqSp4hXMyq50dJM7sP8Nx0avuW3TKvMmc=</code></figure>
 $ erlc CMSECCAlgs-2009-02.asn1
 $ erlc CryptographicMessageSyntax-2010.asn1
 $ erlc KEP.asn1
-$ erlc CMS-AES-CCM-and-AES-GCM-2009.asn1  
-$ erlc CMSECDHAlgs-2017.asn1                 
-$ erlc CryptographicMessageSyntaxAlgorithms-2009.asn1  
+$ erlc CMS-AES-CCM-and-AES-GCM-2009.asn1
+$ erlc CMSECDHAlgs-2017.asn1
+$ erlc CryptographicMessageSyntaxAlgorithms-2009.asn1
 $ erlc PKCS-7.asn1
-$ erlc CMSAesRsaesOaep-2009.asn1          
-$ erlc CryptographicMessageSyntax-2009.asn1  
-$ erlc InformationFramework.asn1                       
+$ erlc CMSAesRsaesOaep-2009.asn1
+$ erlc CryptographicMessageSyntax-2009.asn1
+$ erlc InformationFramework.asn1
 $ erlc PKIX1Explicit-2009.asn1</code></figure>
 
       <p>Ці команди просто згенерують код на Erlang. Далі нам знадобиться
@@ -262,8 +262,9 @@ $ erlc PKIX1Explicit-2009.asn1</code></figure>
 
      <figure><code>def e(x,y), do: :erlang.element(x,y)
 def privat(name), do: e(3,:public_key.pem_entry_decode(readPEM("certs/",name)))
-def public(name), do: e(3,e(8,e(2,:public_key.pem_entry_decode(readPEM("certs/",name)))))
-def readPEM(name), do: hd(:public_key.pem_decode(e(2,:file.read_file(name))))
+def public(name), do: e(3,e(8,e(2,decodePEM(readPEM("certs/",name)))))
+def decodePEM(bin), do: :public_key.pem_decode(bin)
+def readPEM(name), do: hd(decodePEM(e(2,:file.read_file(name))))
 def shared(pub, key, scheme), do: :crypto.compute_key(:ecdh, pub, key, scheme)
 def eccCMS(ukm, len) do
     {:'ECC-CMS-SharedInfo',
