@@ -21,7 +21,7 @@
     <h3>CMS S/MIME</h3>
 
     <p>Я бачив багато захищених месанжерів, але всі вони написані людьми, які
-        занадто надихалися крипто-стартапами. Крипто-стартап --- це така тєма
+        занадто надихалися крипто-стартапами. Крипто-стартап — це така тєма
         де ти вивчив як крутити чотири функції і думаєш шо готовий запропонувати
         рішення рівня NSA. Але, як показав час, вижило не багато месенжерів.
         Хочу виділити ті захищені месанжери та системи доставки повідомлень,
@@ -280,7 +280,7 @@ def eccCMS(ukm, len) do
         :'CryptographicMessageSyntax-2010'.decode(:ContentInfo,:base64.decode(s))
     end</code></figure>
 
-        <p>Перший крок &mdash; це декування текстового повідомлення в Erlang об'єкт зразу.</P>
+        <p>Перший крок &mdash; це декодування текстового повідомлення в Erlang об'єкт зразу.</P>
 
     <figure><code>iex(1)> CA.CRYPTO.testSMIME</code></figure>
  
@@ -329,22 +329,23 @@ def eccCMS(ukm, len) do
 
     <p>Тільки подивившись на цю структуру можна одразу все зрозуміти.
        Далі справа CMS протоколу, який звучить наступним чином:
-       1) Визначте схему видачі ECC сертифікату PRIME256V1 SECP385R1 тощо;
+       1) Визначте схему видачі ECC сертифікату PRIME256V1, SECP385R1, тощо;
        2) Розпакуйте структуру EnvelopedData та знайдіть там наступні елементи:
           публічний сертифікат отримувача <b>publicKey</b>, параметри <b>ukm</b> для
-          структури ECC-CMS-SharedInfo, спеціальний ключ encrypedKey який повинен
+          структури ECC-CMS-SharedInfo, спеціальний ключ <b>encrypedKey</b> який повинен
           розпакуватися алгоритмом AES-WRAP, педінг-параметр для IV для AES шифрів,
-          та власне саме закодоване повідомлення (payload) &mdash; <b>data</b>;
-       3) Сторіть похідний ключ sharedKey на основі публічного ключа кореспондента та вашого
-          приватного ключа з файлу <b>client.key</b>;
+          та власне саме закодоване повідомлення або payload &mdash; <b>data</b>;
+       3) Сторіть похідний ключ <b>sharedKey</b> на основі публічного ключа кореспондента та вашого
+          приватного ключа з файлу client.key;
        4) Застосуйте алгоритм KDF (Key Derive Function) для
           подовження ключа <b>sharedKey</b> до необхідної довжини
-          використовуючи DER закодовану ECC-CMS-SharedInfo структуру
-          з інформацією яка є в конверті (ukm);
+          використовуючи DER закодовану ECC-CMS-SharedInfo структуру <b>ukm</b>
+          з інформацією яка є в конверті;
        5) Розпакуйте алгоритмом AES-UNWRAP закодований ключ <b>encryptedKey</b>
-          ключом KDF отриманим на попередньому кроці;
+          ключом <b>kdf</b> отриманим на попередньому кроці;
        6) Розпакуйте payload <b>data</b> відповідним симетричним алгоритмом
-          використовуючи ключ отриманий на попередньому кроці та <b>iv</b> параметр з конверту.
+          використовуючи ключ отриманий на попередньому кроці та <b>iv</b>
+          параметр з конверту.
        </p>
 
     <figure><code>def testCMS() do
@@ -603,11 +604,12 @@ FIPS — PUB 180-4,<br>
      [1]. <a href="https://tonpa.guru/stream/2020/2020-02-03 Кваліфікований Електронний Підпис.htm">Кваліфікований Електронний Підпис України</a><br>
      [2]. <a href="https:///tonpa.guru/stream/2023/2023-06-22 Месенжер.htm">Сохацький пише Месенжер</a><br>
      [3]. <a href="https://chat.erp.uno">SYNRC CHAT</a><br>
-     [4]. <a href="https://tonpa.guru/stream/2010/2010-10-18 LDAP.htm">Як написати LDAP сервер за 30 хвилин</a><br>
-     [5]. <a href="https://soatok.blog/2021/11/17/understanding-hkdf/">Understanding HKDF</a><br>
-     [6]. <a href="https://gist.github.com/5HT/86f25408ed74ddb090d2ed9267b33afb">CMS S/MIME compatible MUA SMTP clients</a><br>
-     [7]. <a href="https://thehackernews.com/2019/04/email-signature-spoofing.html">Over Dozen Popular Email Clients Found Vulnerable to Signature Spoofing Attacks</a><br>
-     [8]. <a href="https://czo.gov.ua/testexamples">CMS приклади на сторінці Українського ЦЗО</a><br>
+     [4]. <a href="https://ca.erp.uno">SYNRC CA</a><br>
+     [5]. <a href="https://tonpa.guru/stream/2010/2010-10-18 LDAP.htm">Як написати LDAP сервер за 30 хвилин</a><br>
+     [6]. <a href="https://soatok.blog/2021/11/17/understanding-hkdf/">Understanding HKDF</a><br>
+     [7]. <a href="https://gist.github.com/5HT/86f25408ed74ddb090d2ed9267b33afb">CMS S/MIME compatible MUA SMTP clients</a><br>
+     [8]. <a href="https://thehackernews.com/2019/04/email-signature-spoofing.html">Over Dozen Popular Email Clients Found Vulnerable to Signature Spoofing Attacks</a><br>
+     [9]. <a href="https://czo.gov.ua/testexamples">CMS приклади на сторінці Українського ЦЗО</a><br>
      </p>
 
     </section>
