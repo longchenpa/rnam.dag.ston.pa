@@ -92,11 +92,12 @@
     <p>Перед початком дамо основи сучасної криптографії в одному параграфі. Для створення спільного
        секретного слова, яким можна було би шифрувати трафік за допомогою симетричного шифру AES
        використовується математичний протокол обміну публічними ключами Діфі-Хелмана
-       і його обчислення на сторонах кореспондентів комунікації.Суть протоколу зводить до наступниїх рівнянь: </p>
+       і його обчислення на сторонах кореспондентів комунікації.
+       Суть протоколу зводиться до наступниїх рівнянь: </p>
 
-    <figure><code> roccoK := private(32)
- roccoP = public(roccoK)
+    <figure><code> roccoK = private(32)
  tonpaK = private(32)
+ roccoP = public(roccoK)
  tonpaP = public(tonpaK)
  tonpaS = shared(tonpaK,roccoP)
  roccoS = shared(roccoK,tonpaP)
@@ -113,8 +114,9 @@
          Кожна крипто-система на публічних та приватних ключа повинна
          відповідати цим рівнянням.</p>
 
-    <figure><code> ciphers = encrypt(plaintxt,tonpaS)
- plaintxt = decrypt(ciphers,roccoS)</figure></code>
+    <figure><code>
+ ciphered = encrypt(plaintxt,tonpaS)
+ plaintxt = decrypt(ciphered,roccoS)</figure></code>
 
       <p>Далі використовується симетричні алгоритми шифрування такі як AES в
          різних флейворах CCM, GCM, ECB і т.д. Код на мові Erlang виглядає так: </p>
@@ -285,45 +287,29 @@ def eccCMS(ukm, len) do
      <figure><code>{:ok,
  {:ContentInfo, {1, 2, 840, 113549, 1, 7, 3},
   {:EnvelopedData, :v2, :asn1_NOVALUE,
-   [
-     kari: {:KeyAgreeRecipientInfo, :v3,
-      {:originatorKey,
-       {:OriginatorPublicKey,
-        {:OriginatorPublicKey_algorithm, {1, 2, 840, 10045, 2, 1},
-         {:asn1_OPENTYPE, <<6, 8, 42, 134, 72, 206, 61, 3, 1, 7>>}},
+   [ kari: {:KeyAgreeRecipientInfo, :v3, {:originatorKey, {:OriginatorPublicKey,
+           {:OriginatorPublicKey_algorithm, {1, 2, 840, 10045, 2, 1},
+           {:asn1_OPENTYPE, <<6, 8, 42, 134, 72, 206, 61, 3, 1, 7>>}},
         <<4, 6, 190, 96, 29, 199, 131, 230, 12, 102, 154, 16, 154, 10, 234, 73,
-          251, 68, 231, 22, 127, 239, 155, 68, 215, 5, 198, 168, 182, 12, 91,
-          20, ...>>}},
+          251, 68, 231, 22, 127, 239, 155, 68, 215, 5, 198, 168, 182, ...>>}},
       <<50, 85, 46, 76, 19, 151, 182, 205, 95, 11, 98, 153, 40, 157, 233, 140,
         239, 139, 208, 211, 169, 250, 65, 36, 223, 147, 205, 131, 58, 59, 169,
         44, 169, 18, 249, 55, ...>>,
       {:KeyAgreeRecipientInfo_keyEncryptionAlgorithm, {1, 3, 132, 1, 11, 3},
        {:asn1_OPENTYPE, <<48, 11, 6, 9, 96, 134, 72, 1, 101, 3, 4, 1, 45>>}},
-      [
-        {:RecipientEncryptedKey,
-         {:issuerAndSerialNumber,
-          {:IssuerAndSerialNumber,
-           {:rdnSequence,
-            [
-              [
-                {:SingleAttribute, {2, 5, 4, 6}, 'RU'},
-                {:SingleAttribute, {2, 5, 4, 3}, {:bmpString, 'Test'}}
-              ]
-            ]}, 1}},
+      [{:RecipientEncryptedKey,{:issuerAndSerialNumber,{:IssuerAndSerialNumber,
+       {:rdnSequence,[
+              [{:SingleAttribute, {2, 5, 4, 6},  'UA'}],
+              [{:SingleAttribute, {2, 5, 4, 8},  {:uTF8String, "Kyiv"}}],
+              [{:SingleAttribute, {2, 5, 4, 10}, {:uTF8String, "SYNRC"}}],
+              [{:SingleAttribute, {2, 5, 4, 3},  {:uTF8String, "CA"}}]]}, 1}},
          <<229, 31, 137, 113, 61, 155, 40, 22, 173, 172, 192, 34, 94, 109, 213,
-           159, 30, 169, 137, 160, 195, 247, 159, 179, 221, 226, 248, 66, 133,
-           254, ...>>}
-      ]}
-   ],
+           159, 30, 169, 137, 160, 195, 247, 159, 179, 221, 226, 248, ...>>}]}],
    {:EncryptedContentInfo, {1, 2, 840, 113549, 1, 7, 1},
     {:ContentEncryptionAlgorithmIdentifier, {2, 16, 840, 1, 101, 3, 4, 1, 42},
-     {:asn1_OPENTYPE,
-      <<4, 16, 109, 140, 24, 154, 31, 80, 220, 181, 16, 192, 76, 248, 64, 247,
-        33, 58>>}},
-    <<77, 232, 21, 22, 241, 220, 98, 121, 133, 82, 196, 133, 192, 209, 3, 72,
-      129, 19, 35, 227, 67, 100, 214, 153, 34, 128, 13, 170, 134, 165, 98,
-      142>>}, :asn1_NOVALUE}}}
-</code></figure>
+     {:asn1_OPENTYPE, <<4, 16, 109, 140, 24, 154, 31, 80, 220, ...>>}},
+       <<77, 232, 21, 22, 241, 220, 98, 121, 133, 82, 196, 133, 192, 209, 3, 72,
+         129, 19, 35, 227, 67, 100, 214, 153, 34, 128, ...>>}, :asn1_NOVALUE}}}</code></figure>
 
     <p>Тільки подивившись на цю структуру можна одразу все зрозуміти.
        Далі справа CMS протоколу, який звучить наступним чином:
@@ -352,11 +338,10 @@ def eccCMS(ukm, len) do
     {_,{:ContentInfo,_,{:EnvelopedData,_,_,x,
        {:EncryptedContentInfo,_,{_,_,{_,iv}},data},_}}} = testSMIME()
     [{:kari,{_,:v3,{_,{_,_,publicKey}},ukm,_,[{_,_,encryptedKey}]}}|_] = x
-    sharedKey    = shared(publicKey,privateKey,scheme)
-    {_,content}  = :'CMSECCAlgs-2009-02'.encode(:'ECC-CMS-SharedInfo',
-                                                eccCMS(ukm, 256))
-    kdf          = KDF.derive(:sha512, sharedKey, 32, content)
-    unwrap       = :aes_kw.unwrap(encryptedKey, kdf)
+    sharedKey = shared(publicKey,privateKey,scheme)
+    der = :'CMSECCAlgs-2009-02'.encode(:'ECC-CMS-SharedInfo', eccCMS(ukm,256))
+    kdf = KDF.derive(:sha512, sharedKey, 32, e(2,content))
+    unwrap = :aes_kw.unwrap(encryptedKey, kdf)
     CA.AES.decrypt(:aes_256_cbc, data, unwrap, :binary.part(iv,2,16))
 end</code></figure>
 
