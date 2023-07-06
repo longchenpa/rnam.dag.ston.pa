@@ -367,6 +367,12 @@ def eccCMS(ukm, len) do
     CA.AES.decrypt(:aes_256_cbc, data, unwrap, :binary.part(iv,2,16))
 end</code></figure>
 
+<p>Це приклад є частиною <a href="https://ca.erp.uno">SYNRC CA</a>
+   та <a href="https://chat.erp.uno">SYNRC CHAT</a> які можна просто
+   скачати і подивитися маючи Elixir. Сертифікати pki.js закомічені в
+   CA, а openssl команди та сертифікати SYNRC CA закомічені в CHAT.</p>
+
+<p>Успіхів в дешифрації!</p>
 
 <h3>Додаток А. Криптографічні алгоритми</h3>
 
