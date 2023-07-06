@@ -266,10 +266,8 @@ def public(name), do: e(3,e(8,e(2,decodePEM(readPEM("certs/",name)))))
 def decodePEM(bin), do: :public_key.pem_decode(bin)
 def readPEM(name), do: hd(decodePEM(e(2,:file.read_file(name))))
 def shared(pub, key, scheme), do: :crypto.compute_key(:ecdh, pub, key, scheme)
-def eccCMS(ukm, len) do
-    {:'ECC-CMS-SharedInfo',
-       {:'KeyWrapAlgorithm',{2,16,840,1,101,3,4,1,45},:asn1_NOVALUE},
-       ukm, <<len::32>>}</code></figure>
+def eccCMS(ukm, len), do: {:'ECC-CMS-SharedInfo',
+    {:'KeyWrapAlgorithm',{2,16,840,1,101,3,4,1,45},:asn1_NOVALUE}, ukm, <<len::32>>}</code></figure>
 
        <p>Це функції побудовані над стандартними з базової бібліотеки, які читають файли
           обчислюють похідні ключі та формують спеціальну структуру ECC-CMS-Info в DER
