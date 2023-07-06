@@ -100,8 +100,7 @@
  tonpaP := public(tonpaK)
  tonpaS := shared(tonpaK,roccoP)
  roccoS := shared(roccoK,tonpaP)
- roccoS == tonpaS
-     </figure></code>
+ roccoS == tonpaS</figure></code>
 
       <p>Два учасники мають пару Публічний та Приватний ключі, які генеруються
          функціями <b>puiblic</b> та <b>private</b>, зазвичай приватний ключ
@@ -114,17 +113,15 @@
          Кожна крипто-система на публічних та приватних ключа повинна
          відповідати цим рівнянням.</p>
 
-    <figure><code> outgoing := encrypt(tonpaS)
+    <figure><code> outgoing := encrypt(plaintext,tonpaS)
  send(tonpaP, roccoP, outgoing)
  incoming := receive(roccoP, tonpaP)
- decrypt(incoming)
-      </figure></code>
+ plaintext = decrypt(incoming,roccoS)</figure></code>
 
       <p>Далі використовується симетричні алгоритми шифрування такі як AES в
          різних флейворах CCM, GCM, ECB і т.д. Код на мові Erlang виглядає так: </p>
 
-    <figure><code>
-    def check_X448_GCM256() do # X488
+    <figure><code>    def check_X448_GCM256() do # X488
         scheme = :x448
         {roccoP,roccoK} = :crypto.generate_key(:ecdh, scheme)
         {maximP,maximK} = :crypto.generate_key(:ecdh, scheme)
@@ -133,8 +130,7 @@
         x = encrypt(:aes_256_cbc, "Success!", maximS)
         "Success!" == decrypt(:aes_256_cbc, x, roccoS)
         :ok
-    end
-      </figure></code>
+    end </figure></code>
 
      <p>На цьому можна було би зупинитись і почати писати псевдо-захищений
         месенжер, як всі роблять, але тут дуже багато безпекових н'юансів
@@ -248,8 +244,7 @@ afj8HEdqSp4hXMyq50dJM7sP8Nx0avuW3TKvMmc=</code></figure>
        промислово згенерувати код ASN.1 компіляторм прямо з ASN.1 дефініцій. Для розшифровки CMS
        нам знадобляться наступні дефініції:<p>
 
-     <figure><code>
-$ erlc AuthenticationFramework.asn1
+     <figure><code>$ erlc AuthenticationFramework.asn1
 $ erlc CMSECCAlgs-2009-02.asn1
 $ erlc CryptographicMessageSyntax-2010.asn1
 $ erlc KEP.asn1
@@ -260,8 +255,7 @@ $ erlc PKCS-7.asn1
 $ erlc CMSAesRsaesOaep-2009.asn1          
 $ erlc CryptographicMessageSyntax-2009.asn1  
 $ erlc InformationFramework.asn1                       
-$ erlc PKIX1Explicit-2009.asn1
-</code></figure>
+$ erlc PKIX1Explicit-2009.asn1</code></figure>
 
       <p>Ці команди просто згенерують код на Erlang. Далі нам знадобиться
          маленька прелюдія:</p>
