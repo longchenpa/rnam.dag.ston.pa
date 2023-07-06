@@ -143,7 +143,442 @@
 
     <h4>Генерація криптографічного повідомлення CMS</h4>
 
+    <p>В цьому параграфі я розгляну зразу дві криптографічні системи на яких буду
+       тестувати код референсного клієнта мого месенжера. Перший &mdash; це класичний
+       OpenSSL клієнт <b>openssl cms</b>, а другий &mdash; це бібліотека pki.js.
+       І вже після них і всіх сумісних протоколі я перейду до поштових клієнтів
+       і їх підримки (чисто погратися).</p>
+
+    <p>Для генерації криптографічного повідомлення необхідно спочатку дві пари
+       ключів кореспондентів. Насправді ми тестуємо шифрування (без підпису),
+       тому достатньо пари &mdash; публічний ключ відправника, та приватний ключ
+       отримувача. В процесі підпису відправником створюється ефимерний приватний
+       ключ, а для розшифровування нам не потрібний публічний ключ отримувача, тому
+       шо він віддрукований в самому конверті криптогрфічного повідомлення, то ж
+       ми на стороні отримувача просто викликатимемо функцію <b>shared</b> (в JavaScript
+       називається deriveKey) і отримуватимемо спільний ключ яким і будемо розшифровувати.</p>
+
+    <p>Але перед цим треба створити сертифікати. Оскільки це тема окремої статті про
+       Центр Сертифікації Ключів, а в нас він є в складі месанжера і називається SYNRC CA,
+       то ми просто вікладемо цю статтю в стіл і покажемо просто як ним користуватися.
+       Ну або, якшо ви вмієте можете просто згенерувати їх за допомогою openssl,
+       детальний перевірений перелік команд необхідний для цього наведено в офіційній
+       документації по SYNRC CA &mdash; <a href="https://ca.erp.uno/man/ecc.htm">Як видавати ECC сертифікати.</a></p>
+
+    <p>Після описаних вище процедур у вас повинно з'явитися три файли: публічний, приватний
+       ключі та публічний ключ сертифікаційного центру.</p>
+
+     <p>Сертифікат ЦА <b>caroot.pem</b></p>
+
+     <figure><code>-----BEGIN CERTIFICATE-----
+MIICFTCCAZqgAwIBAgIUMaLQHXg8CHFS+FFxQ6savPqihpcwCgYIKoZIzj0EAwMw
+OTELMAkGA1UEBhMCVUExDTALBgNVBAgMBEt5aXYxDjAMBgNVBAoMBVNZTlJDMQsw
+CQYDVQQDDAJDQTAeFw0yMzA2MTQwNjM0NDlaFw0zMzA2MTEwNjM0NDlaMDkxCzAJ
+BgNVBAYTAlVBMQ0wCwYDVQQIDARLeWl2MQ4wDAYDVQQKDAVTWU5SQzELMAkGA1UE
+AwwCQ0EwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAASuoANS5G51qPPNF8k4tGaWL6t1
+Fk26Wz91aU+bu2NwbDc0knfYvkdY/Rvw4jskP9ANxsqAwOVB2XVSk2gZ8pBv4RhC
+Z1W7v96/4cXbAg4BUO1SGGOyJkbHumnzOY+QcrijYzBhMB0GA1UdDgQWBBSXIYhB
+nKXOU4m9EWTuXdq0r96N2zAfBgNVHSMEGDAWgBSXIYhBnKXOU4m9EWTuXdq0r96N
+2zAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAKBggqhkjOPQQDAwNp
+ADBmAjEAzlbOUAwYYoeWpiv9GRQXuGLeEMR444L1z54aINbj25osgYqn4Yy73IdQ
+DBlpK7bsAjEAu2Iic30yu5xJ+X4lUZ43sFhgZPU52R8I2j0Wr4bDyOftMvmRPaS7
+LXfHK/DhlkTp
+-----END CERTIFICATE-----</code></figure>
+
+     <p>Публічний ключ кореспондента <b>client.pem</b></p>
+
+     <figure><code>-----BEGIN CERTIFICATE-----
+MIICZTCCAeygAwIBAgIBADAKBggqhkjOPQQDAzA5MQswCQYDVQQGEwJVQTENMAsG
+A1UECAwES3lpdjEOMAwGA1UECgwFU1lOUkMxCzAJBgNVBAMMAkNBMB4XDTIzMDYx
+NDA2MzQ1NloXDTI0MDYxMzA2MzQ1NlowPTELMAkGA1UEBhMCVUExDTALBgNVBAgM
+BEt5aXYxDjAMBgNVBAoMBVNZTlJDMQ8wDQYDVQQDDAZjbGllbnQwdjAQBgcqhkjO
+PQIBBgUrgQQAIgNiAAScTyEGW62+TyFWZshhwPrX2+AxGS+t2k4Fvw8ACbF8DiGZ
+Tj0CM4jbsDnhjnwm8p7MdsIbu4/a+RxGT8qDd0lvlI1lL334L1tDc/06NXzK3IvB
+R2t2reAgTnH4J7sWwbGjgcMwgcAwCQYDVR0TBAIwADARBglghkgBhvhCAQEEBAMC
+BaAwGwYJYIZIAYb4QgENBA4WDFNZTlJDIENMSUVOVDAdBgNVHQ4EFgQUMS7SOt51
+c79DOn8Sdtsq/Eu/AzMwHwYDVR0jBBgwFoAUlyGIQZylzlOJvRFk7l3atK/ejdsw
+DgYDVR0PAQH/BAQDAgXgMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAU
+BgNVHREEDTALgglsb2NhbGhvc3QwCgYIKoZIzj0EAwMDZwAwZAIwQoJgU5jOwhWl
+sE7L6n1W0bDm8Djd/AMzAI59GDoTb23ShCwdDpyKLKRTrMEyzksuAjBeGrut2CG6
+fFnHjIAt7o1V+MA26TbHW5W3HQWZ+Qt54Y2qCNDZzJ1luWu7/NG1HYk=
+-----END CERTIFICATE-----</code></figure>
+
+     <p>Приватний ключ кореспондента <b>client.key</b></p>
+
+     <figure><code>-----BEGIN EC PRIVATE KEY-----
+MIGkAgEBBDBtpuOYsiBPAtMfFfAFv1v45dm/i4C5vd2GbUQjD74YsQfeJjwmNoTW
+Lay6AHTwn26gBwYFK4EEACKhZANiAAScTyEGW62+TyFWZshhwPrX2+AxGS+t2k4F
+vw8ACbF8DiGZTj0CM4jbsDnhjnwm8p7MdsIbu4/a+RxGT8qDd0lvlI1lL334L1tD
+c/06NXzK3IvBR2t2reAgTnH4J7sWwbE=
+-----END EC PRIVATE KEY-----</code></figure>
+
+     <P>Одразу після цього створюємо криптографічне повідомлення у форматі CMS S/MIME:</P>
+
+     <figure><code>$ openssl cms -encrypt -aes256 -in message.txt -out encrypted.txt \
+              -recip client.pem -keyopt ecdh_kdf_md:sha256</code></figure>
+
+     <figure><code>MIME-Version: 1.0
+Content-Disposition: attachment; filename="smime.p7m"
+Content-Type: application/pkcs7-mime; smime-type=enveloped-data; name="smime.p7m"
+Content-Transfer-Encoding: base64
+
+MIICuQYJKoZIhvcNAQcDoIICqjCCAqYCAQIxgf6hgfsCAQOgcaFvMAkGByqGSM49
+AgEDYgAEmjW7S4ADHQwDWh54uki6mdoj52ttu47VziTTOU+jAmnt9H2+NMg+6Y9T
+gBRMVM6tJiTAMgJqEd9W3bqIZyDPZXoTmOjvPKbbiJSlDWa+WifOHwMtyT/ZJFsP
+HEPiF7E7MBUGBiuBBAELATALBglghkgBZQMEAS0wbDBqMD4wOTELMAkGA1UEBhMC
+VUExDTALBgNVBAgMBEt5aXYxDjAMBgNVBAoMBVNZTlJDMQswCQYDVQQDDAJDQQIB
+AAQoBd9ZefjKw4NlME3TOc+ukQadn189UkOU1QBst3Rbulijsu8pTQp85TCCAZ4G
+CSqGSIb3DQEHATAdBglghkgBZQMEASoEEP/0fa2gc399pQ4WtWj17HuAggFwg61G
+004sgw52R0b3oG56OAhnImpILE2NaAIPUr7xVI9MjH8j9hIBv7tCYxBtAPATXe+V
+L5tDBPdSYA7DLuL2VPfS1jtD9H0SM4F5pDN5/8aBM1ViJoJ9j0tkFrhYxP9vulrj
+Ppaw2RJUY5+tilKyoSahweCHbgtvTfVxOj5zQJirQVWmxnU17h/suacUmkV4Y1O5
+tQzeweJJ5qHP0SLFqirMG+QoqBTpaGk1sPQdyXhNDguRXfZxIfRgU30TUB9YPvfc
+dFsfY2urXTa/iyamTBalEjdtgRbOoM+mATgXT9AC6uKOb2MhaM2s0yGLssHHpYMk
+dG95BI2HLpivYrSsJrn4eknbUrs98FIHRS6n+QxbQHRfpcciuekF1g5Jdym4jG8c
+998taA3wrxWcRvkA/L1IUw1Bj1A5bXUOvHZAyOYCwM/b5QRIRmYS1uHTD6a6I6Y5
+afj8HEdqSp4hXMyq50dJM7sP8Nx0avuW3TKvMmc=</code></figure>
+
+     <P>Перевіряємо працездатність самого openssl:</P>
+
+     <figure><code>$ openssl cms -decrypt -in encrypted.txt -inkey client.key -recip client.pem</code></figure>
+
+    <h4>Дешифрація засобами Erlang</h4>
+
+    <p>Як ви знаєте з попередніх статей, аби користуватися промислово криптографією потрібно
+       промислово згенерувати код ASN.1 компіляторм прямо з ASN.1 дефініцій. Для розшифровки CMS
+       нам знадобляться наступні дефініції:<p>
+
+     <figure><code>
+$ erlc AuthenticationFramework.asn1
+$ erlc CMSECCAlgs-2009-02.asn1
+$ erlc CryptographicMessageSyntax-2010.asn1
+$ erlc KEP.asn1
+$ erlc CMS-AES-CCM-and-AES-GCM-2009.asn1  
+$ erlc CMSECDHAlgs-2017.asn1                 
+$ erlc CryptographicMessageSyntaxAlgorithms-2009.asn1  
+$ erlc PKCS-7.asn1
+$ erlc CMSAesRsaesOaep-2009.asn1          
+$ erlc CryptographicMessageSyntax-2009.asn1  
+$ erlc InformationFramework.asn1                       
+$ erlc PKIX1Explicit-2009.asn1
+</code></figure>
+
+      <p>Ці команди просто згенерують код на Erlang. Далі нам знадобиться
+         маленька прелюдія:</p>
+
+     <figure><code>def e(x,y), do: :erlang.element(x,y)
+def privat(name), do: e(3,:public_key.pem_entry_decode(readPEM("certs/",name)))
+def public(name), do: e(3,e(8,e(2,:public_key.pem_entry_decode(readPEM("certs/",name)))))
+def readPEM(name), do: hd(:public_key.pem_decode(e(2,:file.read_file(name))))
+def shared(pub, key, scheme), do: :crypto.compute_key(:ecdh, pub, key, scheme)
+def eccCMS(ukm, len) do
+    {:'ECC-CMS-SharedInfo',
+       {:'KeyWrapAlgorithm',{2,16,840,1,101,3,4,1,45},:asn1_NOVALUE},
+       ukm, <<len::32>>}</code></figure>
+
+       <p>Це функції побудовані над стандартними з базової бібліотеки, які читають файли
+          обчислюють похідні ключі та формують спеціальну структуру ECC-CMS-Info в DER
+          кодуванні яка нам знадобить для дешифрації повідомлення.</p>
+
+     <figure><code>def testSMIME() do
+        {:ok,base} = :file.read_file "priv/encrypted.txt"
+        [_,s] = :string.split base, "\n\n"
+        :'CryptographicMessageSyntax-2010'.decode(:ContentInfo,:base64.decode(s))
+    end</code></figure>
+
+        <p>Перший крок &mdash; це декування текстового повідомлення в Erlang об'єкт зразу.</P>
+
+    <figure><code>iex(1)> CA.CRYPTO.testSMIME</code></figure>
+ 
+     <figure><code>{:ok,
+ {:ContentInfo, {1, 2, 840, 113549, 1, 7, 3},
+  {:EnvelopedData, :v2, :asn1_NOVALUE,
+   [
+     kari: {:KeyAgreeRecipientInfo, :v3,
+      {:originatorKey,
+       {:OriginatorPublicKey,
+        {:OriginatorPublicKey_algorithm, {1, 2, 840, 10045, 2, 1},
+         {:asn1_OPENTYPE, <<6, 8, 42, 134, 72, 206, 61, 3, 1, 7>>}},
+        <<4, 6, 190, 96, 29, 199, 131, 230, 12, 102, 154, 16, 154, 10, 234, 73,
+          251, 68, 231, 22, 127, 239, 155, 68, 215, 5, 198, 168, 182, 12, 91,
+          20, ...>>}},
+      <<50, 85, 46, 76, 19, 151, 182, 205, 95, 11, 98, 153, 40, 157, 233, 140,
+        239, 139, 208, 211, 169, 250, 65, 36, 223, 147, 205, 131, 58, 59, 169,
+        44, 169, 18, 249, 55, ...>>,
+      {:KeyAgreeRecipientInfo_keyEncryptionAlgorithm, {1, 3, 132, 1, 11, 3},
+       {:asn1_OPENTYPE, <<48, 11, 6, 9, 96, 134, 72, 1, 101, 3, 4, 1, 45>>}},
+      [
+        {:RecipientEncryptedKey,
+         {:issuerAndSerialNumber,
+          {:IssuerAndSerialNumber,
+           {:rdnSequence,
+            [
+              [
+                {:SingleAttribute, {2, 5, 4, 6}, 'RU'},
+                {:SingleAttribute, {2, 5, 4, 3}, {:bmpString, 'Test'}}
+              ]
+            ]}, 1}},
+         <<229, 31, 137, 113, 61, 155, 40, 22, 173, 172, 192, 34, 94, 109, 213,
+           159, 30, 169, 137, 160, 195, 247, 159, 179, 221, 226, 248, 66, 133,
+           254, ...>>}
+      ]}
+   ],
+   {:EncryptedContentInfo, {1, 2, 840, 113549, 1, 7, 1},
+    {:ContentEncryptionAlgorithmIdentifier, {2, 16, 840, 1, 101, 3, 4, 1, 42},
+     {:asn1_OPENTYPE,
+      <<4, 16, 109, 140, 24, 154, 31, 80, 220, 181, 16, 192, 76, 248, 64, 247,
+        33, 58>>}},
+    <<77, 232, 21, 22, 241, 220, 98, 121, 133, 82, 196, 133, 192, 209, 3, 72,
+      129, 19, 35, 227, 67, 100, 214, 153, 34, 128, 13, 170, 134, 165, 98,
+      142>>}, :asn1_NOVALUE}}}
+</code></figure>
+
+    <p>Тільки подивившись на цю структуру можна одразу все зрозуміти.
+       Далі справа CMS протоколу, який звучить наступним чином:
+       1) Визначте схему видачі ECC сертифікату PRIME256V1 SECP385R1 тощо;
+       2) Розпакуйте структуру EnvelopedData та знайдіть там наступні елементи:
+          публічний сертифікат отримувача <b>publicKey</b>, параметри <b>ukm</b> для
+          структури ECC-CMS-SharedInfo, спеціальний ключ encrypedKey який повинен
+          розпакуватися алгоритмом AES-WRAP, педінг-параметр для IV для AES шифрів,
+          та власне саме закодоване повідомлення (payload) &mdash; <b>data</b>;
+       3) Сторіть похідний ключ sharedKey на основі публічного ключа кореспондента та вашого
+          приватного ключа з файлу <b>client.key</b>;
+       4) Застосуйте алгоритм KDF (Key Derive Function) для
+          подовження ключа <b>sharedKey</b> до необхідної довжини
+          використовуючи DER закодовану ECC-CMS-SharedInfo структуру
+          з інформацією яка є в конверті (ukm);
+       5) Розпакуйте алгоритмом AES-UNWRAP закодований ключ <b>encryptedKey</b>
+          ключом KDF отриманим на попередньому кроці;
+       6) Розпакуйте payload <b>data</b> відповідним симетричним алгоритмом
+          використовуючи ключ отриманий на попередньому кроці та <b>iv</b> параметр з конверту.
+       </p>
+
+    <figure><code>def testCMS() do
+    privateKey = privat "client.key"
+    scheme = :prime256v1
+    {_,{:ContentInfo,_,{:EnvelopedData,_,_,x,
+       {:EncryptedContentInfo,_,{_,_,{_,iv}},data},_}}} = testSMIME()
+    [{:kari,{_,:v3,{_,{_,_,publicKey}},ukm,_,[{_,_,encryptedKey}]}}|_] = x
+    sharedKey    = shared(publicKey,privateKey,scheme)
+    {_,content}  = :'CMSECCAlgs-2009-02'.encode(:'ECC-CMS-SharedInfo',
+                                                eccCMS(ukm, 256))
+    kdf          = KDF.derive(:sha512, sharedKey, 32, content)
+    unwrap       = :aes_kw.unwrap(encryptedKey, kdf)
+    CA.AES.decrypt(:aes_256_cbc, data, unwrap, :binary.part(iv,2,16))
+end</code></figure>
+
+
+<h3>Додаток А. Криптографічні алгоритми</h3>
+
+<figure><code>defmodule CA.ALG do
+
+   def algorithms() do
+       [
+         {:'id-gost28147-ofb',    {1,2,804,2,1,1,1,1,1,1,2}},
+         {:'id-gost28147-cfb',    {1,2,804,2,1,1,1,1,1,1,3}},
+         {:'id-gost28147-wrap',   {1,2,804,2,1,1,1,1,1,1,5}},
+         {:'id-Dstu7624cfb-x256', {1,2,804,2,1,1,1,1,1,3,3,2}},
+         {:'id-Dstu7624ofb-x256', {1,2,804,2,1,1,1,1,1,3,6,2}},
+         {:'id-ecPublicKey',      {1,2,840,10045,2,1}},
+         {:secp192r1,             {1,2,840,10045,3,1,1}},
+         {:secp256r1,             {1,2,840,10045,3,1,7}},
+         {:'ecdsa-with-SHA224',   {1,2,840,10045,4,3,1}},
+         {:'ecdsa-with-SHA256',   {1,2,840,10045,4,3,2}},
+         {:'ecdsa-with-SHA384',   {1,2,840,10045,4,3,3}},
+         {:'ecdsa-with-SHA512',   {1,2,840,10045,4,3,4}},
+         {:'ecdsa-with-SHA1',     {1,2,840,10045,4,1}},
+         {:'id-dsa',              {1,2,840,10040,4,1}},
+         {:'dsa-with-sha1',       {1,2,840,10040,4,3}},
+         {:rsaEncryption,         {1,2,840,113549,1,1,1}},
+         {:md2WithRSAEncryption,  {1,2,840,113549,1,1,2}},
+         {:md5WithRSAEncryption,  {1,2,840,113549,1,1,4}},
+         {:sha1WithRSAEncryption, {1,2,840,113549,1,1,5}},
+         {:'id-PBKDF2',           {1,2,840,113549,1,5,12}},
+         {:'smime-alg',           {1,2,840,113549,1,9,16,3}},
+         {:'id-alg-ESDH',         {1,2,840,113549,1,9,16,3,5}},
+         {:'id-alg-SSDH',         {1,2,840,113549,1,9,16,3,10}},
+         {:'id-alg-CMS3DESwrap',  {1,2,840,113549,1,9,16,3,6}},
+         {:'id-alg-CMSRC2wrap',   {1,2,840,113549,1,9,16,3,7}},
+         {:'id-md2',              {1,2,840,113549,2,2}},
+         {:'id-md5',              {1,2,840,113549,2,5}},
+         {:'id-hmacWithSHA224',   {1,2,840,113549,2,8}},
+         {:'id-hmacWithSHA256',   {1,2,840,113549,2,9}},
+         {:'id-hmacWithSHA384',   {1,2,840,113549,2,10}},
+         {:'id-hmacWithSHA512',   {1,2,840,113549,2,11}},
+         {:'rc2-cbc',             {1,2,840,113549,3,2}},
+         {:'des-ede3-cbc',        {1,2,840,113549,3,7}},
+         {:keyExchangeAlgorithm,  {2,16,840,1,101,2,1,1,22}},
+         {:'id-aes128-ECB',       {2,16,840,1,101,3,4,1,1}},
+         {:'id-aes128-CBC',       {2,16,840,1,101,3,4,1,2}},
+         {:'id-aes128-wrap',      {2,16,840,1,101,3,4,1,5}},
+         {:'id-aes128-GCM',       {2,16,840,1,101,3,4,1,6}},
+         {:'id-aes128-CCM',       {2,16,840,1,101,3,4,1,7}},
+         {:'id-aes128-wrap-pad',  {2,16,840,1,101,3,4,1,8}},
+         {:'id-aes192-ECB',       {2,16,840,1,101,3,4,1,21}},
+         {:'id-aes192-CBC',       {2,16,840,1,101,3,4,1,22}},
+         {:'id-aes192-wrap',      {2,16,840,1,101,3,4,1,25}},
+         {:'id-aes192-GCM',       {2,16,840,1,101,3,4,1,26}},
+         {:'id-aes192-CCM',       {2,16,840,1,101,3,4,1,27}},
+         {:'id-aes192-wrap-pad',  {2,16,840,1,101,3,4,1,28}},
+         {:'id-aes256-ECB',       {2,16,840,1,101,3,4,1,41}},
+         {:'id-aes256-CBC',       {2,16,840,1,101,3,4,1,42}},
+         {:'id-aes256-OFB',       {2,16,840,1,101,3,4,1,43}},
+         {:'id-aes256-CFB',       {2,16,840,1,101,3,4,1,44}},
+         {:'id-aes256-wrap',      {2,16,840,1,101,3,4,1,45}},
+         {:'id-aes256-GCM',       {2,16,840,1,101,3,4,1,46}},
+         {:'id-aes256-CCM',       {2,16,840,1,101,3,4,1,47}},
+         {:'id-aes256-wrap-pad',  {2,16,840,1,101,3,4,1,48}},
+         {:'dsa-with-sha224',     {2,16,840,1,101,3,4,3,1}},
+         {:'dsa-with-sha256',     {2,16,840,1,101,3,4,3,2}},
+         {:'dhSinglePass-stdDH-hkdf-sha256-scheme',    {1,2,840,113549,1,9,16,3,19}},
+         {:'dhSinglePass-stdDH-hkdf-sha384-scheme',    {1,2,840,113549,1,9,16,3,20}},
+         {:'dhSinglePass-stdDH-hkdf-sha512-scheme',    {1,2,840,113549,1,9,16,3,21}},
+         {:defaultPBKDF2,                              {1,3,6,1,5,5,8,1,2}},
+         {:'hMAC-SHA1',                                {1,3,6,1,5,5,8,1,2}},
+         {:'id-sha1',                                  {1,3,14,3,2,26}},
+         {:sect163k1,                                  {1,3,132,0,1}},
+         {:sect163r2,                                  {1,3,132,0,15}},
+         {:secp224r1,                                  {1,3,132,0,33}},
+         {:sect233k1,                                  {1,3,132,0,26}},
+         {:sect233r1,                                  {1,3,132,0,27}},
+         {:sect283k1,                                  {1,3,132,0,16}},
+         {:sect283r1,                                  {1,3,132,0,17}},
+         {:secp384r1,                                  {1,3,132,0,34}},
+         {:sect409k1,                                  {1,3,132,0,36}},
+         {:sect409r1,                                  {1,3,132,0,37}},
+         {:secp521r1,                                  {1,3,132,0,35}},
+         {:sect571k1,                                  {1,3,132,0,38}},
+         {:sect571r1,                                  {1,3,132,0,39}},
+         {:'secg-scheme',                              {1,3,132,1}},
+         {:'dhSinglePass-stdDH-sha224kdf-scheme',      {1,3,132,1,11,0}},
+         {:'dhSinglePass-stdDH-sha256kdf-scheme',      {1,3,132,1,11,1}},
+         {:'dhSinglePass-stdDH-sha384kdf-scheme',      {1,3,132,1,11,2}},
+         {:'dhSinglePass-stdDH-sha512kdf-scheme',      {1,3,132,1,11,3}},
+         {:'id-ecDH',                                  {1,3,132,1,12}},
+         {:'id-ecMQV',                                 {1,3,132,1,13}},
+         {:'dhSinglePass-cofactorDH-sha224kdf-scheme', {1,3,132,1,14,0}},
+         {:'dhSinglePass-cofactorDH-sha256kdf-scheme', {1,3,132,1,14,1}},
+         {:'dhSinglePass-cofactorDH-sha384kdf-scheme', {1,3,132,1,14,2}},
+         {:'dhSinglePass-cofactorDH-sha512kdf-scheme', {1,3,132,1,14,3}},
+         {:'mqvSinglePass-sha224kdf-scheme',           {1,3,132,1,15,0}},
+         {:'mqvSinglePass-sha256kdf-scheme',           {1,3,132,1,15,1}},
+         {:'mqvSinglePass-sha384kdf-scheme',           {1,3,132,1,15,2}},
+         {:'mqvSinglePass-sha512kdf-scheme',           {1,3,132,1,15,3}},
+         {:'x9-63-scheme',                             {1,3,133,16,840,63,0}},
+         {:'dhSinglePass-stdDH-sha1kdf-scheme',        {1,3,133,16,840,63,0,2}},
+         {:'dhSinglePass-cofactorDH-sha1kdf-scheme',   {1,3,133,16,840,63,0,3}},
+         {:'mqvSinglePass-sha1kdf-scheme',             {1,3,133,16,840,63,0,16}},
+       ]
+   end
+end
+</code></figure>
+
+<h3>Додаток Б. ASN.1 дефініції</h3>
+
+<figure><code>$ tree -L 3 .
+.
+├── cms
+│   ├── AESKeyWrapWithPad-02.asn1
+│   ├── AESKeyWrapWithPad-88.asn1
+│   ├── AlgorithmInformation-2009.asn1
+│   ├── AttributeCertificateVersion1-2009.asn1
+│   ├── AuthenticationFramework.asn1
+│   ├── BasicAccessControl.asn1
+│   ├── CMS-AES-CCM-and-AES-GCM-2009.asn1
+│   ├── CMSAesRsaesOaep-2009.asn1
+│   ├── CMSECCAlgs-2009-02.asn1
+│   ├── CMSECDHAlgs-2017.asn1
+│   ├── CertificateExtensions.asn1
+│   ├── Character-Coding-Attributes.asn1
+│   ├── Character-Presentation-Attributes.asn1
+│   ├── Character-Profile-Attributes.asn1
+│   ├── Colour-Attributes.asn1
+│   ├── CryptographicMessageSyntax-2009.asn1
+│   ├── CryptographicMessageSyntax-2010.asn1
+│   ├── CryptographicMessageSyntaxAlgorithms-2009.asn1
+│   ├── DOR-definition.asn1
+│   ├── Default-Value-Lists.asn1
+│   ├── DirectoryAbstractService.asn1
+│   ├── Document-Profile-Descriptor.asn1
+│   ├── EnrollmentMessageSyntax-2009.asn1
+│   ├── ExtendedSecurityServices-2009.asn1
+│   ├── External-References.asn1
+│   ├── Geo-Gr-Coding-Attributes.asn1
+│   ├── Geo-Gr-Presentation-Attributes.asn1
+│   ├── Geo-Gr-Profile-Attributes.asn1
+│   ├── ISO-STANDARD-9541-FONT-ATTRIBUTE-SET.asn1
+│   ├── ISO9541-SN.asn1
+│   ├── Identifiers-and-Expressions.asn1
+│   ├── InformationFramework.asn1
+│   ├── Layout-Descriptors.asn1
+│   ├── Link-Descriptors.asn1
+│   ├── Location-Expressions.asn1
+│   ├── Logical-Descriptors.asn1
+│   ├── MultipleSignatures-2010.asn1
+│   ├── PKCS-10.asn1
+│   ├── PKCS-12.asn1
+│   ├── PKCS-5.asn1
+│   ├── PKCS-7.asn1
+│   ├── PKCS-8.asn1
+│   ├── PKCS-9.asn1
+│   ├── PKIX-CommonTypes-2009.asn1
+│   ├── PKIX-X400Address-2009.asn1
+│   ├── PKIX1-PSS-OAEP-Algorithms-2009.asn1
+│   ├── PKIX1Explicit-2009.asn1
+│   ├── PKIX1Explicit88.asn1
+│   ├── PKIX1Implicit-2009.asn1
+│   ├── PKIX1Implicit88.asn1
+│   ├── PKIXAlgs-2009.asn1
+│   ├── PKIXAttributeCertificate-2009.asn1
+│   ├── PKIXCMP-2009.asn1
+│   ├── PKIXCRMF-2009.asn1
+│   ├── Raster-Gr-Coding-Attributes.asn1
+│   ├── Raster-Gr-Presentation-Attributes.asn1
+│   ├── Raster-Gr-Profile-Attributes.asn1
+│   ├── SMIMESymmetricKeyDistribution-2009.asn1
+│   ├── SecureMimeMessageV3dot1-2009.asn1
+│   ├── SelectedAttributeTypes.asn1
+│   ├── Style-Descriptors.asn1
+│   ├── Subprofiles.asn1
+│   ├── Temporal-Relationships.asn1
+│   ├── Text-Units.asn1
+│   ├── UpperBounds.asn1
+│   ├── UsefulDefinitions.asn1
+│   └── Videotex-Coding-Attributes.asn1
+├── csr
+│   ├── AlgorithmInformation-2009.asn1
+│   ├── PKCS-10.asn1
+│   ├── PKIX-CommonTypes-2009.asn1
+│   ├── PKIX-X400Address-2009.asn1
+│   ├── PKIX1-PSS-OAEP-Algorithms-2009.asn1
+│   ├── PKIX1Explicit-2009.asn1
+│   ├── PKIX1Implicit-2009.asn1
+│   └── PKIXAlgs-2009.asn1
+├── kep
+│   ├── AuthenticationFramework.asn1
+│   ├── BasicAccessControl.asn1
+│   ├── CertificateExtensions.asn1
+│   ├── DirectoryAbstractService.asn1
+│   ├── InformationFramework.asn1
+│   ├── KEP.asn1
+│   ├── SelectedAttributeTypes.asn1
+│   ├── UpperBounds.asn1
+│   └── UsefulDefinitions.asn1
+├── ldap
+│   └── LDAP.asn1
+├── ocsp
+│   ├── OCSP.asn1
+│   ├── PKIX1Explicit88.asn1
+│   └── PKIX1Implicit88.asn1
+└── x9
+    ├── ANSI-X9-42.asn1
+    └── ANSI-X9-62.asn1</code></figure>
+
+   <br><center>&dot;</center>
+
     <hr>
+
+   <br><center>&dot;</center>
 
      <p>
      [1]. <a href="https://tonpa.guru/stream/2020/2020-02-03 Кваліфікований Електронний Підпис.htm">Кваліфікований Електронний Підпис України</a><br>
