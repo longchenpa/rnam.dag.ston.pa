@@ -83,9 +83,9 @@ def kari(kari, privateKeyBin, schemeOID, encOID, data, iv) do
     {enc,_}     = CA.ALG.lookup(encOID)
     sharedKey   = :crypto.compute_key(:ecdh,publicKey,privateKeyBin,scheme)
     {_,payload} = eccCMS(ukm, 256)
-    derived = KDF.derive(map(kdf), sharedKey, 32, payload)
-    unwrap = CA.AES.KW.unwrap(encryptedKey, derived)
-    res = CA.AES.decrypt(enc, data, unwrap, iv)
+    derived     = KDF.derive(map(kdf), sharedKey, 32, payload)
+    unwrap      = CA.AES.KW.unwrap(encryptedKey, derived)
+    res         = CA.AES.decrypt(enc, data, unwrap, iv)
     {:ok, res}
 end</code></figure>
 
