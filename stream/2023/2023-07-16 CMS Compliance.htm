@@ -37,24 +37,25 @@
 
     <p>Compatibility: OpenSSL CMS, GnuPG S/MIME, Erlang SSL.</p>
 
-    <h3>CMS Decrypt</h3>
+    <h3>Elixir.CMS.decrypt.ebin</h3>
 
-    <figure><code>def decrypt(cms, {schemeOID, privateKeyBin}) do
-    {_,{:ContentInfo,_,{:EnvelopedData,_,_,x,y,_}}} = cms
-    {:EncryptedContentInfo,_,{_,encOID,{_,<<_::16,iv::binary>>}},data} = y
-          case :proplists.get_value(:kari,  x, []) do
-    [] -> case :proplists.get_value(:ktri,  x, []) do
-    [] -> case :proplists.get_value(:kekri, x, []) do
-    [] -> case :proplists.get_value(:pwri,  x, []) do
-    [] -> {:error, "Unknown Other Recepient Info"}
-          pwri  -> pwri(pwri,   privateKeyBin, encOID, data, iv) end
-          kekri -> kekri(kekri, privateKeyBin, encOID, data, iv) end
-          ktri  -> ktri(ktri,   privateKeyBin, encOID, data, iv) end
-          kari  -> kari(kari,   privateKeyBin, schemeOID, encOID, data, iv) end
-end
-</code></figure>
+    <figure><code>defmodule CMS do
+    def decrypt(cms, {schemeOID, privateKeyBin}) do
+        {_,{:ContentInfo,_,{:EnvelopedData,_,_,x,y,_}}} = cms
+        {:EncryptedContentInfo,_,{_,encOID,{_,<<_::16,iv::binary>>}},data} = y
+              case :proplists.get_value(:kari,  x, []) do
+        [] -> case :proplists.get_value(:ktri,  x, []) do
+        [] -> case :proplists.get_value(:kekri, x, []) do
+        [] -> case :proplists.get_value(:pwri,  x, []) do
+        [] -> {:error, "Unknown Other Recepient Info"}
+              pwri  -> pwri(pwri,   privateKeyBin, encOID, data, iv) end
+              kekri -> kekri(kekri, privateKeyBin, encOID, data, iv) end
+              ktri  -> ktri(ktri,   privateKeyBin, encOID, data, iv) end
+              kari  -> kari(kari,   privateKeyBin, schemeOID, encOID, data, iv) end
+    end
+end</code></figure>
 
-    <h3>CMS KARI</h3>
+    <h3>CMS-KARI</h3>
 
     <figure><code>$ openssl cms -decrypt -in encrypted.txt -inkey client.key -recip client.pem
 $ openssl cms -encrypt -aes256 -in message.txt -out encrypted.txt \
@@ -65,23 +66,40 @@ $ openssl cms -encrypt -aes256 -in message.txt -out encrypted.txt \
 def map(:'dhSinglePass-stdDH-sha512kdf-scheme'), do: :sha512
 def map(:'dhSinglePass-stdDH-sha384kdf-scheme'), do: :sha384
 def map(:'dhSinglePass-stdDH-sha256kdf-scheme'), do: :sha256
+def eccCMS(ukm, bit), do:
+    :'CMSECCAlgs-2009-02'.encode(:'ECC-CMS-SharedInfo', sharedInfo(ukm, bit))
 def sharedInfo(ukm, len), do: {:'ECC-CMS-SharedInfo',
     {:'KeyWrapAlgorithm',{2,16,840,1,101,3,4,1,45},:asn1_NOVALUE}, ukm, <<len::32>>}
 
 def kari(kari, privateKeyBin, schemeOID, encOID, data, iv) do
-    {:'KeyAgreeRecipientInfo',:v3,{_,{_,_,publicKey}},ukm,{_,kdfOID,_},[{_,_,encryptedKey}]} = kari
+    {_,:v3,{_,{_,_,publicKey}},ukm,{_,kdfOID,_},[{_,_,encryptedKey}]} = kari
     {scheme,_}  = CA.ALG.lookup(schemeOID)
     {kdf,_}     = CA.ALG.lookup(kdfOID)
     {enc,_}     = CA.ALG.lookup(encOID)
     sharedKey   = :crypto.compute_key(:ecdh,publicKey,privateKeyBin,scheme)
-    {_,payload} =  :'CMSECCAlgs-2009-02'.encode(:'ECC-CMS-SharedInfo', sharedInfo(ukm,256))
+    {_,payload} = eccCMS(ukm, 256)
     derived = KDF.derive(map(kdf), sharedKey, 32, payload)
     unwrap = CA.AES.KW.unwrap(encryptedKey, derived)
     res = CA.AES.decrypt(enc, data, unwrap, iv)
     {:ok, res}
 end</code></figure>
 
-    <h3>CMS KEKRI</h3>
+<figure><code>def testDecryptECC(), do: CA.CMS.decrypt(testECC(), testPrivateKeyECC())
+
+def testECC() do
+    {:ok,base} = :file.read_file "priv/certs/encrypted.txt"
+    [_,s] = :string.split base, "\n\n"
+    x = :base64.decode s
+    :'CryptographicMessageSyntax-2010'.decode(:ContentInfo, x)
+end
+
+def testPrivateKeyECC() do
+    privateKey = :public_key.pem_entry_decode(pem("priv/certs/client.key"))
+    {:'ECPrivateKey',_,privateKeyBin,{:namedCurve,schemeOID},_,_} = privateKey
+    {schemeOID,privateKeyBin}
+end</code></figure>
+
+    <h3>CMS-KEKRI</h3>
 
     <figure><code>$ openssl cms -encrypt -secretkeyid 07 \
               -secretkey 0123456789ABCDEF0123456789ABCDEF \
@@ -101,7 +119,20 @@ def kekri(kekri, privateKeyBin, encOID, data, iv) do
     {:ok, res}
 end</code></figure>
 
-    <h3>CMS KTRI</h3>
+<figure><code>def testDecryptKEK(), do: CA.CMS.decrypt(testKEK(), testPrivateKeyKEK())
+
+def testPrivateKeyKEK() do
+    {:kek, :binary.decode_hex("0123456789ABCDEF0123456789ABCDEF")}
+end
+
+def testKEK() do
+    {:ok,base} = :file.read_file "priv/certs/encrypted2.txt"
+    [_,s] = :string.split base, "\n\n"
+    x = :base64.decode s
+    :'CryptographicMessageSyntax-2010'.decode(:ContentInfo, x)
+end</code></figure>
+
+    <h3>CMS-KTRI</h3>
 
     <figure><code>$ gpgsm --list-keys
 $ gpgsm --list-secret-keys
@@ -121,6 +152,22 @@ def ktri(ktri, privateKeyBin, encOID, data, iv) do
     sessionKey = :public_key.decrypt_private(key, privateKeyBin)
     res = CA.AES.decrypt(enc, data, sessionKey, iv)
     {:ok, res}
+end</code></figure>
+
+<figure><code>def testDecryptRSA(), do: CA.CMS.decrypt(testRSA(), testPrivateKeyRSA())
+
+def testPrivateKeyRSA() do
+    {:ok,bin} = :file.read_file("priv/rsa-cms.key")
+    pki = :public_key.pem_decode(bin)
+    [{:PrivateKeyInfo,_,_}] = pki
+    rsa = :public_key.pem_entry_decode(hd(pki))
+    {:'RSAPrivateKey',:'two-prime',_n,_e,_d,_,_,_,_,_,_} = rsa
+    {:rsaEncryption,rsa}
+end
+
+def testRSA() do
+    {:ok,x} = :file.read_file "priv/rsa-cms.bin"
+    :'CryptographicMessageSyntax-2010'.decode(:ContentInfo, x)
 end</code></figure>
 
     <h3>KDF</h3>
@@ -163,7 +210,8 @@ codec(256) -> aes_256_ecb.
 
 do_unwrap(Buffer, J, _BlockCount, _KEK) when J &lt; 0 -> Buffer;
 do_unwrap(Buffer, J, BlockCount, KEK) ->
-    do_unwrap(do_unwrap(Buffer, J, BlockCount, BlockCount, KEK), J - 1, BlockCount, KEK).
+    do_unwrap(do_unwrap(Buffer, J, BlockCount, BlockCount, KEK),
+              J - 1, BlockCount, KEK).
 do_unwrap(Buffer, _J, I, _BlockCount, _KEK) when I &lt; 1 -> Buffer;
 do_unwrap(&lt;&lt; A0:?MSB64, Rest/binary >>, J, I, BlockCount, KEK) ->
     HeadSize = (I - 1) * 8,
@@ -178,7 +226,7 @@ do_unwrap(&lt;&lt; A0:?MSB64, Rest/binary >>, J, I, BlockCount, KEK) ->
           Tail/binary >>, J, I - 1, BlockCount, KEK).
 </code></figure>
 
-    <h3>AES</h3>
+    <h3>AES-256</h3>
 
     <figure><code>
 def decrypt(crypto_codec, data, key, iv \\ :crypto.strong_rand_bytes(16))
