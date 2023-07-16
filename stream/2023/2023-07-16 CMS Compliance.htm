@@ -1,0 +1,210 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2023-07-16 CMS Compliance</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css?v=1" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2023-07-16</a>
+</nav>
+<main>
+    <section>
+
+    <h3>CMS Compliance</h3>
+
+    <p>Implementations MUST support key transport, key agreement, and
+       previously distributed symmetric key-encryption keys, as represented
+       by ktri, kari, and kekri, respectively.</p>
+
+    <p>Implementations MAY support the password-based key management as represented by pwri.
+       Implementations MAY support any other key management technique
+       such as Boneh-Franklin and Boneh-Boyen Identity-Based Encryption (RFC 5409)
+       or other SYNRC encryption techniques.</p>
+
+    <p>IETF follow up: 5990, 5911, 5750--5754, 5652, 5408, 5409, 5275, 5126,
+       5035, 4853, 4490, 4262, 4134, 4056, 4010, 3850, 3851, 3852,
+       3854, 3855, 3657, 3560, 3565, 3537, 3394, 3369, 3370, 3274,
+       3114, 3278, 3218, 3211, 3217, 3183, 3185, 3125--3126, 3058,
+       2984, 2876, 2785, 2630, 2631, 2632, 2633, 5083, 5084, 2634.</p>
+
+    <p>Compatibility: OpenSSL CMS, GnuPG S/MIME, Erlang SSL.</p>
+
+    <h3>CMS Decrypt</h3>
+
+    <figure><code>def decrypt(cms, {schemeOID, privateKeyBin}) do
+    {_,{:ContentInfo,_,{:EnvelopedData,_,_,x,y,_}}} = cms
+    {:EncryptedContentInfo,_,{_,encOID,{_,<<_::16,iv::binary>>}},data} = y
+          case :proplists.get_value(:kari,  x, []) do
+    [] -> case :proplists.get_value(:ktri,  x, []) do
+    [] -> case :proplists.get_value(:kekri, x, []) do
+    [] -> case :proplists.get_value(:pwri,  x, []) do
+    [] -> {:error, "Unknown Other Recepient Info"}
+          pwri  -> pwri(pwri,   privateKeyBin, encOID, data, iv) end
+          kekri -> kekri(kekri, privateKeyBin, encOID, data, iv) end
+          ktri  -> ktri(ktri,   privateKeyBin, encOID, data, iv) end
+          kari  -> kari(kari,   privateKeyBin, schemeOID, encOID, data, iv) end
+end
+</code></figure>
+
+    <h3>CMS KARI</h3>
+
+    <figure><code>$ openssl cms -decrypt -in encrypted.txt -inkey client.key -recip client.pem
+$ openssl cms -encrypt -aes256 -in message.txt -out encrypted.txt \
+                       -recip client.pem -keyopt ecdh_kdf_md:sha256</code></figure>
+
+    <figure><code># CMS Codec KARI: ECC+KDF/ECB+AES/KW+256/CBC
+
+def map(:'dhSinglePass-stdDH-sha512kdf-scheme'), do: :sha512
+def map(:'dhSinglePass-stdDH-sha384kdf-scheme'), do: :sha384
+def map(:'dhSinglePass-stdDH-sha256kdf-scheme'), do: :sha256
+def sharedInfo(ukm, len), do: {:'ECC-CMS-SharedInfo',
+    {:'KeyWrapAlgorithm',{2,16,840,1,101,3,4,1,45},:asn1_NOVALUE}, ukm, <<len::32>>}
+
+def kari(kari, privateKeyBin, schemeOID, encOID, data, iv) do
+    {:'KeyAgreeRecipientInfo',:v3,{_,{_,_,publicKey}},ukm,{_,kdfOID,_},[{_,_,encryptedKey}]} = kari
+    {scheme,_}  = CA.ALG.lookup(schemeOID)
+    {kdf,_}     = CA.ALG.lookup(kdfOID)
+    {enc,_}     = CA.ALG.lookup(encOID)
+    sharedKey   = :crypto.compute_key(:ecdh,publicKey,privateKeyBin,scheme)
+    {_,payload} =  :'CMSECCAlgs-2009-02'.encode(:'ECC-CMS-SharedInfo', sharedInfo(ukm,256))
+    derived = KDF.derive(map(kdf), sharedKey, 32, payload)
+    unwrap = CA.AES.KW.unwrap(encryptedKey, derived)
+    res = CA.AES.decrypt(enc, data, unwrap, iv)
+    {:ok, res}
+end</code></figure>
+
+    <h3>CMS KEKRI</h3>
+
+    <figure><code>$ openssl cms -encrypt -secretkeyid 07 \
+              -secretkey 0123456789ABCDEF0123456789ABCDEF \
+              -aes256 -in message.txt -out encrypted2.txt
+
+$ openssl cms -decrypt -in encrypted2.txt -secretkeyid 07 \
+              -secretkey 0123456789ABCDEF0123456789ABCDEF</code></figure>
+
+    <figure><code># CMS Codec KEKRI: KEK+AES-KW+CBC
+
+def kekri(kekri, privateKeyBin, encOID, data, iv) do
+    {:'KEKRecipientInfo',_vsn,_,{_,kea,_},encryptedKey} = kekri
+    _ = CA.ALG.lookup(kea)
+    {enc,_} = CA.ALG.lookup(encOID)
+    unwrap = CA.AES.KW.unwrap(encryptedKey,privateKeyBin)
+    res = CA.AES.decrypt(enc, data, unwrap, iv)
+    {:ok, res}
+end</code></figure>
+
+    <h3>CMS KTRI</h3>
+
+    <figure><code>$ gpgsm --list-keys
+$ gpgsm --list-secret-keys
+$ gpgsm -r 0xD3C8F78A -e CNAME > cms.bin
+$ gpgsm -u 0xD3C8F78A -d cms.bin
+$ gpgsm --export-secret-key-p12 0xD3C8F78A > key.bin
+
+$ openssl pkcs12 -in key.bin -nokeys -out public.pem
+$ openssl pkcs12 -in key.bin -nocerts -nodes -out private.pem</code></figure>
+
+    <figure><code># CMS Codec KTRI: RSA+RSAES-OAEP
+
+def ktri(ktri, privateKeyBin, encOID, data, iv) do
+    {:'KeyTransRecipientInfo',_vsn,_,{_,schemeOID,_},key} = ktri
+    {:rsaEncryption,_} = CA.ALG.lookup schemeOID
+    {enc,_} = CA.ALG.lookup(encOID)
+    sessionKey = :public_key.decrypt_private(key, privateKeyBin)
+    res = CA.AES.decrypt(enc, data, sessionKey, iv)
+    {:ok, res}
+end</code></figure>
+
+    <h3>KDF</h3>
+
+    <figure><code>def hl(:md5),    do: 16
+def hl(:sha),    do: 20
+def hl(:sha224), do: 28
+def hl(:sha256), do: 32
+def hl(:sha384), do: 48
+def hl(:sha512), do: 64
+
+def derive(h, d, len, x) do
+    :binary.part(:lists.foldr(fn i, a ->
+        :crypto.hash(h, d <> <<i::32>> <> x) <> a
+    end, <<>>, :lists.seq(1,round(Float.ceil(len/hl(h))))), 0, len)
+end
+</code></figure>
+
+    <h3>AES-KW</h3>
+
+    <figure><code>
+unwrap(CipherText, KEK) -> unwrap(CipherText, KEK, ?DEFAULT_IV).
+unwrap(CipherText, KEK, IV)
+        when (byte_size(CipherText) rem 8) =:= 0
+        andalso (bit_size(KEK) =:= 128
+            orelse bit_size(KEK) =:= 192
+            orelse bit_size(KEK) =:= 256) ->
+    BlockCount = (byte_size(CipherText) div 8) - 1,
+    IVSize = byte_size(IV),
+    case do_unwrap(CipherText, 5, BlockCount, KEK) of
+        &lt;&lt; IV:IVSize/binary, PlainText/binary >> ->
+            PlainText;
+        _ ->
+            erlang:error({badarg, [CipherText, KEK, IV]})
+    end.
+
+codec(128) -> aes_128_ecb;
+codec(192) -> aes_192_ecb;
+codec(256) -> aes_256_ecb.
+
+do_unwrap(Buffer, J, _BlockCount, _KEK) when J &lt; 0 -> Buffer;
+do_unwrap(Buffer, J, BlockCount, KEK) ->
+    do_unwrap(do_unwrap(Buffer, J, BlockCount, BlockCount, KEK), J - 1, BlockCount, KEK).
+do_unwrap(Buffer, _J, I, _BlockCount, _KEK) when I &lt; 1 -> Buffer;
+do_unwrap(&lt;&lt; A0:?MSB64, Rest/binary >>, J, I, BlockCount, KEK) ->
+    HeadSize = (I - 1) * 8,
+    &lt;&lt; Head:HeadSize/binary, B0:8/binary, Tail/binary >> = Rest,
+    Round = (BlockCount * J) + I,
+    A1 = A0 bxor Round,
+    Data = &lt;&lt; A1:?MSB64, B0/binary >>,
+    &lt;&lt; A2:8/binary, B1/binary >>
+        = crypto:crypto_one_time(codec(bit_size(KEK)),
+          KEK, ?DEFAULT_IV, Data, [{encrypt,false}]),
+    do_unwrap(&lt;&lt; A2/binary, Head/binary, B1/binary,
+          Tail/binary >>, J, I - 1, BlockCount, KEK).
+</code></figure>
+
+    <h3>AES</h3>
+
+    <figure><code>
+def decrypt(crypto_codec, data, key, iv \\ :crypto.strong_rand_bytes(16))
+def decrypt(:'id-aes256-ECB', data, key, iv), do: decryptAES256ECB(data, key, iv)
+def decrypt(:'id-aes256-CBC', data, key, iv), do: decryptAES256CBC(data, key, iv)
+def decrypt(:'id-aes256-GCM', data, key, iv), do: decryptAES256GCM(data, key, iv)
+def decrypt(:'id-aes256-CCM', data, key, iv), do: decryptAES256CCM(data, key, iv)
+</code></figure>
+
+    <figure><code>def test() do
+  [
+    check_SECP384R1_GCM256(),
+    check_X25519_GCM256(),
+    check_C2PNB368w1_GCM256(),
+    check_BrainPoolP512t1_GCM256(),
+    check_BrainPoolP512t1_GCM256(),
+    check_SECT571_GCM256(),
+    check_X448_GCM256(),
+    check_X448_CBC256(),
+    check_X448_ECB256(),
+  ]
+end</code></figure>
+
+    </section>
+</main>
+<footer><a href="https://instagram.com/5HT/">Namdak Tönpa</a> <span class="heart">&nbsp;❤&nbsp;</span> 2023</footer>
+</body>
+</html>
+
