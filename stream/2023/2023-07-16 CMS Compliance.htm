@@ -36,14 +36,15 @@
        3114, 3278, 3218, 3211, 3217, 3183, 3185, 3125--3126, 3058,
        2984, 2876, 2785, 2630, 2631, 2632, 2633, 5083, 5084, 2634.</p>
 
-    <p>Compatibility: OpenSSL CMS, GnuPG S/MIME, Erlang SSL.</p>
+    <p>Compatibility: Erlang SSL, LibreSSL CMS, OpenSSL CMS, GnuPG S/MIME.</p>
 
     <h3>Elixir.CMS.ebin</h3>
 
     <p>X.509 CMS Cryptographic Message Syntax specification for
        RSA (Key Transport),
        ECC (Key Agreement),
-       KEK (Key Encryption Key) disciplines.</p>
+       KEK (Key Encryption Key) disciplines for Erlang/OTP never
+       heartbleeded (!) CRYPTO and SSL applcations. Implemented as CMS module of CA applcation.</p>
 
     <figure><code>defmodule CMS do
     def decrypt(cms, {schemeOID, privateKeyBin}) do
@@ -188,7 +189,8 @@ end</code></figure>
 
     <h3>KDF</h3>
 
-    <p>KDF (MD5: 128, SHA: 160—512) and HKDF (HMAC) Key Derive functions.</p>
+    <p>KDF (MD5: 128, SHA: 160—512) and HKDF (HMAC) Key Derive functions used in ECC CMS schemes as
+       of <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-108r1.pdf">NIST SP 800-108r1</a>.</p>
 
     <figure><code>
 defmodule KDF do
@@ -209,7 +211,8 @@ end</code></figure>
     <h3>AES-KW</h3>
 
     <p>AES Key Wrap function is applicable to keys of 128/192/256
-       bit using AES-ECB encoding.</p>
+       bit using AES-ECB encoding as of RFC 5649:2009 Advanced
+       Encryption Standard (AES) Key Wrap with Padding Algorithm.</p>
 
     <figure><code>-define(MSB64,      1/unsigned-big-integer-unit:64).
 -define(DEFAULT_IV, &lt;&lt; 16#A6A6A6A6A6A6A6A6:?MSB64 >>).
