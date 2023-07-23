@@ -24,7 +24,7 @@
 
     <h3>Elixir.LDAP.ebin</h3>
 
-<figure><code>defmodule LDAP.TCP do
+<figure><code>defmodule LDAP do
    import Exqlite.Sqlite3
    require LDAP
 
@@ -320,6 +320,7 @@ end</code></figure>
 <figure><code>   def message(no, socket, {:compareRequest, {_,dn, assertion}}, db) do
        :logger.info 'CMP DN: ~p', [dn]
        :logger.info 'CMP Assertion: ~p', [assertion]
+       result = compareDN(db, db, assertion)
        resp = LDAP.'LDAPResult'(resultCode: :success, matchedDN: dn, diagnosticMessage: 'OK')
        answer(resp, no, :compareResponse, socket)
    end</code></figure>
