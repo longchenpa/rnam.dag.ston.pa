@@ -103,9 +103,34 @@
        використовувати SYNRC LDAP де об'єм директоріє більше ніж пів мільйона співробітників,
        наприклад для Walmart. Для великих корпорацій краще брати OpenLDAP.</p>
 
-    <h4>Інші LDAP продукти</h4>
+    <h3>Предметна область</h3>
 
-    <h4>TCP сервер</h4>
+    <h4>Netscape, Sun DS, 389 DS, Oracle</h4>
+
+    <p>PEOPLE|SYNC стартап SYNRC 2007 року підтримував також роботу з Sun Directory Server. Його родословна
+       бере початок від сервера OpenLDAP, в 1996 року стартував форк Netscape Directory Server.
+       Після банкротства Netscape право на код викупила компанія AOL, яка ліцензувала право на розробку
+       компанії Sun Microsystems, зберігши право на код. В 2009 році Sun DS був переіменований на 389 Directory Server,
+       а Oracle почала свій форк Sun DS під назвою
+       <a href="https://www.oracle.com/docs/tech/middleware/ds-oracle-dsee-final.pdf">Oracle Directory Server</a></p>
+
+    <h4>Microsoft Active Directory</h4>
+
+    <p>Традиційно кожна корпорація займається розробкою свого LDAP сервера,
+       компанія Microsoft випустила свій перший в 1999 році. Active Directory
+       у якості бекенда використовує Extensible Storage Engine ESENT.DLL,
+       також відомий як JetDB, на яцій побудований також Windows Registry,
+       Microsoft Access, та можливо і інші внутрішні продукти компанії Microsoft.</p>
+
+    <h4>OpenLDAP, Apple Open Directory</h4>
+
+    <p>Були часи, що OpenLDAP був вбудований в кожну версію Mac OS X,
+       але Apple почала розвивати свій власний
+       <a href="https://images.apple.com/server/docs/Open_Directory_TB_v10.4.pdf">Open Directory Server</a>,
+       оскільки безпека кожної корпорації полягає у тому числі в брендованих
+       LDAP серверах під свої потреби та політику розробки..</p>
+
+    <h3>TCP сервер</h3>
 
 <figure><code>defmodule LDAP.TCP do
    import Exqlite.Sqlite3
