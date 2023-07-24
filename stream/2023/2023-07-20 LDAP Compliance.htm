@@ -66,7 +66,6 @@
        такими як Apache Directory Studio, а також усіма LDIF файлами
        які ми змогли знайти в інтернеті.</p>
 
-    <figure><img src="img/apache-ds.jpg"></figure>
 
     <p>Так як якісну безпечну розподілену інфраструктуру яка відповідає
        міжнародним і українським стандартами неможливо створити без CA/CMS,
@@ -112,7 +111,9 @@
        Після банкротства Netscape право на код викупила компанія AOL, яка ліцензувала право на розробку
        компанії Sun Microsystems, зберігши право на код. В 2009 році Sun DS був переіменований на 389 Directory Server,
        а Oracle почала свій форк Sun DS під назвою
-       <a href="https://www.oracle.com/docs/tech/middleware/ds-oracle-dsee-final.pdf">Oracle Directory Server</a></p>
+       <a href="https://www.oracle.com/docs/tech/middleware/ds-oracle-dsee-final.pdf">Oracle Directory Server</a>.
+       389 Directory Server також можна зустріти під іменами Fedora DS та Red Hat DS, оскільки це основні
+       донори проекту.</p>
 
     <h4>Microsoft Active Directory</h4>
 
@@ -132,15 +133,88 @@
 
     <h3>TCP сервер</h3>
 
-<figure><code>defmodule LDAP.TCP do
+    <p>Я неодноразово використовував написання LDAP серверу у своїх Erlang курсах,
+       а також на конференціях у якості майстер-класу по програмуванню, де ми
+       з аудиторією пишемо всі разом LDAP сервер за 45 хвилин з моїми коментарями
+       та інтеракцією. Рекорд на відео був поставлений 30 хвилин, так шо це не прікол,
+       я дійсню MVP всіх продуктів SYNRC можу написати за 30 хвилин кожен. Власне
+       це є одним з критеріїв SYNRC, що тісно переплетено з показником LOC.
+       Ця версія SYNRC LDAP з підтримкою SQLite займає 300 рядків коду і
+       проходить всі LDIF тест сюїти.</p>
+
+    <figure><figcaption>facebook.com/synrc</figcaption><img src="img/erlangcourses.jpg"></figure>
+
+<figure><code>    
+</code></figure>
+
+    <p>Перед початком поставте Erlang та його Erlang AST фронтенд Elixir.
+       Ставити можна завжди тільки Elixir, Erlang піде як залежність
+       в будь-якому пекедж менеджері.</p>
+
+<figure><code>$ sudo apt install elixir</code></figure>
+
+     <p>Створюємо папку проекту і в ній створюємо файл mix.exs для уніфікованого
+        депенденсі і пекадж менеджера Erlang і Elixir мов, mix.</p>
+
+     <p>Крім класичної прелюдії mix.exs, нам цікавий параметр exqlite, це ім'я
+        бібліотеки пакетного менеджера hex.pm, яка містить в собі 8-мегабайтний Сі файл,
+        і FFI обгортку для нього яка в Erlang світі називається NIF. </p>
+
+<figure><code>defmodule LDAP.Mixfile do
+  use Mix.Project
+
+  def project(), do:
+    [ app: :ldap, version: "8.7.20", deps: deps(),
+      releases: [ldap: [include_executables_for: [:unix], cookie: "SYNRC:LDAP"]]]
+  def application(), do: [mod: {LDAP, []}, extra_applications: [:eldap,:asn1]] end
+  def deps(), do: [{:exqlite, "~> 0.13.14"}]
+
+end</code></figure>
+
+     <p>Далі пишемо найпростіший ідіоматичний Erlang TCP сервер.
+        Довгий час я використовував класичні, розширені версії на недокументованій
+        функції prim_inet:async_accept, такий як <a href="https://github.com/5HT/tcp">5HT/tcp</a>,
+        але зрештою відмовився так як не вбачаю в надмірному контролі семантики процесу ніяких перевах,
+        для нас діє така сама семантика як в вебі, відвалився клієнт і нічого страшного,
+        нікому його контроль на рівні сигналінгу не потрібен. Ми не слідкуємо за LDAP клієнтами!</p>
+
+     <p>Якшо в config/config.exs немає параметра ldap:intance то створюється нова SQLite база
+        по рендомному хешу з налаштуваннями по перформансу: 1) відключений журнал,
+        2) ін-меморі буфер, 3) великий кеш, 4) примусова синхронність; які визначаються
+        відповідними SQL прагмами.</p>
+
+     <p>Архітектура TCP сервера відповідає POSIX, ми створюємо лістенер,
+        який на кожне вхідне TCP повідомлення стартує акцептори, які
+        стартують некотрольований Erlang процес &mdash; лупер,
+        який обслуговує вхідне TCP повідомлення. Для декодування використовується
+        згенерований ASN.1 компілятором енкодер/декодер LDAP протоколу
+        по файлу LDAP.ans1, який можна знайти прямо в RFC IETF на
+        нормативно-правових актах України.</p>
+
+<figure><code>$ erlc LADP.asn1</code></figure>
+
+     <p>Після геренації покладіть файли в LDAP.erl та LDAP.hrl в папку src проекту.
+        А в папці lib створіть обгортку для згенерованих рекордів за допомогою Record,</p>
+
+<figure><code>defmodule DS do
+    require Record
+    Enum.each(Record.extract_all(from_lib: "ldap/include/LDAP.hrl"),
+             fn {name, definition} -> Record.defrecord(name, definition) end)
+end
+</code></figure>
+
+       <p>а також створіть козу аплікейшина, файл ldap.ex:</p>
+
+<figure><code>defmodule LDAP do
    import Exqlite.Sqlite3
-   require LDAP
+   require DS
 
    def code(), do: :binary.encode_hex(:crypto.strong_rand_bytes(8))
 
    def initDB(path) do
        {:ok, conn} = open(path)
-       :logger.info 'SYNRC LDAP Instance: ~p Connection: ~p', [path,conn]
+       :logger.info 'SYNRC LDAP Instance: ~p', [path]
+       :logger.info 'SYNRC LDAP Connection: ~p', [conn]
        execute(conn, "create table ldap (rdn text,att text,val binary)")
        :ok = execute(conn, "PRAGMA journal_mode = OFF;")
        :ok = execute(conn, "PRAGMA temp_store = MEMORY;")
@@ -168,13 +242,19 @@
                   :application.get_env(:ldap,:instance,code())) end)
    end
 
+    def answer(response, no, op, socket) do
+        message = DS."LDAPMessage"(messageID: no, protocolOp: {op, response})
+        {:ok, bytes} = :'LDAP'.encode(:'LDAPMessage', message)
+        send = :gen_tcp.send(socket, :erlang.iolist_to_binary(bytes))
+    end
+
    def loop(socket, db) do
        case :gen_tcp.recv(socket, 0) do
             {:ok, data} ->
                  case :'LDAP'.decode(:'LDAPMessage',data) do
                       {:ok,decoded} ->
                           {:'LDAPMessage', no, payload, _} = decoded
-                          message(no, socket, payload, db)
+#                         message(no, socket, payload, db)
                           loop(socket, db)
                       {:error,reason} ->
                          :logger.error 'ERROR: ~p', [reason]
@@ -186,7 +266,31 @@
 
 end</code></figure>
 
+<p>Цей сервер вже може відповідати на запити ldapmodify але буде їх блокувати так як поки що
+   не відповідає належним чином. Запустити програму можна класичними мантрами Elixir, а
+   в Elixir Shell виконати функцію запуску TCP лістенера, для цього перевпевніться що
+   дефаултний порт 1389 вільний.</p>
+
+<figure><code>$ mix deps.get
+$ iex -S mix
+> LDAP.start
+#PID<0.311.0>
+iex(2)>
+04:58:26.030 [info]  SYNRC LDAP Instance: "416C4C41ED2C7060"
+04:58:26.030 [info]  SYNRC LDAP Connection: #Reference<0.1146704550.396492828.212314>
+iex(3)>
+nil</code></figure>
+
     <h3>DSE</h3>
+
+    <p>Якшо тестувати наш прото-сервер не ldapmodify, а Apache Directory Studio,
+       то вона початково буде питати так званий Root DSE об'єкт запитуючи після
+       bind, search реквест з пустим DN. Для коректної репрезентації спеціалізованої
+       інформації ми прошиємо стандартну відповідь на цей запит для нашого
+       фірмового SYNRC LDAP сервера версії 2.0 який підтримує протокол LDAPv3.
+       Він підтримує SIMPLE спосіб аунтентифікації тільки (поки що) і два
+       іменних простори ключів: dc=synrc,dc=com ou=schema, як виманає декілька RFC.
+       Це всьо пакується у LDAPMessage і відправляється на клієнт функцією answer.</p>
 
 <figure><code>   def attr(k,v),      do: {:PartialAttribute, k, v}
    def node(dn,attrs), do: {:SearchResultEntry, dn, attrs}
@@ -208,14 +312,18 @@ end</code></figure>
               attr("altServer", ['ldap.synrc.com']),
               attr("subschemaSubentry", ['ou=schema']),
               attr("vendorName", ['SYNRC LDAP']),
-              attr("vendorVersion", ['1.0']),
+              attr("vendorVersion", ['2.0']),
               attr("supportedSASLMechanisms", ['SIMPLE']),
               attr("objectClass", ['top','extensibleObject']),
               attr("entryUUID", [code()])])])
 
-       resp = LDAP.'LDAPResult'(resultCode: :success, matchedDN: "", diagnosticMessage: 'OK')
+       resp = DS.'LDAPResult'(resultCode: :success, matchedDN: "", diagnosticMessage: 'OK')
        answer(resp, no, :searchResDone,socket)
    end</code></figure>
+
+     <p>Після цього зможуть розгортати в інтерфейсі дерево об'єктів.</p>
+
+    <figure><img src="img/apache-ds.jpg"></figure>
 
     <h3>BIND</h3>
 
@@ -226,12 +334,12 @@ end</code></figure>
        case step(db, statement) do
            :done ->  code = :invalidCredentials
                      :logger.error 'BIND Error: ~p', [code]
-                     response = LDAP."BindResponse"(resultCode: code,
+                     response = DS."BindResponse"(resultCode: code,
                          matchedDN: "", diagnosticMessage: 'ERROR')
                      answer(response, no, :bindResponse, socket)
             {:row,[dn,password]} ->
                      :logger.info 'BIND DN: ~p', [bindDN]
-                     response = LDAP."BindResponse"(resultCode: :success,
+                     response = DS."BindResponse"(resultCode: :success,
                           matchedDN: "", diagnosticMessage: 'OK')
                      answer(response, no, :bindResponse, socket)
        end
@@ -240,7 +348,7 @@ end</code></figure>
    def message(no, socket, {:bindRequest, {_,_,bindDN,creds}}, db) do
        code = :authMethodNotSupported
        :logger.info 'BIND ERROR: ~p', [code]
-       response = LDAP."BindResponse"(resultCode: code,
+       response = DS."BindResponse"(resultCode: code,
           matchedDN: "", diagnosticMessage: 'ERROR')
        answer(response, no, :bindResponse, socket)
    end</code></figure>
@@ -263,13 +371,13 @@ end</code></figure>
       case step(db, statement) do
             {:row, _} ->
                 :logger.info 'ADD ERROR: ~p', [dn]
-                resp = LDAP.'LDAPResult'(resultCode: :entryAlreadyExists,
+                resp = DS.'LDAPResult'(resultCode: :entryAlreadyExists,
                        matchedDN: dn, diagnosticMessage: 'ERROR')
                 answer(resp, no, :addResponse, socket)
             :done ->
                 createDN(db, dn, attributes)
                 :logger.info 'ADD DN: ~p', [dn]
-                resp = LDAP.'LDAPResult'(resultCode: :success,
+                resp = DS.'LDAPResult'(resultCode: :success,
                        matchedDN: dn, diagnosticMessage: 'OK')
                 answer(resp, no, :addResponse, socket)
        end
@@ -310,11 +418,11 @@ end</code></figure>
       case step(db, statement) do
            {:row, _} -> :logger.info 'MOD DN: ~p', [dn]
                         modifyDN(db, dn, attributes)
-                        resp = LDAP.'LDAPResult'(resultCode: :success,
+                        resp = DS.'LDAPResult'(resultCode: :success,
                             matchedDN: dn, diagnosticMessage: 'OK')
                         answer(resp, no, :modifyResponse, socket)
            :done ->     :logger.info 'MOD ERROR: ~p', [dn]
-                        resp = LDAP.'LDAPResult'(resultCode: :noSuchObject,
+                        resp = DS.'LDAPResult'(resultCode: :noSuchObject,
                            matchedDN: dn, diagnosticMessage: 'ERROR')
                         answer(resp, no, :modifyResponse, socket)
       end
@@ -326,7 +434,7 @@ end</code></figure>
        :logger.info 'MOD RDN DN: ~p', [dn]
        :logger.info 'MOD RDN newRDN: ~p', [rdn]
        :logger.info 'MOD RDN oldRDN: ~p', [old]
-       resp = LDAP.'LDAPResult'(resultCode: :success, matchedDN: dn, diagnosticMessage: 'OK')
+       resp = DS.'LDAPResult'(resultCode: :success, matchedDN: dn, diagnosticMessage: 'OK')
        answer(resp, no, :modDNResponse, socket)
    end</code></figure>
 
@@ -342,7 +450,7 @@ end</code></figure>
    def message(no, socket, {:delRequest, dn}, db) do
        :logger.info 'DEL DN: ~p', [dn]
        deleteDN(db, dn)
-       resp = LDAP.'LDAPResult'(resultCode: :success, matchedDN: dn, diagnosticMessage: 'OK')
+       resp = DS.'LDAPResult'(resultCode: :success, matchedDN: dn, diagnosticMessage: 'OK')
        answer(resp, no, :delResponse, socket)
    end</code></figure>
 
@@ -419,7 +527,7 @@ end</code></figure>
        :logger.info 'SEARCH Attr: ~p', [attributes]
 
        select(socket, no, db, filter, scope, qdn(bindDN))
-       resp = LDAP.'LDAPResult'(resultCode: :success, matchedDN: "", diagnosticMessage: 'OK')
+       resp = DS.'LDAPResult'(resultCode: :success, matchedDN: "", diagnosticMessage: 'OK')
        answer(resp, no, :searchResDone, socket)
    end</code></figure>
 
@@ -429,7 +537,7 @@ end</code></figure>
        :logger.info 'CMP DN: ~p', [dn]
        :logger.info 'CMP Assertion: ~p', [assertion]
        result = compareDN(db, db, assertion)
-       resp = LDAP.'LDAPResult'(resultCode: :success, matchedDN: dn, diagnosticMessage: 'OK')
+       resp = DS.'LDAPResult'(resultCode: :success, matchedDN: dn, diagnosticMessage: 'OK')
        answer(resp, no, :compareResponse, socket)
    end</code></figure>
 
