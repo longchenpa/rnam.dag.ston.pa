@@ -250,8 +250,9 @@ $ iex -S mix
 
 <figure><code>
   def message(socket, header, {:p10cr, csr} = body, code) do
-      {:PKIHeader, pvno, from, to, messageTime, protectionAlg, _senderKID, _recipKID,
-         transactionID, senderNonce, _recipNonce, _freeText, _generalInfo} = header
+      {:PKIHeader, pvno, from, to, messageTime, protectionAlg,
+         _senderKID, _recipKID, transactionID, senderNonce,
+         _recipNonce, _freeText, _generalInfo} = header
       true = code == validateProtection(header, body, code)
 
       {ca_key, ca} = CA.CSR.read_ca()
@@ -270,9 +271,11 @@ $ iex -S mix
               status: CA."PKIStatusInfo"(status: 0))])
 
       pkibody = {:cp, reply}
-      pkiheader = CA."PKIHeader"(sender: to, recipient: from, pvno: pvno, recipNonce: senderNonce,
-          transactionID: transactionID, protectionAlg: protectionAlg, messageTime: messageTime)
-      answer(socket, pkiheader, pkibody, validateProtection(pkiheader, pkibody, code))
+      pkiheader = CA."PKIHeader"(sender: to, recipient: from, pvno: pvno,
+          recipNonce: senderNonce, transactionID: transactionID,
+          protectionAlg: protectionAlg, messageTime: messageTime)
+      answer(socket, pkiheader, pkibody,
+          validateProtection(pkiheader, pkibody, code))
   end</code></figure>
 
     <h4>CERTCONF/PKICONF</h4>
@@ -285,8 +288,10 @@ $ iex -S mix
       end, statuses)
 
       pkibody = {:pkiconf, :asn1_NOVALUE}
-      pkiheader = CA."PKIHeader"(header, sender: to, recipient: from, recipNonce: senderNonce)
-      answer(socket, pkiheader, pkibody, validateProtection(pkiheader, pkibody, code))
+      pkiheader = CA."PKIHeader"(header, sender: to, recipient: from,
+          recipNonce: senderNonce)
+      answer(socket, pkiheader, pkibody,
+          validateProtection(pkiheader, pkibody, code))
   end</code></figure>
 
     <p>В результаті в консолі повинні спостерігати:</p>
