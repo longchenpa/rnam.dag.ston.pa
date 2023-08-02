@@ -36,6 +36,13 @@
 
     <h3>Вступ</h3>
 
+    <p>Ця стаття могла би називати «Як написати CMP сервер за 30 хвилин»,
+       але на відміну від попередньої статті про LDAP, ця вже покриває
+       більше ніж тузінь ASN.1 файлів, добре шо ми вже познайомилися
+       з CMS та LDAP бібіліотеками та їх ASN.1 файлами. В цій статті про CMP
+       нас в основному цікавитимуть PKIXCMP-2009, PKIXCRMF-2009 та
+       EnrollmentMessageSyntax-2009 для CMC.</p>
+
 <figure><code>CMS-AES-CCM-and-AES-GCM-2009.asn1
 CMSAesRsaesOaep-2009.asn1
 CMSECCAlgs-2009-02.asn1
@@ -54,167 +61,184 @@ PKIXCRMF-2009.asn1</code></figure>
 
     <h3>CSR</h3>
 
+    <p>Отже починається написання CMP серверу з найголовнішої його функції:
+       видачі сертифікату по PCKS-10 CSR реквесту. Схема наступна:
+       Клієнт генерує приватний ключ, конвертує його в PEM файл, відсилає як
+       P10CR повідомлення у складі payload PKIMessage, отримує відповідь
+       CP, після чого клієнт шле ще одне повідомлення CERTCONF, після
+       якого CMP сервер повинен відповисти PKICONF повідомленням.</p>
+
+<figure><code>  def csr(user) do
+      {ca_key, ca} = read_ca()
+      priv = X509.PrivateKey.new_ec(:secp384r1)
+      der = :public_key.der_encode(:ECPrivateKey, priv)
+      pem = :public_key.pem_encode([{:ECPrivateKey, der, :not_encrypted}])
+      :file.write_file(user <> ".key", pem)
+      :io.format '~p~n', [priv]
+      csr = X509.CSR.new(priv, "/C=UA/L=Kyiv/O=SYNRC/CN=" <> user,
+         extension_request: [
+            X509.Certificate.Extension.subject_alt_name(["n2o.dev"])])
+      :io.format 'CSR: ~p~n', [csr]
+      :file.write_file(user <> ".csr", X509.CSR.to_pem(csr))
+      true = X509.CSR.valid?(csr)
+      subject = X509.CSR.subject(csr)
+      :io.format 'Subject ~p~n', [subject]
+      :io.format 'CSR ~p~n', [csr]
+      X509.Certificate.new(X509.CSR.public_key(csr), subject, ca, ca_key,
+         extensions: [subject_alt_name:
+           X509.Certificate.Extension.subject_alt_name(["n2o.dev", "erp.uno"]) ])
+      csr
+  end</code></figure>
+
     <p>RFC2510</p>
 
-<figure><code>
-def ca() do
-    ca_key = X509.PrivateKey.new_ec(:secp384r1)
-    ca = X509.Certificate.self_signed(ca_key,
-          "/C=UA/L=Kyiv/O=SYNRC/CN=CSR-CMP", template: :root_ca)
-    der = :public_key.der_encode(:ECPrivateKey, ca_key)
-    pem = :public_key.pem_encode([{:ECPrivateKey, der, :not_encrypted}])
-    :file.write_file "ca.key", pem
-    :file.write_file "ca.pem", X509.Certificate.to_pem(ca)
-    {ca_key, ca}
-end
+    <P>Перед початком роботи CMP сервера повинен бути згенерований рутовий CA
+       сертифікат з приватним ключем, ці два файла ми зберігаємо на диск,
+       і у всіх подальших операціях користуємося ними. Для генерації файлів
+       використовуємо функцію CA.CSR.ca.</p>
 
-def read_ca() do
-    {:ok, ca_key_bin} = :file.read_file "ca.key"
-    {:ok, ca_bin} = :file.read_file "ca.pem"
-    {:ok, ca_key} = X509.PrivateKey.from_pem ca_key_bin
-    {:ok, ca} = X509.Certificate.from_pem ca_bin
-    {ca_key, ca}
-end
+<figure><code>  def ca() do
+      ca_key = X509.PrivateKey.new_ec(:secp384r1)
+      ca = X509.Certificate.self_signed(ca_key,
+            "/C=UA/L=Kyiv/O=SYNRC/CN=CSR-CMP", template: :root_ca)
+      der = :public_key.der_encode(:ECPrivateKey, ca_key)
+      pem = :public_key.pem_encode([{:ECPrivateKey, der, :not_encrypted}])
+      :file.write_file "ca.key", pem
+      :file.write_file "ca.pem", X509.Certificate.to_pem(ca)
+      {ca_key, ca}
+  end
 
-def csr() do
-    {ca_key, ca} = read_ca()
-    priv = X509.PrivateKey.new_ec(:secp384r1)
-    csr = X509.CSR.new(priv, "/C=UA/L=Kyiv/O=SYNRC",
-            extension_request: [
-               X509.Certificate.Extension.subject_alt_name(["n2o.dev"])
-            ])
-    :io.format 'CSR: ~p~n', [csr]
-    :file.write_file "maxim.csr", X509.CSR.to_pem(csr)
-    true = X509.CSR.valid?(csr)
-    subject = X509.CSR.subject(csr)
-    X509.Certificate.new(X509.CSR.public_key(csr), subject, ca, ca_key,
-       extensions: [subject_alt_name:
-         X509.Certificate.Extension.subject_alt_name(["n2o.dev", "erp.uno"]) ])
-    csr
-end</code></figure>
+  def read_ca() do
+      {:ok, ca_key_bin} = :file.read_file "ca.key"
+      {:ok, ca_bin} = :file.read_file "ca.pem"
+      {:ok, ca_key} = X509.PrivateKey.from_pem ca_key_bin
+      {:ok, ca} = X509.Certificate.from_pem ca_bin
+      {ca_key, ca}
+  end</code></figure>
+
+     <p>Для одноразовоїї генерації серверних сертифікатів які
+        обсуговують клієнтські TLS сесії можна використати наступний код.</p>
+
+<figure><code>  def server(name) do
+      {ca_key, ca} = read_ca()
+      server_key = X509.PrivateKey.new_ec(:secp384r1)
+        X509.Certificate.new(X509.PublicKey.derive(server_key),
+           "/C=UA/L=Kyiv/O=SYNRC/CN=" <> name, ca, ca_key,
+           extensions: [subject_alt_name:
+              X509.Certificate.Extension.subject_alt_name(["n2o.dev", "erp.uno"]) ])
+  end</code></figure>
 
     <h3>CMS</h3>
 
     <p>Детально сімейство протоколів і CMS кодування описано в
-       окремій статті присвяченій <a href="2023-07-16 CMS Compliance.htm">CMS Compliance</a>.</p>
+       окремій статті присвяченій <a href="2023-07-16 CMS Compliance.htm">CMS Compliance</a>.
+       CMS кодування використовується тільки для CMC сервера, тому
+       ми це поки висвітлювати не будемо.</p>
 
     <h3>CMP/CSR/TCP</h3>
 
-    <p>RFC 6712, 4210, </p>
+    <p>RFC 6712, 4210. Для початку напишемо простий PKIMessage сервер.</p>
 
 <figure><code>
-def code(),  do: :binary.encode_hex(:crypto.strong_rand_bytes(8))
-def start(), do: :erlang.spawn(fn -> listen(1829) end)
+defmodule CA.CMP do
+  @moduledoc "CA/CMP TCP server."
+  require CA
 
-def listen(port) do
-    {:ok, socket} = :gen_tcp.listen(port,
-      [:binary, {:packet, 0}, {:active, false}, {:reuseaddr, true}])
-    accept(socket)
-end
+  def start(), do: :erlang.spawn(fn -> listen(1829) end)
+  def listen(port) do
+      {:ok, socket} = :gen_tcp.listen(port,
+        [:binary, {:packet, 0}, {:active, false}, {:reuseaddr, true}])
+      accept(socket)
+  end
 
-def accept(socket) do
-    {:ok, fd} = :gen_tcp.accept(socket)
-    :erlang.spawn(fn -> __MODULE__.loop(fd) end)
-    accept(socket)
-end
+  def accept(socket) do
+      {:ok, fd} = :gen_tcp.accept(socket)
+      :erlang.spawn(fn -> __MODULE__.loop(fd) end)
+      accept(socket)
+  end
 
-def message(_socket, _header, body, _code) do
-    :logger.info 'Unknown message request ~p', [body]
-end
+  def loop(socket) do
+      case :gen_tcp.recv(socket, 0) do
+           {:ok, data} ->
+               [headers,body] = :string.split data, "\r\n\r\n", :all
+               {:ok,dec} = :'PKIXCMP-2009'.decode(:'PKIMessage', body)
+               {:PKIMessage, header, body, code, _extra} = dec
+               __MODULE__.message(socket, header, body, code)
+               loop(socket)
+          {:error, :closed} -> :exit
+      end
+  end
 
-def answer(socket, header, body, code) do
-    message = CA."PKIMessage"(header: header, body: body, protection: code)
-    {:ok, bytes} = :'PKIXCMP-2009'.encode(:'PKIMessage', message)
-    res =  "HTTP/1.0 200 OK\r\n"
-        <> "Server: SYNRC CA\r\n"
-        <> "Content-Type: application/pkixcmp\r\n\r\n"
-        <> :erlang.iolist_to_binary(bytes)
-    send = :gen_tcp.send(socket, res)
-end
-
-def loop(socket) do
-    case :gen_tcp.recv(socket, 0) do
-         {:ok, data} ->
-              {{_,headers},asn} = :asn1rt_nif.decode_ber_tlv(data)
-              [_,body] = :string.split asn, "\r\n\r\n", :all
-              {:ok,dec} = :'PKIXCMP-2009'.decode(:'PKIMessage', body)
-              {:PKIMessage, header, body, code, extra} = dec
-              __MODULE__.message(socket, header, body, code)
-              loop(socket)
-         {:error, :closed} -> :exit
-    end
-end
 </code></figure>
 
-    <h4>GENM/GENP</h4>
+    <h4>PKIMessage.protection</h4>
+
+    <p>Розберемося з полем PKIMessage.protection, в якому
+       зберігається результат PBKDF2 алгоритма. Майте на увазі
+       шо OpenSSL за замовчування використовує 20-байтні ключі
+       та HMAC/SHA-1 у якості MAC функції, хоча OWF в 500 ітераціях
+       обчислюється за допомогою OWF функції SHA-256.</p>
 
 <figure><code>
-# openssl cmp -cmd genm -server 127.0.0.1:1829 \
-#             -recipient "/CN=CMPserver" -ref 1234 -secret pass:0000
+  def baseKey(pass, salt, iter, owf \\ :sha256), do:
+      :lists.foldl(fn _, acc ->
+      :crypto.hash(owf, acc) end, pass <> salt,
+      :lists.seq(1,iter))
+
+  def protection(:asn1_NOVALUE), do: {"","","","",1}
+  def protection(protectionAlg) do
+      {_,oid,{_,param}} = protectionAlg
+      {:ok, parameters} = :"PKIXCMP-2009".decode(:'PBMParameter', param)
+      {:PBMParameter, salt, {_,owf,_}, counter, {_,mac,_} } = parameters
+      {oid, salt, owf, mac, counter}
+  end
+
+  def validateProtection(header, body, code) do
+      {:PKIHeader, _, _, _, _, protectionAlg, _, _, _, _, _, _, _} = header
+      {oid, salt, owfoid, _mac, counter} = protection(protectionAlg)
+      case CA.ALG.lookup(oid) do
+           {:'id-PasswordBasedMac', _ } ->
+                protection = CA."ProtectedPart"(header: header, body: body)
+                {:ok, bin} = :"PKIXCMP-2009".encode(:'ProtectedPart', protection)
+                {owf,_} = CA.ALG.lookup(owfoid)
+                pbm = :application.get_env(:ca, :pbm, "0000")
+                verifyKey  = baseKey(pbm, salt, counter, owf)
+                mac = CA.KDF.hs(:erlang.size(code))
+                :crypto.mac(:hmac, mac, verifyKey, bin)
+           {_, _ } ->
+                ""
+      end
+  end
 </code></figure>
+
+    <h4>ANSWER</h4>
+
+    <P>Оскільки CMP сервер повинен працювати по HTTP/1.0
+       згідно стандартів додаємо необхідні HTTP заголовки.</p>
 
 <figure><code>
-def message(socket, header, {:genm, req} = body, code) do
-    {:PKIHeader, pvno, from, to, messageTime,
-        {_,oid,{_,param}} = protectionAlg, senderKID, recipKID,
-        transactionID, senderNonce, recipNonce, freeText, generalInfo} = header
-    {:ok, parameters} = :"PKIXCMP-2009".decode(:'PBMParameter', param)
-    {:PBMParameter, salt, {_,owf,_}, counter, {_,mac,_} } = parameters
-    :io.format 'generalMessage: ~p~n', [req]
-end
+  def answer(socket, header, body, code) do
+      message = CA."PKIMessage"(header: header, body: body, protection: code)
+      {:ok, bytes} = :'PKIXCMP-2009'.encode(:'PKIMessage', message)
+      res =  "HTTP/1.0 200 OK\r\n"
+          <> "Server: SYNRC CA/CMP\r\n"
+          <> "Content-Type: application/pkixcmp\r\n\r\n"
+          <> :erlang.iolist_to_binary(bytes)
+      :gen_tcp.send(socket, res)
+  end
 </code></figure>
-
-    <h4>IR/IP</h4>
-
-<figure><code>
-# openssl cmp -cmd ir -server 127.0.0.1:1829 \
-#             -path . -srvcert ca.pem -ref NewUser \
-#             -secret pass:0000 -certout maxim.pem \
-#             -newkey maxim.key -subject "/CN=maxim/O=SYNRC/ST=Kyiv/C=UA"
-</code></figure>
-
-<figure><code>
-def message(socket, header, {:ir, req} = body, code) do
-    {:PKIHeader, pvno, from, to, messageTime,
-        {_,oid,{_,param}} = protectionAlg, senderKID, recipKID,
-        transactionID, senderNonce, recipNonce, freeText, generalInfo} = header
-    {:ok, parameters} = :"PKIXCMP-2009".decode(:'PBMParameter', param)
-    {:PBMParameter, salt, {_,owf,_}, counter, {_,mac,_} } = parameters
-    :lists.map(fn {:CertReqMsg, req, sig, code} ->
-        :io.format 'request: ~p~n', [req]
-        :io.format 'signature: ~p~n', [sig]
-        :io.format 'code: ~p~n', [code]
-    end, req)
-end
-</code></figure>
-
-
-    <h4>CR/CP</h4>
-
-<figure><code>
-# openssl cmp -cmd cr -server 127.0.0.1:1829 \
-#             -path . -srvcert ca.pem -ref NewUser \
-#             -secret pass:0000 -certout maxim.pem \
-#             -newkey maxim.key -subject "/CN=maxim/O=SYNRC/ST=Kyiv/C=UA"
-</code></figure>
-
-<figure><code>
-def message(socket, header, {:cr, req} = body, code) do
-    {:PKIHeader, pvno, from, to, messageTime,
-        {_,oid,{_,param}} = protectionAlg, senderKID, recipKID,
-        transactionID, senderNonce, recipNonce, freeText, generalInfo} = header
-    {:ok, parameters} = :"PKIXCMP-2009".decode(:'PBMParameter', param)
-    {:PBMParameter, salt, {_,owf,_}, counter, {_,mac,_} } = parameters
-    :lists.map(fn {:CertReqMsg, req, sig, code} ->
-        :io.format 'request: ~p~n', [req]
-        :io.format 'signature: ~p~n', [sig]
-        :io.format 'code: ~p~n', [code]
-    end, req)
-end
-</code></figure>
-
 
     <h4>P10CR/CP</h4>
+
+    <p>Запускаємо сервер та генеруємо сертифікати CA та CSR користувача:</p>
+
+<figure><code>$ mix deps.get
+$ iex -S mix
+> CA.CSR.ca
+> CA.CSR.csr "maxim"
+</code></figure>
+
+    <p>Запускаємо клієнтський запит за допомогою OpenSSL:</p>
 
 <figure><code>
 # openssl cmp -cmd p10cr -server localhost:1829 \
@@ -222,47 +246,92 @@ end
 #             -secret pass:0000 -certout $client.pem -csr $client.csr
 </code></figure>
 
+    <p>Пишему функцію видачі сертифікату:</p>
+
 <figure><code>
-def message(socket, header, {:p10cr, csr} = body, code) do
-    {:PKIHeader, pvno, from, to, messageTime,
-        {_,oid,{_,param}} = protectionAlg, senderKID, recipKID,
-        transactionID, senderNonce, recipNonce, freeText, generalInfo} = header
-    {:ok, parameters} = :"PKIXCMP-2009".decode(:'PBMParameter', param)
-    {:PBMParameter, salt, {_,owf,_}, counter, {_,mac,_} } = parameters
-    {:CertificationRequest, {:CertificationRequestInfo, v, subj, x, y}, b, c} = csr
-    csr2 = {:CertificationRequest, {:CertificationRequestInfo,v,subj(subj),x,y},b,c}
+  def message(socket, header, {:p10cr, csr} = body, code) do
+      {:PKIHeader, pvno, from, to, messageTime, protectionAlg, _senderKID, _recipKID,
+         transactionID, senderNonce, _recipNonce, _freeText, _generalInfo} = header
+      true = code == validateProtection(header, body, code)
 
-    {ca_key, ca} = CA.CSR.read_ca()
-    subject = X509.CSR.subject(csr)
-    true = X509.CSR.valid?(csr2)
-    cert = X509.Certificate.new(X509.CSR.public_key(csr),
-           subj(subject),
-           ca,
-           ca_key,
-           extensions: [
-              subject_alt_name:
-                 X509.Certificate.Extension.subject_alt_name(["synrc.com"])
-           ])
+      {ca_key, ca} = CA.CSR.read_ca()
+      subject = X509.CSR.subject(csr)
+      :io.format '~p~n',[subject]
+      true = X509.CSR.valid?(CA.parseSubj(csr))
+      cert = X509.Certificate.new(X509.CSR.public_key(csr),
+         CA.CAdES.subj(subject), ca, ca_key,
+         extensions: [subject_alt_name:
+            X509.Certificate.Extension.subject_alt_name(["synrc.com"]) ])
 
-    reply = CA."CertRepMessage"(response:
-              [ CA."CertResponse"(certReqId: 1,
-                certifiedKeyPair: CA."CertifiedKeyPair"(certOrEncCert:
-                  {:certificate, {:x509v3PKCert, convertOTPtoPKIX(cert)}}),
-                status: CA."PKIStatusInfo"(status: 0))])
+      reply = CA."CertRepMessage"(response:
+            [ CA."CertResponse"(certReqId: 0,
+              certifiedKeyPair: CA."CertifiedKeyPair"(certOrEncCert:
+                {:certificate, {:x509v3PKCert, CA.convertOTPtoPKIX(cert)}}),
+              status: CA."PKIStatusInfo"(status: 0))])
 
-    pkibody = {:cp, reply}
-    pkiheader = CA."PKIHeader"(sender: to, recipient: from, pvno: pvno,
-        transactionID: transactionID,
-        protectionAlg: protectionAlg,
-        messageTime: messageTime)
-    outgoingProtection = CA."ProtectedPart"(header: pkiheader, body: pkibody)
+      pkibody = {:cp, reply}
+      pkiheader = CA."PKIHeader"(sender: to, recipient: from, pvno: pvno, recipNonce: senderNonce,
+          transactionID: transactionID, protectionAlg: protectionAlg, messageTime: messageTime)
+      answer(socket, pkiheader, pkibody, validateProtection(pkiheader, pkibody, code))
+  end</code></figure>
 
-    {:ok, out} = :"PKIXCMP-2009".encode(:'ProtectedPart', outgoingProtection)
-    kdf = :crypto.pbkdf2_hmac(:sha256, out, salt, counter, 20)
-    :io.format 'protection: ~p~n', [kdf]
+    <h4>CERTCONF/PKICONF</h4>
 
-    answer(socket, pkiheader, pkibody, kdf)
-end
+<figure><code>  def message(socket, header, {:certConf, statuses}, code) do
+      {:PKIHeader, _, from, to, _, _, _, _, _, senderNonce, _, _, _} = header
+
+      :lists.map(fn {:CertStatus,bin,no,{:PKIStatusInfo, :accepted, _, _}} ->
+          :logger.info 'CERTCONF ~p request ~p~n', [no,:binary.part(bin,0,8)]
+      end, statuses)
+
+      pkibody = {:pkiconf, :asn1_NOVALUE}
+      pkiheader = CA."PKIHeader"(header, sender: to, recipient: from, recipNonce: senderNonce)
+      answer(socket, pkiheader, pkibody, validateProtection(pkiheader, pkibody, code))
+  end</code></figure>
+
+    <p>В результаті в консолі повинні спостерігати:</p>
+
+<figure><code>CMP info: sending P10CR
+CMP info: received CP
+CMP info: sending CERTCONF
+CMP info: received PKICONF
+CMP info: received 1 enrolled certificate(s), saving to file 'maxim.pem'
+</code></figure>
+
+    <h4>GENM/GENP</h4>
+
+    <p>Далі можете написати інші функції:</p>
+
+<figure><code># openssl cmp -cmd genm -server 127.0.0.1:1829 \
+#             -recipient "/CN=CMPserver" -ref 1234 -secret pass:0000</code></figure>
+
+<figure><code>  def message(_socket, _header, {:genm, req} = _body, _code) do
+      :io.format 'generalMessage: ~p~n', [req]
+  end</code></figure>
+
+    <h4>IR/IP</h4>
+
+<figure><code># openssl cmp -cmd ir -server 127.0.0.1:1829 \
+#             -path . -srvcert ca.pem -ref NewUser \
+#             -secret pass:0000 -certout maxim.pem \
+#             -newkey maxim.key -subject "/CN=maxim/O=SYNRC/ST=Kyiv/C=UA"</code></figure>
+
+<figure><code>  def message(_socket, _header, {:ir, req}, _) do
+      :lists.map(fn {:CertReqMsg, req, sig, code} ->
+         :io.format 'request: ~p~n', [req]
+         :io.format 'signature: ~p~n', [sig]
+         :io.format 'code: ~p~n', [code]
+      end, req)
+  end</code></figure>
+
+    <h4>CR/CP</h4>
+
+<figure><code># openssl cmp -cmd cr -server 127.0.0.1:1829 \
+#             -path . -srvcert ca.pem -ref NewUser \
+#             -secret pass:0000 -certout maxim.pem \
+#             -newkey maxim.key -subject "/CN=maxim/O=SYNRC/ST=Kyiv/C=UA"</code></figure>
+
+<figure><code>
 </code></figure>
 
     <h3>CMC/CMS/TCP</h3>
@@ -275,12 +344,16 @@ end
 
     <h3>Висновки</h3>
 
+
 <figure><code>defmodule CA do
   use Application
   use Supervisor
 
   require Record
   Enum.each(Record.extract_all(from_lib: "ca/include/PKIXCMP-2009.hrl"),
+            fn {name, definition} -> Record.defrecord(name, definition) end)
+
+  Enum.each(Record.extract_all(from_lib: "public_key/include/public_key.hrl"),
             fn {name, definition} -> Record.defrecord(name, definition) end)
 
   def init([]), do: {:ok, { {:one_for_one, 5, 10}, []} }
@@ -291,6 +364,22 @@ end
       :supervisor.start_link({:local, __MODULE__}, __MODULE__, [])
   end
 end</code></figure>
+
+    <p>Ну PasswordBasedMac в нас є, тепер треба DHMac, але shared secret
+       можна і в PBM засунути. Є ше Proof Of Posession (POP) — там зразу
+       ECDSA verify. Я до речі думаю в CA тримати ключі для всіх кривих,
+       і коли я виставлятиму сервіс то я буду виставляти його на N портах
+       і N ключах, щоб будь який клієнтський TLS сертифікат приймався як рідний!
+       Chat 💬 X.509 дає можливість вибирати TLS сертифікати автоматично по
+       обраних кривих. Ви вибираєте під якими ключами сьогодні заходити.
+       LDAP, MQTT, NS, CA — в кожного сервісу свої N портів і N серверних
+       TLS сертифікатів. Передбачається що перший сертифікат видається DH
+       по TCP а потім зразу всьо переходить в TLS режим і всі наступні
+       сертифікати вже видаються всередині клієнтського TLS. При реєстрації
+       користувач зразу доступний в LDAP якшо захотів зробити себе відкритим
+       для пошуку. Після реєстрації пошук в директорії і френдування (обмін
+       ключами) і поїхали чат в обгортках CAdES, CMS, ECDSA/AES — лейби біля
+       повідомлень ПІДПИС/ШИФР.</p>
 
    <br><center>&dot;</center>
 
