@@ -351,6 +351,44 @@ END
 
     <h3>Висновки</h3>
 
+    <p>Якшо не модифікувати протокол, то ASN.1/BER в 3 рази
+       ефективніший BERT/ETF, який у свою чергу ефективніший
+       ніж JSON. ASN.1 протокол використовується для КЕП,
+       LDAP, DNS, X.509 PKI, CSR, PKCS, TLS, CMS,
+       тому природнім чином визначати телекомунікаційні
+       протоколи в ASN.1.</p>
+
+<h4>ASN.1/BER</h4>
+
+<figure><code>
+> {:ok, asn1} = :CHAT.encode(:CHATMessage, CHAT."CHATMessage"(no: 1,
+headers: [], body: {:message,CHAT."Message"(id: "5HT", feed: {:muc,
+CHAT."MUC"(room: "1")}, signature: "", from: "sys", to: "5HT", created: 1,
+files: [], type: :sys, link: {:empty,"NULL"}, seenby: "", repliedby: "",
+mentioned: [])}))
+{:ok,
+ <<48, 45, 2, 1, 1, 48, 0, 164, 38, 4, 3, 53, 72, 84, 161, 3, 4, 1, 49, 4, 0, 4,
+   3, 115, 121, 115, 4, 3, 53, 72, 84, 2, 1, 1, 48, 0, 10, 1, 1, 129, 0, 4, 0,
+   4, 0, 48, 0>>}
+> :erlang.size asn1
+47
+</code></figure>
+
+<h4>ETF/BERT</h4>
+
+<figure><code>
+> bert = :erlang.term_to_binary CHAT."CHATMessage"(no: 1,
+headers: [], body: {:message,CHAT."Message"(id: "5HT", feed: {:muc,
+CHAT."MUC"(room: "1")}, signature: "", from: "sys", to: "5HT", created: 1,
+files: [], type: :sys, link: {:empty,"NULL"}, seenby: "", repliedby: "",
+mentioned: [])}), [:compressed]
+<<131, 80, 0, 0, 0, 140, 120, 156, 203, 96, 41, 231, 118, 246, 112, 12, 241, 77,
+  45, 46, 78, 76, 79, 77, 100, 204, 202, 96, 42, 103, 207, 133, 240, 50, 248,
+  202, 217, 161, 18, 185, 12, 12, 12, 204, 166, 30, 33, 64, 89, 230, ...>>
+> :erlang.size bert
+114
+</code></figure>
+
    <br><center>&dot;</center>
 
     <hr>
