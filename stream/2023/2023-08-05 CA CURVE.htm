@@ -1,0 +1,367 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2023-08-05 CA CURVE</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css?v=1" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2023-08-05</a>
+</nav>
+<main>
+    <section>
+
+    <h3>Ця курва</h3>
+
+    <p>Тут покажемо як працює підпис на рівні операцій над точкою,
+       що знаходиться на еліптичній кривій, та операціями додавання
+       та множення які рухать точку по цій кривій.</p>
+
+    <h4>Точка на лінії</h4>
+
+    <p>Для початку визнається точка на площині в координатах Якобі.</p>
+
+<figure><code>
+defmodule CA.Point do
+  defstruct [:x, :y, z: 0]
+  def isAtInfinity?(p) do
+    p.y == 0
+  end
+
+end
+</code></figure>
+
+    <p>Та функція визначення </p>
+
+<figure><code>
+defmodule CA.Curve do
+  @moduledoc false
+  require CA.Integer
+  require CA.Point
+  defstruct [:A, :B, :P, :N, :G, :name, :oid]
+  def contains?(curve, p) do
+      cond do
+        p.x < 0 || p.x > curve."P" - 1 -> false
+        p.y < 0 || p.y > curve."P" - 1 -> false
+        CA.Integer.ipow(p.y, 2) - (CA.Integer.ipow(p.x, 3)
+                                + curve."A" * p.x + curve."B")
+          |> CA.Integer.modulo(curve."P") != 0 -> false
+        true -> true
+      end
+  end
+  def getLength(curve) do
+      div(1 + String.length(Integer.to_string(curve."N", 16)), 2)
+  end
+end
+</code></figure>
+
+    <h4>Множення в координатах Якобі</h4>
+
+    <p>Алгоритм бінарного множення в координатах Якобі.</p>
+
+<figure><code>
+defmodule CA.Jacobian do
+  require CA.Integer
+  require CA.Point
+  @moduledoc false
+
+  def toJacobian(p), do: %CA.Point{x: p.x, y: p.y, z: 1}
+  def fromJacobian(p, cP) do
+      z = inv(p.z, cP)
+      %CA.Point{
+        x: CA.Integer.modulo(p.x * CA.Integer.ipow(z, 2), cP),
+        y: CA.Integer.modulo(p.y * CA.Integer.ipow(z, 3), cP)
+      }
+  end
+
+  def multiply(p, n, cN, cA, cP), do:
+      p |> toJacobian()
+        |> jacobianMultiply(n, cN, cA, cP)
+        |> fromJacobian(cP)
+  def add(p, q, cA, cP), do:
+      jacobianAdd(toJacobian(p), toJacobian(q), cA, cP)
+        |> fromJacobian(cP)
+  def inv(x, _) when x == 0, do: 0
+  def inv(x, n), do:
+      invOperator(1, 0, CA.Integer.modulo(x, n), n)
+        |> CA.Integer.modulo(n)
+  def invOperator(lm, hm, low, high) when low > 1 do
+      r = div(high, low)
+      invOperator(hm - lm * r, lm, high - low * r, low) end
+  def invOperator(lm, _, _, _), do: lm
+
+  def jacobianDouble(p, cA, cP) do
+      if p.y == 0 do
+         %CA.Point{x: 0, y: 0, z: 0}
+      else
+        ysq = CA.Integer.ipow(p.y, 2) |> CA.Integer.modulo(cP)
+        s = (4 * p.x * ysq) |> CA.Integer.modulo(cP)
+        m = (3 * CA.Integer.ipow(p.x, 2) + cA * CA.Integer.ipow(p.z, 4))
+          |> CA.Integer.modulo(cP)
+        nx = (CA.Integer.ipow(m, 2) - 2 * s) |> CA.Integer.modulo(cP)
+        ny = (m * (s - nx) - 8 * CA.Integer.ipow(ysq, 2))
+          |> CA.Integer.modulo(cP)
+        nz = (2 * p.y * p.z) |> CA.Integer.modulo(cP)
+        %CA.Point{x: nx, y: ny, z: nz}
+      end
+  end
+
+  def jacobianAdd(p, q, cA, cP) do
+      if p.y == 0 do
+         q
+      else
+         if q.y == 0 do
+            p
+         else
+           u1 = (p.x * CA.Integer.ipow(q.z, 2)) |> CA.Integer.modulo(cP)
+           u2 = (q.x * CA.Integer.ipow(p.z, 2)) |> CA.Integer.modulo(cP)
+           s1 = (p.y * CA.Integer.ipow(q.z, 3)) |> CA.Integer.modulo(cP)
+           s2 = (q.y * CA.Integer.ipow(p.z, 3)) |> CA.Integer.modulo(cP)
+
+           if u1 == u2 do
+             if s1 != s2 do
+                %CA.Point{x: 0, y: 0, z: 1}
+             else
+               jacobianDouble(p, cA, cP)
+             end
+           else
+             h = u2 - u1
+             r = s2 - s1
+             h2 = (h * h) |> CA.Integer.modulo(cP)
+             h3 = (h * h2) |> CA.Integer.modulo(cP)
+             u1h2 = (u1 * h2) |> CA.Integer.modulo(cP)
+             nx = (CA.Integer.ipow(r, 2) - h3 - 2 * u1h2) |> CA.Integer.modulo(cP)
+             ny = (r * (u1h2 - nx) - s1 * h3) |> CA.Integer.modulo(cP)
+             nz = (h * p.z * q.z) |> CA.Integer.modulo(cP)
+             %CA.Point{x: nx, y: ny, z: nz}
+           end
+         end
+       end
+  end
+
+  def jacobianMultiply(_p, n, _cN, _cA, _cP) when n == 0, do:
+      %CA.Point{x: 0, y: 0, z: 1}
+  def jacobianMultiply(p, n, _cN, _cA, _cP) when n == 1 do
+      case p.y do
+           0 -> %CA.Point{x: 0, y: 0, z: 1}
+           _ -> p
+      end
+  end
+  def jacobianMultiply(p, n, cN, cA, cP) when n < 0 or n >= cN do
+      case p.y do
+           0 -> %CA.Point{x: 0, y: 0, z: 1}
+           _ -> jacobianMultiply(p, CA.Integer.modulo(n, cN), cN, cA, cP)
+      end
+  end
+  def jacobianMultiply(p, _n, _cN, _cA, _cP) when p.y == 0, do:
+      %CA.Point{x: 0, y: 0, z: 1}
+  def jacobianMultiply(p, n, cN, cA, cP) when rem(n, 2) == 0 do
+      jacobianMultiply(p, div(n, 2), cN, cA, cP) |> jacobianDouble(cA, cP)
+  end
+  def jacobianMultiply(p, n, cN, cA, cP) do
+      jacobianMultiply(p, div(n, 2), cN, cA, cP)
+      |> jacobianDouble(cA, cP) |> jacobianAdd(p, cA, cP)
+  end
+
+end
+</code></figure>
+
+    <h4>Множення в координатах Якобі</h4>
+
+    <p>Параметри кривих ідентифікуються атомом та/або OID,
+       та визначають точки А, Б, Засіювання, Точка на кривій,
+       Порядок, Кофактор.</p>
+
+<figure><code>
+defmodule CA.KnownCurves do
+  require CA.Curve
+  require CA.Point
+
+  @secp256k1Oid {1, 3, 132, 0, 10}
+  @secp256k1name :secp256k1
+  @prime256v1 {1, 2, 840, 10045, 3, 1, 7}
+  @prime256v1name :prime256v1
+
+  def getCurveByOid(oid) do
+    case oid do
+      @secp256k1Oid -> secp256k1()
+      @prime256v1 -> prime256v1()
+    end
+  end
+
+  def getCurveByName(name) do
+    case name do
+      @secp256k1name -> secp256k1()
+      @prime256v1name -> prime256v1()
+    end
+  end
+
+  def secp256k1() do
+    %CA.Curve{
+      name: @secp256k1name,
+      A: 0x0000000000000000000000000000000000000000000000000000000000000000,
+      B: 0x0000000000000000000000000000000000000000000000000000000000000007,
+      P: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F,
+      N: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141,
+      G: %CA.Point{
+        x: 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
+        y: 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+      },
+      oid: @secp256k1Oid
+    }
+  end
+
+  def prime256v1() do
+    %CA.Curve{
+      name: @prime256v1name,
+      A: 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC,
+      B: 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B,
+      P: 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF,
+      N: 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551,
+      G: %CA.Point{
+        x: 0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296,
+        y: 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5
+      },
+      oid: @prime256v1
+    }
+  end
+end
+</code></figure>
+
+    <h4>BigNum RND</h4>
+
+    <p>Алгоритм генерація великого довільного числа,
+       яке береться як координата точки на еліптичній кривій,
+       автоматично визначається її пара, яка утворює точку на прямій,
+       і далі відбуваються подальші криптографічні перетворення.</p>
+
+<figure><code>
+defmodule CA.Integer do
+  @moduledoc false
+  import Bitwise
+
+  def modulo(x, n), do: rem(x, n) |> correctNegativeModulo(n)
+  def correctNegativeModulo(r, n) when r < 0, do: r + n
+  def correctNegativeModulo(r, _n), do: r
+  def ipow(base, p, acc \\ 1)
+  def ipow(base, p, acc) when p > 0, do: ipow(base, p - 1, base * acc)
+  def ipow(_base, _p, acc), do: acc
+
+  def between(minimum, maximum) when minimum < maximum do
+      range = maximum - minimum + 1
+      {bytesNeeded, mask} = calculateParameters(range)
+      randomNumber = :crypto.strong_rand_bytes(bytesNeeded)
+                  |> :binary.bin_to_list()
+                  |> bytesToNumber &&& mask
+
+      if randomNumber < range do
+         minimum + randomNumber
+      else
+         between(minimum, maximum)
+      end
+  end
+
+  def bytesToNumber(randomBytes, randomNumber \\ 0, i \\ 0)
+  def bytesToNumber([randomByte | otherRandomBytes], randomNumber, i), do:
+      bytesToNumber(otherRandomBytes, randomNumber ||| randomByte <<< (8 * i), i + 1)
+  def bytesToNumber([], randomNumber, _i), do: randomNumber
+
+  def calculateParameters(range), do: calculateParameters(range, 1, 0)
+  def calculateParameters(range, mask, bitsNeeded) when range > 0, do:
+      calculateParameters(range >>> 1, mask &lt;&lt;&lt; 1 ||| 1, bitsNeeded + 1)
+  def calculateParameters(_range, mask, bitsNeeded), do:
+      {div(bitsNeeded, 8) + 1, mask}
+
+end
+</code></figure>
+
+    <h4>ECDSA</h4>
+
+    <p>Обчислення r та s для криптографічного підпису.</p>
+
+<figure><code>
+defmodule CA.ECDSA do
+  require CA.Point
+  require CA.Integer
+  require CA.Jacobian
+  require CA.ECDSA.OTP
+
+  def numberFromString(data) do
+      Base.encode16(data)
+      |> Integer.parse(16)
+      |> (fn {parsedInt, ""} -> parsedInt end).()
+  end
+
+  def sign(message, privateKey, options \\ []) do
+      %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
+      number = :crypto.hash(hashfunc, message) |> numberFromString()
+      curve = CA.KnownCurves.secp256k1()
+      randNum = CA.Integer.between(1, curve."N" - 1)
+      r = CA.Jacobian.multiply(curve."G", randNum, curve."N", curve."A", curve."P").x
+        |> CA.Integer.modulo(curve."N")
+      s = ((number + r * privateKey) * CA.Jacobian.inv(randNum, curve."N"))
+        |> CA.Integer.modulo(curve."N")
+      {r, s}
+  end
+
+  def private(bin), do: :erlang.element(2,X509.PrivateKey.from_pem(bin))
+  def public(bin),  do: :public_key.pem_entry_decode(hd(:public_key.pem_decode(bin)))
+
+  def verify(file, signature, pub) do
+      {:ok, msg} = :file.read_file file
+      {:ok, pem} = :file.read_file pub
+      verify(msg, CA.ECDSA.OTP.signature(signature), public(pem), [])
+  end
+
+  def verify(message, {r,s}, publicKey, options) do
+      %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
+      number = :crypto.hash(hashfunc, message) |> numberFromString()
+      curve = CA.KnownCurves.secp256k1()
+      inv = CA.Jacobian.inv(s, curve."N")
+      v = CA.Jacobian.add(
+        CA.Jacobian.multiply(curve."G", CA.Integer.modulo(number * inv, curve."N"),
+           curve."N", curve."A", curve."P"),
+        CA.Jacobian.multiply(publicKey, CA.Integer.modulo(r * inv, curve."N"),
+           curve."N", curve."A", curve."P" ), curve."A", curve."P")
+      cond do
+        r < 1 || r >= curve."N" -> false
+        s < 1 || s >= curve."N" -> false
+        CA.Point.isAtInfinity?(v) -> false
+        CA.Integer.modulo(v.x, curve."N") != r -> false
+        true -> true
+      end
+  end
+
+end
+</code></figure>
+
+    <h3>Висновки</h3>
+
+    <p> Промислової якості криптографічні перетворення з
+        використанням бібліотеки великих цілих чисел
+        GMP вбудованої в віртуальну машину Erlang
+        вміщаються в 250 LOC та всього в декілька разів
+        повільніше OpenSSL імплементації на мові C.</p>
+
+   <br><center>&dot;</center>
+
+    <hr>
+
+   <br><center>&dot;</center>
+
+     <p>
+     </p>
+
+    </section>
+</main>
+<footer><a href="https://instagram.com/5HT/">Namdak Tönpa</a> <span class="heart">&nbsp;❤&nbsp;</span> 2023</footer>
+</body>
+</html>
+
