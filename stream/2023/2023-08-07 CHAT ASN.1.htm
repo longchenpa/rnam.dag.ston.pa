@@ -304,8 +304,6 @@ CHAT DEFINITIONS IMPLICIT TAGS ::= BEGIN
        data SEQUENCE OF message Message,
        roster UniversalString,
        status HistoryStatus }
-
-END
 </code></figure>
 
     <h4>Налаштування</h4>
@@ -346,6 +344,7 @@ END
     PresenceType ::= ENUMERATED { offline (1), online (2) }
     Presence ::= SEQUENCE { nickname OCTET STRING, status PresenceType }
 
+END
 </code></figure>
 
     <h3>Висновки</h3>
