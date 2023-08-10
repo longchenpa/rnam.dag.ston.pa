@@ -52,6 +52,29 @@
 
     <h4>Функціональні</h4>
 
+    <p><b>Принципові особливості</b>. Користувач повинен мати можливість
+       контролювати типи кривих і ключ для кожного облікового запису або
+       навіть для кожного повідомлення. Усі повідомлення, які користувач надсилає або отримує підписуються та шифруються
+       цими ключами, зашифровані копії при цьому не зберігаються на сервері.</p>
+
+    <p><b>Відкритість та прозорість для аудиту</b>. Повний вихідний код ЧАТ X.509 клієнтів і
+       серверних рішень доступний на GitHub. Це дає змогу зацікавленим сторонам
+       перевірити код на безпеку та правильність.</p>
+
+    <p><b>Відповідність</b> світовим та державним телекомунікаційним та
+       криптографічним стандартам NIST, ISO, ANSI, ITU, FIPS, ДСТУ, ДССЗІ.</p>
+
+    <p>NIST: SP 800 38D-56A-57-162, P-384, P-571;<br>
+        ISO: 20922 15946 10646 8824 8825;<br>
+       ANSI: X9-64, X9-62;<br>
+       FIPS: PUB 180-4;<br>
+       ДСТУ: 4541 28147 GF(2^509);<br>
+        ITU: X.509 (PKI), X.894 (CMS), X.680-X.683 X.690-697 (ASN.1);<br>
+      ДССЗІ: #112 14.05.2010 #1236/5/453 20.08.2012 #687 27.10.2020</p>
+
+    <p><b>Протокол системи</b>. Протокол системи повинен відповідати CHAT ASN.1 специфікації.
+       Відповідні клієнти повинні генеруватися для Swift найсучаснішими бібліотеками від Apple.</p>
+
     <p>1) Чат протокол<br>
        2) Контакти<br>
        3) Записна книжка<br>
@@ -67,7 +90,190 @@
 
     <h4>Технічні</h4>
 
-    <p>Повний перелік стандартів і протоколів.</p>
+    <p><b>Криптографічна повнота</b>. Система повинна підтримувати всі криптографічні
+       примітиви згідно визначених стандартів, таких як CMS, і для яких існують ASN.1 oid ідентифікатори.</p>
+
+<figure><code>defmodule CA.ALG do
+
+   def algorithms() do
+       [
+         {:'id-gost28147-ofb',    {1,2,804,2,1,1,1,1,1,1,2}},
+         {:'id-gost28147-cfb',    {1,2,804,2,1,1,1,1,1,1,3}},
+         {:'id-gost28147-wrap',   {1,2,804,2,1,1,1,1,1,1,5}},
+         {:'id-Dstu7624cfb-x256', {1,2,804,2,1,1,1,1,1,3,3,2}},
+         {:'id-Dstu7624ofb-x256', {1,2,804,2,1,1,1,1,1,3,6,2}},
+         {:'id-ecPublicKey',      {1,2,840,10045,2,1}},
+         {:secp192r1,             {1,2,840,10045,3,1,1}},
+         {:secp256r1,             {1,2,840,10045,3,1,7}},
+         {:'ecdsa-with-SHA224',   {1,2,840,10045,4,3,1}},
+         {:'ecdsa-with-SHA256',   {1,2,840,10045,4,3,2}},
+         {:'ecdsa-with-SHA384',   {1,2,840,10045,4,3,3}},
+         {:'ecdsa-with-SHA512',   {1,2,840,10045,4,3,4}},
+         {:'ecdsa-with-SHA1',     {1,2,840,10045,4,1}},
+         {:'id-dsa',              {1,2,840,10040,4,1}},
+         {:'dsa-with-sha1',       {1,2,840,10040,4,3}},
+         {:rsaEncryption,         {1,2,840,113549,1,1,1}},
+         {:md2WithRSAEncryption,  {1,2,840,113549,1,1,2}},
+         {:md5WithRSAEncryption,  {1,2,840,113549,1,1,4}},
+         {:sha1WithRSAEncryption, {1,2,840,113549,1,1,5}},
+         {:'id-PBKDF2',           {1,2,840,113549,1,5,12}},
+         {:'smime-alg',           {1,2,840,113549,1,9,16,3}},
+         {:'id-alg-ESDH',         {1,2,840,113549,1,9,16,3,5}},
+         {:'id-alg-SSDH',         {1,2,840,113549,1,9,16,3,10}},
+         {:'id-alg-CMS3DESwrap',  {1,2,840,113549,1,9,16,3,6}},
+         {:'id-alg-CMSRC2wrap',   {1,2,840,113549,1,9,16,3,7}},
+         {:'id-md2',              {1,2,840,113549,2,2}},
+         {:'id-md5',              {1,2,840,113549,2,5}},
+         {:'id-hmacWithSHA224',   {1,2,840,113549,2,8}},
+         {:'id-hmacWithSHA256',   {1,2,840,113549,2,9}},
+         {:'id-hmacWithSHA384',   {1,2,840,113549,2,10}},
+         {:'id-hmacWithSHA512',   {1,2,840,113549,2,11}},
+         {:'rc2-cbc',             {1,2,840,113549,3,2}},
+         {:'des-ede3-cbc',        {1,2,840,113549,3,7}},
+         {:keyExchangeAlgorithm,  {2,16,840,1,101,2,1,1,22}},
+         {:'id-aes128-ECB',       {2,16,840,1,101,3,4,1,1}},
+         {:'id-aes128-CBC',       {2,16,840,1,101,3,4,1,2}},
+         {:'id-aes128-wrap',      {2,16,840,1,101,3,4,1,5}},
+         {:'id-aes128-GCM',       {2,16,840,1,101,3,4,1,6}},
+         {:'id-aes128-CCM',       {2,16,840,1,101,3,4,1,7}},
+         {:'id-aes128-wrap-pad',  {2,16,840,1,101,3,4,1,8}},
+         {:'id-aes192-ECB',       {2,16,840,1,101,3,4,1,21}},
+         {:'id-aes192-CBC',       {2,16,840,1,101,3,4,1,22}},
+         {:'id-aes192-wrap',      {2,16,840,1,101,3,4,1,25}},
+         {:'id-aes192-GCM',       {2,16,840,1,101,3,4,1,26}},
+         {:'id-aes192-CCM',       {2,16,840,1,101,3,4,1,27}},
+         {:'id-aes192-wrap-pad',  {2,16,840,1,101,3,4,1,28}},
+         {:'id-aes256-ECB',       {2,16,840,1,101,3,4,1,41}},
+         {:'id-aes256-CBC',       {2,16,840,1,101,3,4,1,42}},
+         {:'id-aes256-OFB',       {2,16,840,1,101,3,4,1,43}},
+         {:'id-aes256-CFB',       {2,16,840,1,101,3,4,1,44}},
+         {:'id-aes256-wrap',      {2,16,840,1,101,3,4,1,45}},
+         {:'id-aes256-GCM',       {2,16,840,1,101,3,4,1,46}},
+         {:'id-aes256-CCM',       {2,16,840,1,101,3,4,1,47}},
+         {:'id-aes256-wrap-pad',  {2,16,840,1,101,3,4,1,48}},
+         {:'dsa-with-sha224',     {2,16,840,1,101,3,4,3,1}},
+         {:'dsa-with-sha256',     {2,16,840,1,101,3,4,3,2}},
+         {:'dhSinglePass-stdDH-hkdf-sha256-scheme',    {1,2,840,113549,1,9,16,3,19}},
+         {:'dhSinglePass-stdDH-hkdf-sha384-scheme',    {1,2,840,113549,1,9,16,3,20}},
+         {:'dhSinglePass-stdDH-hkdf-sha512-scheme',    {1,2,840,113549,1,9,16,3,21}},
+         {:'hMAC-SHA1',                                {1,3,6,1,5,5,8,1,2}},
+         {:'id-sha1',                                  {1,3,14,3,2,26}},
+         {:sect163k1,                                  {1,3,132,0,1}},
+         {:sect163r2,                                  {1,3,132,0,15}},
+         {:secp224r1,                                  {1,3,132,0,33}},
+         {:sect233k1,                                  {1,3,132,0,26}},
+         {:sect233r1,                                  {1,3,132,0,27}},
+         {:sect283k1,                                  {1,3,132,0,16}},
+         {:sect283r1,                                  {1,3,132,0,17}},
+         {:secp384r1,                                  {1,3,132,0,34}},
+         {:sect409k1,                                  {1,3,132,0,36}},
+         {:sect409r1,                                  {1,3,132,0,37}},
+         {:secp521r1,                                  {1,3,132,0,35}},
+         {:sect571k1,                                  {1,3,132,0,38}},
+         {:sect571r1,                                  {1,3,132,0,39}},
+         {:'secg-scheme',                              {1,3,132,1}},
+         {:'dhSinglePass-stdDH-sha224kdf-scheme',      {1,3,132,1,11,0}},
+         {:'dhSinglePass-stdDH-sha256kdf-scheme',      {1,3,132,1,11,1}},
+         {:'dhSinglePass-stdDH-sha384kdf-scheme',      {1,3,132,1,11,2}},
+         {:'dhSinglePass-stdDH-sha512kdf-scheme',      {1,3,132,1,11,3}},
+         {:'id-ecDH',                                  {1,3,132,1,12}},
+         {:'id-ecMQV',                                 {1,3,132,1,13}},
+         {:'dhSinglePass-cofactorDH-sha224kdf-scheme', {1,3,132,1,14,0}},
+         {:'dhSinglePass-cofactorDH-sha256kdf-scheme', {1,3,132,1,14,1}},
+         {:'dhSinglePass-cofactorDH-sha384kdf-scheme', {1,3,132,1,14,2}},
+         {:'dhSinglePass-cofactorDH-sha512kdf-scheme', {1,3,132,1,14,3}},
+         {:'mqvSinglePass-sha224kdf-scheme',           {1,3,132,1,15,0}},
+         {:'mqvSinglePass-sha256kdf-scheme',           {1,3,132,1,15,1}},
+         {:'mqvSinglePass-sha384kdf-scheme',           {1,3,132,1,15,2}},
+         {:'mqvSinglePass-sha512kdf-scheme',           {1,3,132,1,15,3}},
+         {:'x9-63-scheme',                             {1,3,133,16,840,63,0}},
+         {:'dhSinglePass-stdDH-sha1kdf-scheme',        {1,3,133,16,840,63,0,2}},
+         {:'dhSinglePass-cofactorDH-sha1kdf-scheme',   {1,3,133,16,840,63,0,3}},
+         {:'mqvSinglePass-sha1kdf-scheme',             {1,3,133,16,840,63,0,16}},
+       ]
+   end
+end
+</code></figure>
+
+
+    <p><b>Телекомунікаційна повнота</b>. Система повинна підтримувати наступний
+       перелік стандартів і протоколів ITU, ANSI, ДСТУ конвертів визначених в ASN.1 нотації.
+       Кожен клієнт CHAT X.509 повинен мати змогу підтримувати більшість з цих визначень,
+       але не кожен публічний компілятор ASN.1 підтримує всі файли.</p>
+
+<figure><code>AESKeyWrapWithPad-02.asn1
+AESKeyWrapWithPad-88.asn1
+ANSI-X9-42.asn1
+ANSI-X9-62.asn1
+AlgorithmInformation-2009.asn1
+AttributeCertificateVersion1-2009.asn1
+AuthenticationFramework.asn1
+BasicAccessControl.asn1
+CHAT.asn1
+CMS-AES-CCM-and-AES-GCM-2009.asn1
+CMSAesRsaesOaep-2009.asn1
+CMSECCAlgs-2009-02.asn1
+CMSECDHAlgs-2017.asn1
+CertificateExtensions.asn1
+Character-Coding-Attributes.asn1
+Character-Presentation-Attributes.asn1
+Character-Profile-Attributes.asn1
+Colour-Attributes.asn1
+CryptographicMessageSyntax-2009.asn1
+CryptographicMessageSyntax-2010.asn1
+CryptographicMessageSyntaxAlgorithms-2009.asn1
+DOR-definition.asn1
+Default-Value-Lists.asn1
+DirectoryAbstractService.asn1
+Document-Profile-Descriptor.asn1
+EnrollmentMessageSyntax-2009.asn1
+ExtendedSecurityServices-2009.asn1
+External-References.asn1
+Geo-Gr-Coding-Attributes.asn1
+Geo-Gr-Presentation-Attributes.asn1
+Geo-Gr-Profile-Attributes.asn1
+ISO-STANDARD-9541-FONT-ATTRIBUTE-SET.asn1
+ISO9541-SN.asn1
+Identifiers-and-Expressions.asn1
+InformationFramework.asn1
+KEP.asn1
+LDAP.asn1
+Layout-Descriptors.asn1
+Link-Descriptors.asn1
+Location-Expressions.asn1
+Logical-Descriptors.asn1
+MultipleSignatures-2010.asn1
+OCSP.asn1
+PKCS-10.asn1
+PKCS-12.asn1
+PKCS-5.asn1
+PKCS-7.asn1
+PKCS-8.asn1
+PKCS-9.asn1
+PKIX-CommonTypes-2009.asn1
+PKIX-X400Address-2009.asn1
+PKIX1-PSS-OAEP-Algorithms-2009.asn1
+PKIX1Explicit-2009.asn1
+PKIX1Explicit88.asn1
+PKIX1Implicit-2009.asn1
+PKIX1Implicit88.asn1
+PKIXAlgs-2009.asn1
+PKIXAttributeCertificate-2009.asn1
+PKIXCMP-2009.asn1
+PKIXCRMF-2009.asn1
+Raster-Gr-Coding-Attributes.asn1
+Raster-Gr-Presentation-Attributes.asn1
+Raster-Gr-Profile-Attributes.asn1
+SMIMESymmetricKeyDistribution-2009.asn1
+SecureMimeMessageV3dot1-2009.asn1
+SelectedAttributeTypes.asn1
+Style-Descriptors.asn1
+Subprofiles.asn1
+Temporal-Relationships.asn1
+Text-Units.asn1
+UpperBounds.asn1
+UsefulDefinitions.asn1
+Videotex-Coding-Attributes.asn1</code></figure>
 
     <h4>Ергономічні</h4>
 
