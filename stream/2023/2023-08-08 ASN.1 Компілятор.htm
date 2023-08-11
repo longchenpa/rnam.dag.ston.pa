@@ -18,7 +18,7 @@
 <main>
     <section>
 
-    <h3>ASN.1 Компілятор</h3>
+    <h3>ASN.1 Компілятор ASN1SCG</h3>
 
     <p>У статті представлений мінімальний Swift "ASN.1 компілятор"
        на мові Erlang. <br>Автор &mdash; Максим Сохацький, 2023-8-8.</p>
@@ -26,10 +26,9 @@
     <h3>Зміст</h3>
 
     <p>1) Контест ASN.1 компіляторів<br>
-       2) ASN.1 vs GPROTO<br>
-       3) X.509 DER vs Erlang BERT/ETF<br>
-       4) Бібліотека Apple<br>
-       5) Erlang AST ASN.1 Swift кодогенаратора<br>
+       2) X.509 DER vs Erlang BERT/ETF<br>
+       3) Бібліотека Apple<br>
+       4) Erlang AST ASN.1 Swift кодогенаратора<br>
     </p>
 
     <h3>Вступ</h3>
@@ -73,6 +72,8 @@
 
     <h3>Компілятори</h3>
 
+     <p></p>
+
     <h4>Я хотів зробити огляд ASN.1 компіляторів, але
         з представлених безкоштовних жоден крім Erlang-ового
         не компілює повний набір ASN.1 файлів проекта SYNRC CA.
@@ -82,13 +83,16 @@
         це зробити однак з огляду на його клієнтів навряд чи
         ми про це дізнаємося, так шоб прямо розказати в блозі.</h4>
 
-     <p>Я подивився на помилки прдеставлених на сайті ITU компіляторів
+     <p>Я подивився на помилки представлених на сайті ITU компіляторів
         і складається враження що сумісність з самим ж файлами
         дефініціями ITU ніхто не перевіряє навіть мануально.
         Просто вивішують в залікову таблицю будь-кого хто
         успішно розпарсав сабсет ASN.1 і згенерував
-        якийсь граничні імплементація для свого випадку.
-        Ось текстовий сет з сайту ITU яким я перевіряв компілятори.</p>
+        якийсь граничні імплементація для свого випадку.</P>
+
+    <h4>Тестовий набір файлів</h4>
+
+      <p>Ось текстовий сет з сайту ITU яким я перевіряв компілятори.</p>
 
 <figure><code>AESKeyWrapWithPad-02.asn1
 AESKeyWrapWithPad-88.asn1
@@ -164,17 +168,34 @@ UpperBounds.asn1
 UsefulDefinitions.asn1
 Videotex-Coding-Attributes.asn1</code></figure>
 
-    <h3>Серіалізатори</h3>
+    <h3>Фірмові і стандартні</h3>
 
-    <h3>Стандартні і фірмові</h3>
+    <p>Тут розглядаються фірмова бібліотека RPC та стандартна ASN1X компанії SYNRC
+       для бінарної серіалізації внутрішнього бінарного представлення віртуальної
+       машини Erlang та бінарного представлення сімейства розміточних форматів і їх
+       парсерів BER, DER, PER, кодери і декодери яких генеруються з мови специфікацій
+       та протоколів ASN.1.</p>
 
-    <h4>Erlang BERT/ETF</h4>
+    <h4>Ericsson Erlang BERT/ETF</h4>
 
     <p>Серед фірмових можна відзначити Ericsson
        Binary Erlang Term Format, який використовується в
-       промисловості більше 10 років починаючи з Github.</p>
+       промисловості більше 10 років починаючи з Github. SYNRC використовує
+       бібліотеку SYNRC RPC яка генерує кодери і декодери (API SDK) для будь
+       яких Erlang структур на наступні мови програмування та мови визначення протоколів:</p>
 
-    <h4>ASN.1 BER/DER/PER</h4>
+    <p>1) IDL/COM;<br>
+       2) JavaScript;<br>
+       3) Google gproto;<br>
+       4) Apple Swift;<br>
+       5) Erlang validation.<br>
+    </p>
+
+    <p>Завдяки генератору BERT парсерів SYNRC RPC компанія NYNJA
+       змогла уніфіковано працювати з об'єктами системи в двох
+       форматах BERT і GPROTO і залишилася після апробації на BERT.</p>
+
+    <h4>ITU IETF ASN.1 BER/DER/PER Apple/Microsoft/OpenSSL</h4>
 
     <p>До стандартних можна віднести бінарні формати
        для серіалізації сертифікатів та обгорток криптографічних
@@ -187,16 +208,42 @@ Videotex-Coding-Attributes.asn1</code></figure>
        продемонстрована сумісність протоколів CHAT BERT (HRL)
        та результату ASN.1 компіляції CHAT BER.</p>
 
-    <h4>SubjectPublicKeyInfo</h4>
+    <p>1) ASN1C;<br>
+       2) ASN1CC;<br>
+       3) ASN1SCC;<br>
+       4) ASN1SCG (Swift Code Generation);<br>
+       5) ASN1JCG (Java Code Generation).<br>
+    </p>
 
-   <p>ASN.1 визначення структури SubjectPublicKeyInfo.</p>
+      <p>В даній статті розказується про один з двох генераторів коду DER/BER/PER кодерів і декодерів 
+         SYNRC для мови Swift &mdash; ASN1SCG, який генерує код невідмінний від
+         схеми кодування і декодування яку Apple пропонує в свої бібліотеках asn1, crypto та certificates.</p>
+
+    <h4>Google gproto/GRPC</h4>
+
+   <p>В першу чергу цей формат набув популярності на пристроях Apple,
+      так як протокол основного AP сховища Apple Cassandra використовує
+      цей формат. Значною проблему є переускладеність кодогенератора і
+      інфраструктури компілятора.</p>
 
     <h3>Бібліотеки Apple</h3>
+
+    <p>Починаючи з вести 2020 року, коли Apple анонсувала CryptoKit для X.509
+       інфраструктури зокрема, компанія випустила наступні бібліотеки, які
+       показується стандартний механізм який Apple передбачає для Swift авторів
+       як вони мусять користуватися PKI X.509 обгортками, сертифікатами, ключами
+       та взагалі будь-якими ASN.1 протоколами.</p>
 
     <p>1) apple/swift-asn1<br>
        2) apple/swift-crypto<br>
        3) apple/swift-certificates<br>
     </p>
+
+    <p>SYNRC ASN1SCG &mdash; це ASN.1 компілятор в мову Swift з використанням
+       схеми кодування Apple, написаний на мові Erlang компанією SYNRC.
+       Тут показуються приклади генерації кодерів і декодерів для деяких
+       структур сімейства PKI X.509 в форматі прикладів Apple (насправді
+       відрізнити конкретно ці неможливо).</p>
 
     <h4>ECDSASignature</h4>
 
@@ -361,9 +408,40 @@ func serialize(into coder: inout DER.Serializer,
     <h3>Кодогенерація на Erlang в Swift</h3>
 
 <figure><code>
-</code></figure>
+  def parse(file) do
+      tokens = :asn1ct_tok.file file
+      {:ok, mod} = :asn1ct_parser2.parse file, tokens
+      {:module, pos, name, defid, tag, exports, imports, _, component} = mod
+      :lists.map(fn
+         {:typedef,  _, pos, name, type} ->
+             dumpType(pos, name, type)
+         {:valuedef, _, pos, name, type, value, mod} ->
+             dumpValue(pos, name, type, value, mod)
+         {:classdef, _, pos, name, mod, type} ->
+             dumpClass(pos, name, mod, type)
+         {:ptypedef, _, pos, name, args, type} ->
+             dumpPType(pos, name, args, type)
+      end, component)
+      dumpModule(pos, name, defid, tag, exports, imports)
+  end</code></figure>
 
     <h3>Висновки</h3>
+
+    <p>Я взяв наймолодші вендор бібліотеки Apple для схем кодування
+       і декодування ASN.1 форматів BER/DER і існуючу структуру ASN.1
+       компілятора Ericsson, єдиного вільного повного, і написав генератор
+       перших (схем кодування) використовуючи типову інформацію
+       другого (ASN.1 компілятора Erlang/OTP).</p>
+
+    <p>Щодо ефективності, то всі зауваження щодо неї можна направляти напряму Apple,
+       так як наш компілятор намагається просто бути максимально сумісним
+       і робити вигляд шо цей код був написаний співробітниками Apple.</p>
+
+    <p>Якщо ж досліджувати моделі бездоганної або гранично-ефективної компіляції,
+       то вона може бути досягнена виключно генерацією ассемблерних інструкцій і
+       по можливості векторних і паралельних схем парсінгу з представленнями
+       доведеннями ефективності через аналіз заповнення конвеєрів процесора
+       і підрахунку циклів процесора на операції.</p>
 
    <br><center>&dot;</center>
 
@@ -377,6 +455,7 @@ func serialize(into coder: inout DER.Serializer,
      [3]. <a href="https://letsencrypt.org/uk/docs/a-warm-welcome-to-asn1-and-der/">Let's Encrypt. Ласкаво просимо в ASN.1 і DER</a><br>
      [4]. <a href="https://apple.github.io/swift-crypto/docs/current/Crypto/index.html">Swift Crypto Library Documentation</a><br>
      [5]. <a href="https://swiftpackageindex.com/apple/swift-certificates/0.6.0/documentation/x509">Swift Certificates Library Documentation</a><br>
+     [6]. <a href="https://www.oss.com/asn1/resources/books-whitepapers-pubs/dubuisson-asn1-book.PDF">Olivier Dubuisson. ASN.1 Communication between Heterogeneous Systems</a><br>
      </p>
 
     </section>
