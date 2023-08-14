@@ -1,0 +1,230 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2023-08-13 SWIFT X.509</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css?v=1" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2023-08-13</a>
+</nav>
+<main>
+    <section>
+
+    <h3>CHAT 💬 X.509 Swift Console</h3>
+
+    <p>Сектор клієнтської розробки SYNRC CHAT відкриває серію статей
+       присвячених розробці на Swift. Якшо коротко то спочатку ми будемо
+       вчитися працювати з бінарними форматами ASN.1 DER використовуючи
+       бібліотеки Apple. А потім напишемо ASN.1 компілятор з кодогенерацією
+       в Swift 5.8 по ASN.1 специфікаціям які входять до складу SYNRC CA,
+       ключового криптографічного компоненту та головної залежності SYNRC CHAT.</P>
+
+
+      <p>Для початку ми бачимо клієнт CHAT X.509 як read-eval-print цикл як такий,
+         що можна побачити в самому Swift, Elixir та майже кожній
+         сучасній мові програмування. Поки що питання текстового протоколу оператора
+         консолі залищається відкритим, одна уже можна задекларувати принципи на
+         яких буде побудована UTF-8 консоль: перший &mdash; це termio інтерфейс
+         і другий &mdash; це своя мова і протокол спілкування виконаний у вигляді REPL.</p>
+
+      <h4>Створення проєкту</h4>
+
+      <p>Покажемо необхідний мінімум для створення проєету. По-перше треба зробити
+         файл проекту Package.swift. Зверніть увагу на версію Swift в коментарі першого рядка.
+         Всі таргети повинні відповідати папкам та зазвичай знаходяться в папці Sources.
+         Цей додаток використовує тільки дві залежності swift-asn1 і swift-crypto,
+         всі реалізації обгорток в swift-certificates я переніс в папку CMS. Зверніть
+         увагу що там вони використвують внутрішній таргет _CryptoExtras з залежності swift-crypto.
+         Також хочеться додати шо можна було би не красти файли з swift-certificates,
+         а просто поставити її в залежність тоді треба було би робити @testable import X509,
+         але чомусь це забороняє створювати релізи swift build -c release. Не тільки це сталою
+         причиною переносу файлів з swift-certificates &mdash; оскільки ми хочемо
+         аби всі обгортки X509 які зараз лежать в swift-certificates в майбутньому
+         були замінені на результати роботи SYNRC ASN.1 компілятора, ми навмисно
+         не включаємо бібіліотеку в залежності аби поступово замінювати файли що там
+         знаходяться на згенеровані сумісні версії.</p>
+
+<figure><code>// swift-tools-version: 5.8
+
+import PackageDescription
+import class Foundation.ProcessInfo
+
+let package = Package(
+    name: "chat-x509",
+    platforms: [ .macOS(.v10_15), .iOS(.v13) ],
+    products: [ .executable(name: "chat-x509", targets: ["SwiftConsole"]), ],
+    targets: [
+      .executableTarget(
+         name: "SwiftConsole",
+         dependencies: [
+            .product(name: "Crypto", package: "swift-crypto"),
+            .product(name: "_CryptoExtras", package: "swift-crypto"),
+            .product(name: "SwiftASN1", package: "swift-asn1"),
+         ]),
+    ]
+)
+
+if ProcessInfo.processInfo.environment["SWIFTCI_USE_LOCAL_DEPS"] == nil {
+    package.dependencies += [
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "2.6.0"),
+        .package(url: "https://github.com/apple/swift-asn1.git", from: "0.8.0"),
+    ]
+}</code></figure>
+
+      <h4>REPL</h4>
+
+      <p>Наступним кроком підготуємо головну програму яка компілюється в
+         бінарний файл chat-x509 на всіх платформах: Windows, Linux, Mac.</p>
+
+<figure><code>import SwiftASN1
+import Crypto
+import Foundation
+
+func exists(f: String) -> Bool { return FileManager.default.fileExists(atPath: f) }
+
+
+func run() throws {
+     print(": CHAT 💬 X.509 © SYNRC")
+     print("> ", terminator: "")
+     while let line = readLine() {
+        let data = line.components(separatedBy: " ")
+        if (data.joined() == "") {
+            print("> ", terminator: "")
+            continue
+        } else {
+            let args = data.filter { $0 != "" }
+            print(": \(args)")
+        }
+        if (data.count > 2 && data[0] == "show") {
+            switch (data[2]) {
+                case "crt": try showCRT(name: data[1])
+                case "csr": try showCSR(name: data[1])
+                case "cms": try showCMS(name: data[1])
+                default: ()
+            }
+        }
+        print("> ", terminator: "")
+     }
+     print("Bye!")
+}
+
+try run()</code></figure>
+
+      <h4>Підтримка DER пакетів</h4>
+
+      <p>Покажемо на прикладі як використовувати X509 обгортки з Apple бібліотеки
+         swift-certificates, для цього в репозиторії закомічено 3
+         файли: cms.bin (CMS), ca.crt (CRT), ec_sha256.der (CSR). Для відображення
+         розпарсаної інформації з цих файлів в клієнті використовується
+         наприклад наступна команда: show ca.crt crt, де другий параметр show
+         crt показує тип структури, а перший &mdash; ім'я файла де знаходиться структура.
+         </p>
+
+<figure><code>func showCMS(name: String) throws {
+     print(": CMS=\(name)")
+     let url = URL(fileURLWithPath: name)
+     if (!exists(f: url.path)) { print(": CMS file not found.") } else {
+         let data = try Data(contentsOf: url)
+         let cms = try CMSContentInfo(derEncoded: Array(data))
+         print(": \(cms.contentType)")
+     }
+}
+
+func showCRT(name: String) throws {
+     print(": CRT=\(name)")
+     let url = URL(fileURLWithPath: name)
+     if (!exists(f: url.path)) { print(": CRT file not found.") } else {
+         let data = try Data(contentsOf: url)
+         let crt = try Certificate(derEncoded: Array(data))
+         print(": \(crt)")
+     }
+}
+
+func showCSR(name: String) throws {
+     print(": CSR=\(name)")
+     let url = URL(fileURLWithPath: name)
+     if (!exists(f: url.path)) { print(": CSR file not found.") } else {
+         let data = try Data(contentsOf: url)
+         let csr = try CertificateSigningRequest(derEncoded: Array(data))
+         print(": \(csr)")
+     }
+}</code></figure>
+
+      <h4>Запуск та компіляція клієнта</h4>
+
+      <P>Для компіляції релізу зазвичай використовується:</p>
+
+<figure><code>$ swift build -c release</code></figure>
+
+      <p>А для запуску зі swift:</p>
+
+<figure><code style="text-wrap: wrap; word-break: break-all; overflow-wrap: word-wrap;">$ rlwrap swift run
+Building for debugging...
+Build complete! (0.65s)
+: CHAT 💬 X.509 © SYNRC
+>
+>
+show ec_sha256.der csr
+: ["show", "ec_sha256.der", "csr"]
+: CSR=ec_sha256.der
+: CertificateSigningRequest(version: CSRv1, subject: L=Austin,
+ST=Texas,C=US,O=PyCA,CN=cryptography.io, publicKey: P384, attr
+ibutes: Attributes([]), signatureAlgorithm: SignatureAlgorithm
+.ecdsaWithSHA256, signature: ECDSA
+>
+>
+show cms.bin cms
+: ["show", "cms.bin", "cms"]
+: CMS=cms.bin
+: 1.2.840.113549.1.7.3
+>
+>
+show ca.crt crt
+: ["show", "ca.crt", "crt"]
+: CRT=ca.crt
+: Certificate(version: X509v3, serialNumber: 31:a2:d0:1d:78:3c
+:8:71:52:f8:51:71:43:ab:1a:bc:fa:a2:86:97, issuer: "CN=CA,O=SY
+NRC,ST=Kyiv,C=UA", subject: "CN=CA,O=SYNRC,ST=Kyiv,C=UA", notV
+alidBefore: 2023-06-14 06:34:49 +0000, notValidAfter: 2033-06-
+11 06:34:49 +0000, publicKey: P384, signature: ECDSA, extensio
+ns: [SubjectKeyIdentifier(97:21:88:41:9c:a5:ce:53:89:bd:11:64:
+ee:5d:da:b4:af:de:8d:db), AuthorityKeyIdentifier(keyID: 97:21:
+88:41:9c:a5:ce:53:89:bd:11:64:ee:5d:da:b4:af:de:8d:db), BasicC
+onstraints(CA=TRUE), KeyUsage(digitalSignature, keyCertSign, c
+RLSign)])
+>
+>
+>
+</code></figure>
+
+   <br><center>&dot;</center>
+
+    <hr>
+
+   <br><center>&dot;</center>
+
+     <p>
+     [1]. <a href="https://www.itu.int/en/ITU-T/asn1/Pages/Tools.aspx">ITU-T ASN.1 Compilers</a><br>
+     [2]. <a href="https://swiftpackageindex.com/apple/swift-asn1/main/documentation/swiftasn1/decodingasn1">Apple Swift ASN.1 Library Documentation.</a><br>
+     [3]. <a href="https://letsencrypt.org/uk/docs/a-warm-welcome-to-asn1-and-der/">Let's Encrypt. Ласкаво просимо в ASN.1 і DER</a><br>
+     [4]. <a href="https://apple.github.io/swift-crypto/docs/current/Crypto/index.html">Swift Crypto Library Documentation</a><br>
+     [5]. <a href="https://swiftpackageindex.com/apple/swift-certificates/0.6.0/documentation/x509">Swift Certificates Library Documentation</a><br>
+     [6]. <a href="https://www.oss.com/asn1/resources/books-whitepapers-pubs/dubuisson-asn1-book.PDF">Olivier Dubuisson. ASN.1 Communication between Heterogeneous Systems</a><br>
+     [7]. <a href="https://tonpa.guru/stream/2023/2023-08-07 CHAT ASN.1.htm">2023-08-07 CHAT ASN.1</a><br>
+     [8]. <a href="https://tonpa.guru/stream/2023/2023-08-08 ASN.1 Компілятор.htm">2023-08-08 ASN.1 Компілятор</a><br>
+     </p>
+
+    </section>
+</main>
+<footer><a href="https://instagram.com/5HT/">Namdak Tönpa</a> <span class="heart">&nbsp;❤&nbsp;</span> 2023</footer>
+</body>
+</html>
+
