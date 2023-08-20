@@ -407,23 +407,15 @@ func serialize(into coder: inout DER.Serializer,
 
     <h3>Кодогенерація на Erlang в Swift</h3>
 
-<figure><code>
-  def parse(file) do
-      tokens = :asn1ct_tok.file file
-      {:ok, mod} = :asn1ct_parser2.parse file, tokens
-      {:module, pos, name, defid, tag, exports, imports, _, component} = mod
-      :lists.map(fn
-         {:typedef,  _, pos, name, type} ->
-             dumpType(pos, name, type)
-         {:valuedef, _, pos, name, type, value, mod} ->
-             dumpValue(pos, name, type, value, mod)
-         {:classdef, _, pos, name, mod, type} ->
-             dumpClass(pos, name, mod, type)
-         {:ptypedef, _, pos, name, args, type} ->
-             dumpPType(pos, name, args, type)
-      end, component)
-      dumpModule(pos, name, defid, tag, exports, imports)
-  end</code></figure>
+<figure><code>   [x] Sequence
+   [x] Choice
+   [x] Enumeration
+   [x] Integer enumeration
+   [x] Sequence Of
+   [x] Any
+   [x] Null
+   [x] Integer
+   [x] Strings</code></figure>
 
     <h3>Висновки</h3>
 
