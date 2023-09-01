@@ -23,6 +23,11 @@
     <p>У статті представлений повний Swift "ASN.1 компілятор"
        на мові Elixir. <br>Автор &mdash; Максим Сохацький, 2023-9-1.</p>
 
+    <figure><code>$ ./asn1.ex
+Copyright © 2023 Namdak Tonpa.
+ISO 8824 ITU/IETF X.680-690 ERP/1 ASN.1 DER Compiler, version 0.9.1.
+Usage: ./asn1.ex help | compile [-v] [input [output]]</code></figure>
+
     <h3>Зміст</h3>
 
     <p>1) Техніка компіляції та розміточний парсер<br>
@@ -335,8 +340,35 @@ public struct Versioning : Hashable, Sendable, Comparable {
     @inlinable public static func < (lhs: Versioning, rhs: Versioning) -> Bool { lhs.rawValue < rhs.rawValue }
     @inlinable init(rawValue: Int) { self.rawValue = rawValue }
     public static let v1 = Self(rawValue: 0)
+}</code></figure>
+
+<figure><code>CountryName ::= [APPLICATION 1] CHOICE {
+    x121-dcc-code         NumericString    (SIZE (ub-country-name-numeric-length)),
+    iso-3166-alpha2-code  PrintableString  (SIZE (ub-country-name-alpha-length))
 }
 </code></figure>
+
+<figure><code>
+@usableFromInline indirect enum CountryName: DERParseable, DERSerializable, Hashable, Sendable {
+    case x121_dcc_code(ASN1PrintableString)
+    case iso_3166_alpha2_code(ASN1PrintableString)
+    @inlinable init(derEncoded rootNode: ASN1Node) throws {
+        switch rootNode.identifier {
+            case ASN1PrintableString.defaultIdentifier:
+                self = .x121_dcc_code(try ASN1PrintableString(derEncoded: rootNode))
+            case ASN1PrintableString.defaultIdentifier:
+                self = .iso_3166_alpha2_code(try ASN1PrintableString(derEncoded: rootNode))
+            default: throw ASN1Error.unexpectedFieldType(rootNode.identifier)
+        }
+    }
+    @inlinable func serialize(into coder: inout DER.Serializer) throws {
+        switch self {
+            case .x121_dcc_code(let x121_dcc_code): try coder.serialize(x121_dcc_code)
+            case .iso_3166_alpha2_code(let iso_3166_alpha2_code): try coder.serialize(iso_3166_alpha2_code)
+        }
+    }
+
+}</code></figure>
 
     <h3>Тензори</h3>
 
@@ -400,12 +432,38 @@ K ::= SEQUENCE {
 
     <h3>Висновок</h3>
 
-    <p>Найкращий спосіб вивчити ASN.1 — це написати ASN.1 компілятор:</p>
+    <p>Найкращий спосіб вивчити ASN.1 — це написати ASN.1 компілятор. Був детально проаналізований X.680
+       стандарт та знайдені конкуретні переваги над іншими компіляторами: 1) більшість не підтримують
+       рекурсивні типи даних, 2) більшість не підримують повністю всі ASN.1 файли ITU.INT, 3) більшість не підтримують тензори.
+       Наш компілятор зроблений таким, що усуває ці недоліки. Що стосується швидкості парсерів Apple для мови Swift,
+       то вони в середньому в два рази повільніші за fast_ber парсерів на C++ і в 2 рази швидші
+       за парсери asn1c.</p>
+
+    <p>Реалізація використовує потоковий бінарний парсер ASN.1 файлів на 2000 рядків коду разом
+       з токенайзером, що йдуть в дистрибутиві Erlang/OTP в аплікейшині asn1, а сам компілятор виконаний
+       як script файл для мови Elixir на 600 рядків і не потребує компіляції. Найближчі конкуренти asn1c і
+       asn1іcc займають 25000 рядків.</p>
+
+    <p>Доведення коректності компілятора має комбінаторний вигляд, а головна теорема
+       стверджує шо за 2 проходи, можна повністю скомпілювати ASN.1 X.680 стандарт
+       в будь яку мову програмування, кожен прохід містить доведення коректності
+       11 циклів, разом які використовують 50 розгалужень кожне з яких доводиться
+       окремо в комбінаторному стилі кейс аналізом. За перший прохід будують часткові
+       форвард декларації, які повністю стають насиченими на другому проході.
+       В процесі першого проходу не зберігаються файли, зате між проходами
+       не очищується контекст, який містить три типи ключів: визначення типів для носіння полів та їх властивостей,
+       синоніми, та специфікатори тензорів. Також компілятор містить verbose опцію
+       -v яка показує всі стадії насичення контексту.</p>
+
+    <p>На розробку компілятора був витрачений 1 людино-місяць та згенеровано ним 30000 рядків Swift 5.8 коду який працює на Windows/Linux/Mac.
+       Цей код покриває всі конверти які можна знайти на сайті ITU.INT у вигляді ASN.1 файлів. Сюди входять
+       PKIX, CMP, CMC, LDAP, CMS, PCKS, X.400, тощо. Компілятор asn1scc написаний на F# який підтримується
+       Європейським Космічним Агенством не працює на повній множині всіх цих декларацій, а займає теж немало.</p>
 
 <figure><code>
 $ brew install elixir
 $ git clone git@github.com:erpuno/asn1
-$ ./asn1.ex compile
+$ ./asn1.ex compile -v
 $ swift build
 </code></figure>
 
