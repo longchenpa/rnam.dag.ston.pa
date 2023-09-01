@@ -30,8 +30,7 @@
        3) Імплісити, експлісити та опшинали<br>
        4) Рекурсивні суми<br>
        5) Переліки та цілочисельні переліки<br>
-       6) Рядки та ідентифікатори<br>
-       7) Тензори<br>
+       6) Тензори<br>
     </p>
 
     <h3>Техніка компіляції</h3>
@@ -77,16 +76,119 @@ U ::= SEQUENCE {
     k BOOLEAN OPTIONAL
 }</code></figure>
 
+<figure><code>
+@usableFromInline struct U: DERImplicitlyTaggable, Hashable, Sendable {
+    @inlinable static var defaultIdentifier: ASN1Identifier { .sequence }
+    @usableFromInline var a: [ArraySlice&lt;UInt8>]
+    @usableFromInline var b: [ArraySlice&lt;UInt8>]
+    @usableFromInline var c: ArraySlice&lt;UInt8>
+    @usableFromInline var d: ArraySlice&lt;UInt8>
+    @usableFromInline var e: Bool
+    @usableFromInline var f: Bool
+    @usableFromInline var g: [ArraySlice&lt;UInt8>]?
+    @usableFromInline var h: ArraySlice&lt;UInt8>
+    @usableFromInline var i: ArraySlice&lt;UInt8>
+    @usableFromInline var j: ASN1OctetString?
+    @usableFromInline var k: Bool?
+    @inlinable init(a: [ArraySlice&lt;UInt8>], b: [ArraySlice&lt;UInt8>], c: ArraySlice&lt;UInt8>,
+                    d: ArraySlice&lt;UInt8>, e: Bool, f: Bool, g: [ArraySlice&lt;UInt8>]?,
+                    h: ArraySlice&lt;UInt8>, i: ArraySlice&lt;UInt8>, j: ASN1OctetString?, k: Bool?) {
+        self.a = a ; self.b = b ; self.c = c ; self.d = d ;
+        self.e = e ; self.f = f ; self.g = g ; self.h = h ;
+        self.i = i ; self.j = j ; self.k = k
+    }
+    @inlinable init(derEncoded root: ASN1Node,
+        withIdentifier identifier: ASN1Identifier) throws {
+        self = try DER.sequence(root, identifier: identifier) { nodes in
+            let a: [ArraySlice&lt;UInt8>] = try DER.set(of: ArraySlice&lt;UInt8>.self, identifier: .set, nodes: &nodes)
+            let b: [ArraySlice&lt;UInt8>] = try DER.set(of: ArraySlice&lt;UInt8>.self, identifier: .set, nodes: &nodes)
+            let c: ArraySlice&lt;UInt8> = try ArraySlice&lt;UInt8>(derEncoded: &nodes)
+            let d: ArraySlice&lt;UInt8> = try ArraySlice&lt;UInt8>(derEncoded: &nodes)
+            let e: Bool = try Bool(derEncoded: &nodes)
+            let f: Bool = try Bool(derEncoded: &nodes)
+            let g: [ArraySlice&lt;UInt8>]? = try DER.set(of: ArraySlice&lt;UInt8>.self, identifier: .set, nodes: &nodes)
+            let h: ArraySlice&lt;UInt8> = try ArraySlice&lt;UInt8>(derEncoded: &nodes)
+            let i: ArraySlice&lt;UInt8> = try ArraySlice&lt;UInt8>(derEncoded: &nodes)
+            let j: ASN1OctetString? = try ASN1OctetString(derEncoded: &nodes)
+            let k: Bool? = try Bool(derEncoded: &nodes)
+            return V2(a: a, b: b, c: c, d: d, e: e, f: f, g: g, h: h, i: i, j: j, k: k)
+        }
+    }
+    @inlinable func serialize(into coder: inout DER.Serializer,
+        withIdentifier identifier: ASN1Identifier) throws {
+        try coder.appendConstructedNode(identifier: identifier) { coder in
+            try coder.serializeSetOf(a)
+            try coder.serializeSetOf(b)
+            try coder.serialize(c)
+            try coder.serialize(d)
+            try coder.serialize(e)
+            try coder.serialize(f)
+            if let g = self.g { try coder.serializeSetOf(g) }
+            try coder.serialize(h)
+            try coder.serialize(i)
+            if let j = self.j { try coder.serialize(j) }
+            if let k = self.k { try coder.serialize(k) }
+        }
+    }
+}
+</code></figure>
+
     <h3>Рекурсивні суми та їх теги</h3>
 
     <p>Перше шо ви повинні зробити перед тим як публікувати ASN.1 компілятор на сайті ITU.INT це
        пересвідчитися шо він сприймає класичне визначення рекурсивного списку з книжки Олівʼє Дебюсона [6].</p>
 
-    <figure><code>
+<figure><code>
 List ::= SEQUENCE {
     data OCTET STRING,
     next CHOICE { linked-list List, end NULL }
 }</code></figure>
+
+    <figure><code>
+@usableFromInline struct List: DERImplicitlyTaggable, Hashable, Sendable {
+    @inlinable static var defaultIdentifier: ASN1Identifier { .sequence }
+    @usableFromInline var data: ASN1OctetString
+    @usableFromInline var next: List_next_Choice
+    @inlinable init(data: ASN1OctetString, next: List_next_Choice) {
+        self.data = data ; self.next = next
+    }
+    @inlinable init(derEncoded root: ASN1Node,
+        withIdentifier identifier: ASN1Identifier) throws {
+        self = try DER.sequence(root, identifier: identifier) { nodes in
+            let data: ASN1OctetString = try ASN1OctetString(derEncoded: &nodes)
+            let next: List_next_Choice = try List_next_Choice(derEncoded: &nodes)
+            return List(data: data, next: next)
+        }
+    }
+    @inlinable func serialize(into coder: inout DER.Serializer,
+        withIdentifier identifier: ASN1Identifier) throws {
+        try coder.appendConstructedNode(identifier: identifier) { coder in
+            try coder.serialize(data)
+            try coder.serialize(next)
+        }
+    }
+}
+
+@usableFromInline indirect enum List_next_Choice: DERParseable, DERSerializable, Hashable, Sendable {
+    case linked_list(List)
+    case end(ASN1Null)
+    @inlinable init(derEncoded rootNode: ASN1Node) throws {
+        switch rootNode.identifier {
+            case List.defaultIdentifier:
+                self = .linked_list(try List(derEncoded: rootNode))
+            case ASN1Null.defaultIdentifier:
+                self = .end(try ASN1Null(derEncoded: rootNode))
+            default: throw ASN1Error.unexpectedFieldType(rootNode.identifier)
+        }
+    }
+    @inlinable func serialize(into coder: inout DER.Serializer) throws {
+        switch self {
+            case .linked_list(let linked_list): try coder.serialize(linked_list)
+            case .end(let end): try coder.serialize(end)
+        }
+    }
+}
+</code></figure>
 
     <p>Якщо ви хочете тримати в сумі різні значення однакового типу ви повинні використовувати
        врапери теги, які бувають двох видів: 1) імплісіти (129) і 2) експлісіти (160).</p>
@@ -96,8 +198,48 @@ A ::= CHOICE {
     v [0] V,
     list-x [1] List,
     o [2] SET OF OCTET STRING,
-    p [3] SET OF OCTET STRING,
-    q [4] SET OF OCTET STRING
+    s [3] SET OF OCTET STRING,
+}</code></figure>
+
+<figure><code>
+@usableFromInline indirect enum A: DERParseable, DERSerializable, Hashable, Sendable {
+    case v(V)
+    case list_x(List)
+    case o([ASN1OctetString])
+    case s([ASN1OctetString])
+    @inlinable init(derEncoded rootNode: ASN1Node) throws {
+        switch rootNode.identifier {
+            case ASN1Identifier(tagWithNumber: 0, tagClass: .contextSpecific):
+                self = .v(try V(derEncoded: rootNode))
+            case ASN1Identifier(tagWithNumber: 1, tagClass: .contextSpecific):
+                self = .list_x(try List(derEncoded: rootNode))
+            case ASN1Identifier(tagWithNumber: 2, tagClass: .contextSpecific):
+                self = .o(try DER.set(of: ASN1OctetString.self, identifier: .set, rootNode: rootNode))
+            case ASN1Identifier(tagWithNumber: 3, tagClass: .contextSpecific):
+                self = .s(try DER.sequence(of: ASN1OctetString.self, identifier: .sequence, rootNode: rootNode))
+            default: throw ASN1Error.unexpectedFieldType(rootNode.identifier)
+        }
+    }
+    @inlinable func serialize(into coder: inout DER.Serializer) throws {
+        switch self {
+            case .v(let v):
+                try coder.appendConstructedNode(
+                identifier: ASN1Identifier(tagWithNumber: 0, tagClass: .contextSpecific),
+                { coder in try coder.serialize(v) })
+            case .list_x(let list_x):
+                try coder.appendConstructedNode(
+                identifier: ASN1Identifier(tagWithNumber: 1, tagClass: .contextSpecific),
+                { coder in try coder.serialize(list_x) })
+            case .o(let o):
+                try coder.appendConstructedNode(
+                identifier: ASN1Identifier(tagWithNumber: 2, tagClass: .contextSpecific),
+                { coder in try coder.serializeSetOf(o) })
+            case .s(let s):
+                try coder.appendConstructedNode(
+                identifier: ASN1Identifier(tagWithNumber: 3, tagClass: .contextSpecific),
+                { coder in try coder.serializeSequenceOf(s) })
+        }
+    }
 }</code></figure>
 
     <h3>Імплісіти, експлісіти та опшинали</h3>
@@ -106,7 +248,7 @@ A ::= CHOICE {
        NULL (OPTIONAL) та вид тегування (129, 160).</p>
 
     <figure><code>
-  V ::= SEQUENCE {
+V ::= SEQUENCE {
     a [1] IMPLICIT SET OF INTEGER (0..7),
     b [2] EXPLICIT SET OF INTEGER (0..7),
     c [3] IMPLICIT INTEGER (0..7),
@@ -119,21 +261,81 @@ A ::= CHOICE {
     j [0] EXPLICIT INTEGER (0..7) OPTIONAL,
     k OCTET STRING OPTIONAL,
     l BOOLEAN OPTIONAL
-  }</code></figure>
+}</code></figure>
 
+<figure><code>
+@usableFromInline struct V: DERImplicitlyTaggable, Hashable, Sendable {
+    @inlinable static var defaultIdentifier: ASN1Identifier { .sequence }
+    @usableFromInline var a: [ArraySlice&lt;UInt8>]
+    @usableFromInline var b: [ArraySlice&lt;UInt8>]
+    @usableFromInline var c: ArraySlice&lt;UInt8>
+    @usableFromInline var d: ArraySlice&lt;UInt8>
+    @usableFromInline var e: Bool
+    @usableFromInline var f: Bool
+    @usableFromInline var g: [ArraySlice&lt;UInt8>]?
+    @usableFromInline var h: [ArraySlice&lt;UInt8>]?
+    @usableFromInline var i: ArraySlice&lt;UInt8>?
+    @usableFromInline var j: ArraySlice&lt;UInt8>?
+    @usableFromInline var k: ASN1OctetString?
+    @usableFromInline var l: Bool?
+    @inlinable init(a: [ArraySlice&lt;UInt8>], b: [ArraySlice&lt;UInt8>], c: ArraySlice&lt;UInt8>,
+                    d: ArraySlice&lt;UInt8>, e: Bool, f: Bool, g: [ArraySlice&lt;UInt8>]?,
+                    h: [ArraySlice&lt;UInt8>]?, i: ArraySlice&lt;UInt8>?, j: ArraySlice&lt;UInt8>?,
+                    k: ASN1OctetString?, l: Bool?) {
+        self.a = a ; self.b = b ; self.c = c ; self.d = d ;
+        self.e = e ; self.f = f ; self.g = g ; self.h = h ;
+        self.i = i ; self.j = j ; self.k = k ; self.l = l
+    }
+    @inlinable init(derEncoded root: ASN1Node,
+        withIdentifier identifier: ASN1Identifier) throws {
+        self = try DER.sequence(root, identifier: identifier) { nodes in
+            let a: [ArraySlice&lt;UInt8>] = try DER.set(of: ArraySlice&lt;UInt8>.self, identifier: ASN1Identifier(tagWithNumber: 1, tagClass: .contextSpecific), nodes: &nodes)
+            let b: [ArraySlice&lt;UInt8>] = try DER.explicitlyTagged(&nodes, tagNumber: 2, tagClass: .contextSpecific) { node in try DER.set(of: ArraySlice&lt;UInt8>.self, identifier: .set, rootNode: node) }
+            let c: ArraySlice&lt;UInt8> = (try DER.optionalImplicitlyTagged(&nodes, tag: ASN1Identifier(tagWithNumber: 3, tagClass: .contextSpecific)))!
+            let d: ArraySlice&lt;UInt8> = try DER.explicitlyTagged(&nodes, tagNumber: 4, tagClass: .contextSpecific) { node in return try ArraySlice&lt;UInt8>(derEncoded: node) }
+            let e: Bool = (try DER.optionalImplicitlyTagged(&nodes, tag: ASN1Identifier(tagWithNumber: 5, tagClass: .contextSpecific)))!
+            let f: Bool = try DER.explicitlyTagged(&nodes, tagNumber: 6, tagClass: .contextSpecific) { node in return try Bool(derEncoded: node) }
+            let g: [ArraySlice&lt;UInt8>] = try DER.set(of: ArraySlice&lt;UInt8>.self, identifier: ASN1Identifier(tagWithNumber: 7, tagClass: .contextSpecific), nodes: &nodes)
+            let h: [ArraySlice&lt;UInt8>]? = try DER.optionalExplicitlyTagged(&nodes, tagNumber: 8, tagClass: .contextSpecific) { node in try DER.set(of: ArraySlice&lt;UInt8>.self, identifier: .set, rootNode: node) }
+            let i: ArraySlice&lt;UInt8>? = try DER.optionalImplicitlyTagged(&nodes, tag: ASN1Identifier(tagWithNumber: 9, tagClass: .contextSpecific))
+            let j: ArraySlice&lt;UInt8>? = try DER.optionalExplicitlyTagged(&nodes, tagNumber: 0, tagClass: .contextSpecific) { node in return try ArraySlice&lt;UInt8>(derEncoded: node) }
+            let k: ASN1OctetString? = try ASN1OctetString(derEncoded: &nodes)
+            let l: Bool? = try Bool(derEncoded: &nodes)
+            return V(a: a, b: b, c: c, d: d, e: e, f: f, g: g, h: h, i: i, j: j, k: k, l: l)
+        }
+    }
+    @inlinable func serialize(into coder: inout DER.Serializer,
+        withIdentifier identifier: ASN1Identifier) throws {
+        try coder.appendConstructedNode(identifier: identifier) { coder in
+            try coder.serializeSetOf(a, identifier: ASN1Identifier(tagWithNumber: 1, tagClass: .contextSpecific))
+            try coder.serialize(explicitlyTaggedWithTagNumber: 2, tagClass: .contextSpecific) { codec in try codec.serializeSetOf(b) }
+            try coder.serializeOptionalImplicitlyTagged(c, withIdentifier: ASN1Identifier(tagWithNumber: 3, tagClass: .contextSpecific))
+            try coder.serialize(explicitlyTaggedWithTagNumber: 4, tagClass: .contextSpecific) { codec in try codec.serialize(d) }
+            try coder.serializeOptionalImplicitlyTagged(e, withIdentifier: ASN1Identifier(tagWithNumber: 5, tagClass: .contextSpecific))
+            try coder.serialize(explicitlyTaggedWithTagNumber: 6, tagClass: .contextSpecific) { codec in try codec.serialize(f) }
+            if let g = self.g { try coder.serializeSetOf(g, identifier: ASN1Identifier(tagWithNumber: 7, tagClass: .contextSpecific)) }
+            if let h = self.h { try coder.serialize(explicitlyTaggedWithTagNumber: 8, tagClass: .contextSpecific) { codec in try codec.serializeSetOf(h) } }
+            if let i = self.i { try coder.serializeOptionalImplicitlyTagged(i, withIdentifier: ASN1Identifier(tagWithNumber: 9, tagClass: .contextSpecific)) }
+            if let j = self.j { try coder.serialize(explicitlyTaggedWithTagNumber: 0, tagClass: .contextSpecific) { codec in try codec.serialize(j) } }
+            if let k = self.k { try coder.serialize(k) }
+            if let l = self.l { try coder.serialize(l) }
+        }
+    }
 
+}</code></figure>
     <h3>Переліки та цілочисельні переліки</h3>
 
     <p></p>
 
-<figure><code>
-</code></figure>
-
-    <h3>Рядки та ідентифікатори</h3>
-
-    <p></p>
+<figure><code>Versioning ::= INTEGER {  v1(0) }</code></figure>
 
 <figure><code>
+public struct Versioning : Hashable, Sendable, Comparable {
+    @usableFromInline  var rawValue: Int
+    @inlinable public static func < (lhs: Versioning, rhs: Versioning) -> Bool { lhs.rawValue < rhs.rawValue }
+    @inlinable init(rawValue: Int) { self.rawValue = rawValue }
+    public static let v1 = Self(rawValue: 0)
+}
 </code></figure>
 
     <h3>Тензори</h3>
@@ -142,17 +344,70 @@ A ::= CHOICE {
 
 <figure><code>
 K ::= SEQUENCE {
-    version INTEGER { v1(1) },
-    x INTEGER (0..3),
-    y SEQUENCE { d1 BOOLEAN,
-                 d2 BOOLEAN,
-                 d3 INTEGER,
-                 d4 INTEGER },
     w SET OF SEQUENCE OF
-      SET OF SEQUENCE OF
-      SET OF SEQUENCE OF
       SET OF SEQUENCE OF INTEGER
 }</code></figure>
+
+<figure><code>
+@usableFromInline struct K: DERImplicitlyTaggable, Hashable, Sendable {
+    @inlinable static var defaultIdentifier: ASN1Identifier { .sequence }
+    @usableFromInline var w: [[[[ArraySlice&lt;UInt8>]]]]
+    @inlinable init(version: K_version_IntEnum, x: ArraySlice&lt;UInt8>, y: K_y_Sequence, w: [[[[ArraySlice&lt;UInt8>]]]]) {
+        self.w = w
+    }
+    @inlinable init(derEncoded root: ASN1Node,
+        withIdentifier identifier: ASN1Identifier) throws {
+        self = try DER.sequence(root, identifier: identifier) { nodes in
+            let w: [[[[ArraySlice&lt;UInt8>]]]] =
+                try DER.set<[[[[ArraySlice&lt;UInt8>]]]]>(nodes.next()!, identifier: .set) { nodes1 in
+                var wAcc1: [[[[ArraySlice&lt;UInt8>]]]] = []
+                while let wInner1 = nodes1.next() { wAcc1.append(
+                      try DER.sequence<[[[ArraySlice&lt;UInt8>]]]>(wInner1, identifier: .sequence) { nodes2 in
+                      var wAcc2: [[[ArraySlice&lt;UInt8>]]] = []
+                      while let wInner2 = nodes2.next() { wAcc2.append(
+                            try DER.set<[[ArraySlice&lt;UInt8>]]>(wInner2, identifier: .set) { nodes3 in
+                            var wAcc3: [[ArraySlice&lt;UInt8>]] = []
+                            while let wInner3 = nodes3.next() { wAcc3.append(
+                                try DER.sequence(of: ArraySlice&lt;UInt8>.self, identifier: .sequence, rootNode: wInner3)
+                            )}
+                            return wAcc3 }
+                      )}
+                      return wAcc2 }
+                )}
+                return wAcc1 }
+            return K(version: version, x: x, y: y, w: w)
+        }
+    }
+    @inlinable func serialize(into coder: inout DER.Serializer,
+        withIdentifier identifier: ASN1Identifier) throws {
+        try coder.appendConstructedNode(identifier: identifier) { coder in
+            try coder.appendConstructedNode(identifier: .set) {
+                codec1 in for element1 in w {
+                    try codec1.appendConstructedNode(identifier: .sequence) {
+                        codec2 in for element2 in element1 {
+                            try codec2.appendConstructedNode(identifier: .set) {
+                                codec3 in for element3 in element2 {
+                                    try codec3.serializeSequenceOf(element3)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}</code></figure>
+
+    <h3>Висновок</h3>
+
+    <p>Найкращий спосіб вивчити ASN.1 — це написати ASN.1 компілятор:</p>
+
+<figure><code>
+$ brew install elixir
+$ git clone git@github.com:erpuno/asn1
+$ ./asn1.ex compile
+$ swift build
+</code></figure>
 
    <br><center>&dot;</center>
 
