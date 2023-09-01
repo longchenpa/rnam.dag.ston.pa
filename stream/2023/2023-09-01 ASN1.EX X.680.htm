@@ -1,0 +1,161 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2023-09-01 ASN1.EX</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css?v=1" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2023-09-01</a>
+</nav>
+<main>
+    <section>
+
+    <h3>ASN.1 X.680 Компілятор Сохацького</h3>
+
+    <p>У статті представлений повний Swift "ASN.1 компілятор"
+       на мові Elixir. <br>Автор &mdash; Максим Сохацький, 2023-9-1.</p>
+
+    <h3>Зміст</h3>
+
+    <p>1) Техніка компіляції<br>
+       2) Послідовності та множини<br>
+       3) Імплісити, експлісити та опшинали<br>
+       4) Рекурсивні суми<br>
+       5) Переліки та цілочисельні переліки<br>
+       6) Рядки та ідентифікатори<br>
+       7) Тензори<br>
+    </p>
+
+    <h3>Техніка компіляції</h3>
+
+    <p>Оскільки мова ASN.1 має чіткий синтаксис побудова її компілятора може базуватися
+       на BNF парсер генераторах таких як lexx/yacc або їх аналонах на мовах програмування
+       leex/yexx (Erlang), Citron (Swift), ANTLR (Java). Загалом нас цікавитимуть LL, LR, LALR, SLR.
+       Але найшвидші парсери це потокові бінарні, Erlang-овий саме такий і займає 2000
+       рядків разом з токенайзером на 100 рядків.</p>
+
+    <h3>Послідовності та множини</h3>
+
+    <p>Простий приклад з якого варто почати імплементацію будь якого ASN.1 компілятора.</p>
+
+    <figure><code>
+U ::= SEQUENCE {
+    a SET OF INTEGER (0..7),
+    b SET OF INTEGER (0..7),
+    c INTEGER (0..7),
+    d INTEGER (0..7),
+    e BOOLEAN,
+    f BOOLEAN,
+    g SET OF INTEGER (0..7) OPTIONAL,
+    h INTEGER (0..7),
+    i INTEGER (0..7),
+    j OCTET STRING OPTIONAL,
+    k BOOLEAN OPTIONAL
+}</code></figure>
+
+    <h3>Рекурсивні суми та їх теги</h3>
+
+    <p>Перше шо ви повинні зробити перед тим як публікувати ASN.1 компілятор на сайті ITU.INT це
+       пересвідчитися шо він сприймає класичне визначення рекурсивного списку з книжки Олівʼє Дебюсона [6].</p>
+
+    <figure><code>
+List ::= SEQUENCE {
+    data OCTET STRING,
+    next CHOICE { linked-list List, end NULL }
+}</code></figure>
+
+    <p>Якщо ви хочете тримати в сумі різні значення однакового типу ви повинні використовувати
+       врапери теги, які бувають двох видів: 1) імплісіти (129) і 2) експлісіти (160).</p>
+
+<figure><code>
+A ::= CHOICE {
+    v [0] V,
+    list-x [1] List,
+    o [2] SET OF OCTET STRING,
+    p [3] SET OF OCTET STRING,
+    q [4] SET OF OCTET STRING
+}</code></figure>
+
+    <h3>Імплісіти, експлісіти та опшинали</h3>
+
+    <p>Якщо ви хочете позначити поле додатковою інформацією такою як можливіть приймати значення
+       NULL (OPTIONAL) та вид тегування (129, 160).</p>
+
+    <figure><code>
+  V ::= SEQUENCE {
+    a [1] IMPLICIT SET OF INTEGER (0..7),
+    b [2] EXPLICIT SET OF INTEGER (0..7),
+    c [3] IMPLICIT INTEGER (0..7),
+    d [4] EXPLICIT INTEGER (0..7),
+    e [5] IMPLICIT BOOLEAN,
+    f [6] EXPLICIT BOOLEAN,
+    g [7] IMPLICIT SET OF INTEGER (0..7) OPTIONAL,
+    h [8] EXPLICIT SET OF INTEGER (0..7) OPTIONAL,
+    i [9] IMPLICIT INTEGER (0..7) OPTIONAL,
+    j [0] EXPLICIT INTEGER (0..7) OPTIONAL,
+    k OCTET STRING OPTIONAL,
+    l BOOLEAN OPTIONAL
+  }</code></figure>
+
+
+    <h3>Переліки та цілочисельні переліки</h3>
+
+    <p></p>
+
+<figure><code>
+</code></figure>
+
+    <h3>Рядки та ідентифікатори</h3>
+
+    <p></p>
+
+<figure><code>
+</code></figure>
+
+    <h3>Тензори</h3>
+
+    <p></p>
+
+<figure><code>
+K ::= SEQUENCE {
+    version INTEGER { v1(1) },
+    x INTEGER (0..3),
+    y SEQUENCE { d1 BOOLEAN,
+                 d2 BOOLEAN,
+                 d3 INTEGER,
+                 d4 INTEGER },
+    w SET OF SEQUENCE OF
+      SET OF SEQUENCE OF
+      SET OF SEQUENCE OF
+      SET OF SEQUENCE OF INTEGER
+}</code></figure>
+
+   <br><center>&dot;</center>
+
+    <hr>
+
+   <br><center>&dot;</center>
+
+     <p>
+     [1]. <a href="https://www.itu.int/en/ITU-T/asn1/Pages/Tools.aspx">ITU-T ASN.1 Compilers</a><br>
+     [2]. <a href="https://swiftpackageindex.com/apple/swift-asn1/main/documentation/swiftasn1/decodingasn1">Apple Swift ASN.1 Library Documentation.</a><br>
+     [3]. <a href="https://letsencrypt.org/uk/docs/a-warm-welcome-to-asn1-and-der/">Let's Encrypt. Ласкаво просимо в ASN.1 і DER</a><br>
+     [4]. <a href="https://apple.github.io/swift-crypto/docs/current/Crypto/index.html">Swift Crypto Library Documentation</a><br>
+     [5]. <a href="https://swiftpackageindex.com/apple/swift-certificates/0.6.0/documentation/x509">Swift Certificates Library Documentation</a><br>
+     [6]. <a href="https://www.oss.com/asn1/resources/books-whitepapers-pubs/dubuisson-asn1-book.PDF">Olivier Dubuisson. ASN.1 Communication between Heterogeneous Systems</a><br>
+     </p>
+
+    </section>
+</main>
+<footer><a href="https://instagram.com/5HT/">Namdak Tönpa</a> <span class="heart">&nbsp;❤&nbsp;</span> 2023</footer>
+</body>
+</html>
+
