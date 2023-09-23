@@ -23,52 +23,50 @@
          терм Morte/recursive, а для корекурсивних комонадичних нескінченних
          программ використовується терм Morte/corecursive.</p>
 
-<code>
+<figure><code>
 $ cat Morte/recursive
 #IO/replicateM #Nat/Five
                (#IO/[>>=] #IO/data #Unit/@
                           #IO/getLine
                           #IO/putLine)
-</code>
+</code></figure>
 
 <p>Нагадуємо собі, що таке IO и [>>=] (в Хаскель еквіваленті),
    які постачаються з базовою біблиотекою Henk:</p>
 
-<code> #IO/data : #String = #List #Nat</code>
+<figure><code> #IO/data : #String = #List #Nat</code></figure>
 
 <p>Сама вільна монада IO на Хаскель псевдокоді буде виглядати так:</p>
 
-<code>
-data IO r = PutStrLn String (IO r)
+<figure><code>data IO r = PutStrLn String (IO r)
           | GetLine (String -> IO r)
           | Return r
 
      (>>=) :: IO a -> (a -> IO b) -> IO b
      PutStrLn str io >>= f = PutStrLn str (io >>= f)
      GetLine k       >>= f = GetLine (\str -> k str >>= f)
-     Return r        >>= f = f r
-</code>
+     Return r        >>= f = f r</code></figure>
 
 <p>Компиляція (екстракт сертифікованої програми) в Erlang:</p>
 
-<code>
+<figure><code>
 > om:extract("priv/normal/Morte").
-</code>
+</code></figure>
 
 <p>Для запуску цієї монади нам потрібні індуктивні біндінги, тобто зовнішні
 ефекти у вигляді функцій, які ми передаємо як параметри в скомпільований терм
 Morte/recursive</p>:
 
-<code>
+<figure><code>
 pure() -> fun(IO) -> IO end.
 getLine() -> fun(IO) -> fun(_) -> L = ch:list(io:get_line("> ")), ch:ap(IO,[L]) end end.
 putLine() -> fun(S) -> fun(IO) -> io:format(": "), io:put_chars(ch:unlist(S)), ch:ap(IO,[S]) end end.
 ma() -> ap('Morte':recursive(),[getLine(),putLine(),pure(),ch:nil()]).
-</code>
+</code></figure>
 
 <p>Запускаємо:</p>
 
-<code>
+<figure><code>
 > ch:ma().
 > 1
 : 1
@@ -81,7 +79,7 @@ ma() -> ap('Morte':recursive(),[getLine(),putLine(),pure(),ch:nil()]).
 > 5
 : 5
 #Fun
-</code>
+</code></figure>
 
     <p>Ви щойно побачили найчистіший з аплікативних біндінгів
        в функціональних тотальних мовах програмування.</section>
