@@ -52,7 +52,7 @@
 
 <p>Для запуску цієї монади нам потрібні індуктивні біндінги, тобто зовнішні
 ефекти у вигляді функцій, які ми передаємо як параметри в скомпільований терм
-Morte/recursive</p>:
+Morte/recursive:</p>
 
 <figure><code>pure() -> fun(IO) -> IO end.
 getLine() -> fun(IO) -> fun(_) -> L = ch:list(io:get_line("> ")), ch:ap(IO,[L]) end end.
