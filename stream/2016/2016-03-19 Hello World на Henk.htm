@@ -1,0 +1,95 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2016-05-08 Hello World in Henk</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2016-05-08</a>
+</nav>
+<main>
+    <section>
+      <h4>Hello World in Henk</h3>
+
+      <p>Для рекурсивних монадичних скінченних програм використовується
+         терм Morte/recursive, а для корекурсивних комонадичних нескінченних
+         программ використовується терм Morte/corecursive.</p>
+
+<code>
+$ cat Morte/recursive
+#IO/replicateM #Nat/Five
+               (#IO/[>>=] #IO/data #Unit/@
+                          #IO/getLine
+                          #IO/putLine)
+</code>
+
+<p>Нагадуємо собі, що таке IO и [>>=] (в Хаскель еквіваленті),
+   які постачаються з базовою біблиотекою Henk:</p>
+
+<code> #IO/data : #String = #List #Nat</code>
+
+<p>Сама вільна монада IO на Хаскель псевдокоді буде виглядати так:</p>
+
+<code>
+data IO r = PutStrLn String (IO r)
+          | GetLine (String -> IO r)
+          | Return r
+
+     (>>=) :: IO a -> (a -> IO b) -> IO b
+     PutStrLn str io >>= f = PutStrLn str (io >>= f)
+     GetLine k       >>= f = GetLine (\str -> k str >>= f)
+     Return r        >>= f = f r
+</code>
+
+<p>Компиляція (екстракт сертифікованої програми) в Erlang:</p>
+
+<code>
+> om:extract("priv/normal/Morte").
+</code>
+
+<p>Для запуску цієї монади нам потрібні індуктивні біндінги, тобто зовнішні
+ефекти у вигляді функцій, які ми передаємо як параметри в скомпільований терм
+Morte/recursive</p>:
+
+<code>
+pure() -> fun(IO) -> IO end.
+getLine() -> fun(IO) -> fun(_) -> L = ch:list(io:get_line("> ")), ch:ap(IO,[L]) end end.
+putLine() -> fun(S) -> fun(IO) -> io:format(": "), io:put_chars(ch:unlist(S)), ch:ap(IO,[S]) end end.
+ma() -> ap('Morte':recursive(),[getLine(),putLine(),pure(),ch:nil()]).
+</code>
+
+<p>Запускаємо:</p>
+
+<code>
+> ch:ma().
+> 1
+: 1
+> 2
+: 2
+> 3
+: 3
+> 4
+: 4
+> 5
+: 5
+#Fun
+</code>
+
+    <p>Ви щойно побачили найчистіший з аплікативних біндінгів
+       в функціональних тотальних мовах програмування.</section>
+
+</section>
+
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2016</footer>
+</body>
+</html>
+
