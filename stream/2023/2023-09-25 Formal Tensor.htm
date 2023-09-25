@@ -172,8 +172,7 @@ data Linear
    | Int (_: nat) | Float (_: float)
    | Lambda (a: Var) (b: Linear) (c: Exp) | App (a b: Exp) | Pair (a b: Var) (c d: Exp)
    | Consume (a: Var) (b c: Exp) | Gen (a: Var) (b: Exp) | Spec (a: Exp) (b: Fraction)
-   | Fix (a b: Var) (c d: Linear) (e: Exp)
-   | If (a b c: Exp) | Let (a: Var) (b c: Exp)</code></figure>
+   | Fix (a b: Var) (c d: Linear) (e: Exp) | If (a b c: Exp) | Let (a: Var) (b c: Exp)</code></figure>
 
      <p>Тут Variable представляє собою просто String, Prim &mdash; визначені вище
      примітиви SIMD та BLAS, Star, True, False, Int, Float &mdash; консрукторами примітивних типів,
