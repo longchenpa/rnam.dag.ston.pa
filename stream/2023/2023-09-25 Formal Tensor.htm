@@ -144,7 +144,7 @@ data Linear
 
      <h4>Приклад 3: лінійна регресія</h4>
 
-<p>Posv : matrix ⊸ matrix ⊸ matrix ⊗ matriz</p>
+<p>Posv : matrix ⊸ matrix ⊸ matrix ⊗ matrix</p>
 <p>β = (X<sup>T</sup>X)<sup>−1</sup>X<sup>T</sup>y</p>
 
 <p>Програма, яка обчислює лінійну регресію спочатку визначає розмір матриці x,
@@ -155,9 +155,9 @@ data Linear
    (n, m) = Size x
    xy = Tensor (m, 1) { Transpose(x) * y }
    xTx = Tensor (m, m) { Transpose(x) * x }
-   (z, answer) = Posv xTx xy
-   Free z
-   result.emit(answer)</code></figure>
+   (w, cholesky) = Posv xTx xy
+   Free w
+   result.emit(cholesky)</code></figure>
 
      <h3>AST результуючої мови</h3>
 
