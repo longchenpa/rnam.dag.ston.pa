@@ -1,0 +1,190 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2023-04-30 Format Tensor</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2023-05-15 Formal Tensor</a>
+</nav>
+<main>
+    <section>
+
+    <h3>Formal Tensor Language</h3>
+
+    <p>В цій статті "Формальна Тензорна Мова" або "Лінійни Типи для Лінійної Алгебри"
+    піде мова про лінійні системи типів,
+       які є природнім розширенням STLC для роботи з
+       тензорами (структурами з лінійними алгебраїчними операціями),
+       та розподіленим у просторі та часі програмуванням.
+       Основні роботи які раджу почитати на цю тему це:
+       1) Ling,
+       2) Guarged Cubical,
+       3) A Fibrational Framework for Substructural and Modal Logics,
+       4) APL-like interpreter in Rust,
+       5) Futhark;
+       6) NumLin.</p>
+
+     <h3>Пі-числення і лінійні типи</h3>
+
+     <p>Вперше семантика Пі-числення була представлена Мілнером разом з ML мовою,
+        за шо він дістав премію Тюрінга (один з небагатьох хто заслужено).
+        Якшо коротко то Пі-числення отримується з Лямбда-числення шляхом перетворення
+        кожної змінної в нескінченний стрім.</p>
+
+     <h4>Приклад 1: факторіал</h4>
+
+     <p>Наприклад у нас є факторіал записаний таким чином:</p>
+
+<figure><code>
+fac(0: int) -> 1
+fac(x: int) -> x*fac(x -1)
+</code></figure>
+
+     <p>Переписуємо його так шоб замість скалярного аргументу він споживав
+        стрім аргументів, і результатом:</p>
+
+<figure><code>factorial(x: stream int): stream int -> result.set(x*fac(x.get()-1))</code></figure>
+
+     <p>На відміну від попереднього факторіала, цей факторіал споживає
+        довільну кількість аргументів і для кожного з них виштовхує в
+        результуючий стрім результат обчислення факторіалу (використовуючи
+        попередню функцію). Цей новий факторіал на стрімах представляє собою
+        формалізацію нескінченного процесу який можна запустити,
+        це процес підключиться до черги аргументів, яку буде споживати
+        і до черги результату, куди буде виплювовути обчислення.</p>
+
+     <h4>Приклад 2: скалярний добуток</h4>
+
+     <p>Функції можуть мати довільну кількість параметрів, всі ці параметри
+        -- це черги з яких нескінченний процес споживає повідомлення-аргументи
+        і випльовує їх в результуючу чергу-стрім. Наприклад лінійна
+        функція яка обчислює скалярний добуток трьохвимірних векторів виглядатиме так:</p>
+
+<figure><code>dot3D(x: stream int, y: stream int): stream int ->
+   [x1, x2, x3] = x.get(3)
+   [y1, y2, y3] = y.get(3)
+   result.set(x1*y1+x2*y2+x2*y3)</code></figure>
+
+     <p>Слід розрізняти лінійність як алгебраїне поняття і лінійнісь в Пі-численні.
+        В Пі-численні, а також в лінійній логіці Жана-Іва Жирара лінійність означає
+        шо змінна може бути використана тільки один раз, після чого курсор черги
+        зсувається і його неможливо буде вже вернути в попередню позицію після того
+        як якийсь процес прочитає це значення геттером. Сама така семантика присутня
+        в цих прикладах, зокрема в аксесорах get і set.</p>
+
+     <p>При реальних обочисленнях може статися так, що значення прочитане з черги
+        потрібно одразу двом функціям, тому природньо надати можливість закешувати
+        це значення, або іншими словами створити його копію x.duplicate для передачі
+        по мережі далі іншим функціям-процесам. Так само варто приділити увагу
+        деструктору памʼяті коли це значення вже використане усіма учасниками
+        і більше не потрібно нікому x.free.</p>
+
+     <h3>BLAS примітиви в ядрі</h3>
+
+     <p>Для реальних промислових обчислень скалярні добутки не рахують руками,
+        а є примітивами високооптимізованих бібліотек за допомогою SPIRAL чи вручну
+        закодовні. В статті NumLin автори зосереджуються на 1-му та 3-му рівню
+        BLAS, а це включає наступні примітиви для BLAS рівня 1:
+        1) Sum of vector magnitudes (Asum);
+        2) Scalar-vector product (Axpy);
+        3) Dot product (Dotp);
+        4) Modified Givens plane rotation of points (Rotm);
+        5) Vector-scalar product (Scal);
+        6) Index of the maximum absolute value element of a vector (Amax).
+        Так наступні примітиви для BLAS рівня 3:
+        1) Computes a matrix-matrix product with general matrices (Gemm);
+        2) Computes a matrix-matrix product where one input matrix is symmetric (Symm);
+        3) Performs a symmetric rank-k update (Syrk);
+        4) Декомпозиція Холецького (Posv)</p>
+
+        <p>Також зауважимо шо єдиними типами даних які є в BLAS це Int і Float,
+           а також нам знадобляться хелпери типу Transpose і Size.
+           Тому синтаксичне дерево вбудованих примітивів BLAS буде виглядати так:</p>
+
+<figure><code>data Arith = Add | Sub | Mul | Div | Eq | Lt | Gt
+data Builtin
+   = Intop (a: Arith) | Floatop (a: Arith)    -- SIMD types
+   | Get | Set | Duplicate | Free             -- linearity
+   | Transpose | Size                         -- matrices
+   | Asum | Axpy | Dotp | Rotm | Scal | Amax  -- BLAS Level 1
+   | Symm | Gemm | Syrk | Posv                -- BLAS Level 3</code></figure>
+
+     <h3>Лінійне лямбда числення</h3>
+
+     <p>Лінійне лямбда числення має всього три контексти: 1) Часткових дозволів,
+     2) Контекст лінійних змінних, 3) контекст звичайного лямбда числення.</p>
+
+     <p>Як мною було показано в QPL ми можемо одночасно мати два лямбда числення:
+        стандартне і лінійне на стрімах, однак тут ми просто будуємо звичайне лінійне лямбда
+        числення виділяючи його з основного дерева. Тензори в памʼяті містять додаткову
+        інформацію про сходимість у вигляді часткові дозволеності Fraction, якшо Fraction = 1
+        то мається на увазі повний ownership, якшо Fraction = 1/2 то частковий, шо означає
+        шо дві частин програми мають доступ до ньго, часткові дозволеності можна обʼєднувати
+        в процесі нормалізації аж до повного ownership (Fraction = 1). Тут Pair представляє собою
+        лінійну пару, Fun &mdash; лінійну функцію, Consume &mdash;
+        споживання змінної перенос її з лінійного контексту в звичайний.</p>
+
+<figure><code>data Fraction = Z | S (_: Fraction)
+data Dimension = Vector | Matrix | Stream | Table
+data Linear
+   = Empty | Unit | Bool
+   | Int | Float
+   | Tensor (a: Fraction) (x: Dimension)
+   | Pair (a b: Linear) | Fun (a b: Linear)
+   | Consume (a: Linear) | All (a: Var) (b: Linear)</code></figure>
+
+     <h4>Приклад 3: лінійна регресія</h4>
+
+<p>Posv : matrix ⊸ matrix ⊸ matrix ⊗ matriz</p>
+<p>β = (X<sup>T</sup>X)<sup>−1</sup>X<sup>T</sup>y</p>
+
+<p>Програма, яка обчислює лінійну регресію спочатку визначає розмір матриці x,
+   потім створює в памʼяті нову матриці X<sup>T</sup>y і x<sup>T</sup>x,
+   після чого обчислює за допомогою Posv і цих двох матриць безпосередньо результат.</p>
+
+<figure><code>Linear_Regression(x y: matrix float) ->
+   (n, m) = Size x
+   xy = Tensor (m, 1) { Transpose(x) * y }
+   xTx = Tensor (m, m) { Transpose(x) * x }
+   (z, answer) = Posv xTx xy
+   Free z
+   result.emit(answer)</code></figure>
+
+     <h3>AST результуючої мови</h3>
+
+     <p>На відміну від слабих пре-термів Linear, дерево Exp містить
+        повний набір конструкторів верхнього рівня, що є головними мовними
+        синтаксичними конструкціями які представлені наступним AST деревом.</p>
+
+<figure><code>data Exp
+   = Variable (_: Var)
+   | Prim (_: Builtin)
+   | Star | True | False
+   | Int (_: nat) | Float (_: float)
+   | Lambda (a: Var) (b: Linear) (c: Exp) | App (a b: Exp) | Pair (a b: Var) (c d: Exp)
+   | Consume (a: Var) (b c: Exp) | Gen (a: Var) (b: Exp) | Spec (a: Exp) (b: Fraction)
+   | Fix (a b: Var) (c d: Linear) (e: Exp)
+   | If (a b c: Exp) | Let (a: Var) (b c: Exp)</code></figure>
+
+     <p>Тут Variable представляє собою просто String, Prim &mdash; визначені вище
+     примітиви SIMD та BLAS, Star, True, False, Int, Float &mdash; консрукторами примітивних типів,
+     Lambda, App, Pair &mdash; лінійні конструктори лямбда числення,
+     Consume &mdash; перенос змінної з фракційного контексту часткового доступу в звичайний,
+     Gen &mdash; узагальнення частково доступу, Spec &mdash; спеціалізація часткового доступу.
+     Насамкінець, Fix, If, Let &mdasg; звичайні ML хелпери.</p>
+
+    </section>
+</main>
+<footer><a href="https://instagram.com/5HT/">Намдак Тöнпа</a> <span class="heart">&nbsp;❤&nbsp;</span> </footer>
+</body>
+</html>
+
