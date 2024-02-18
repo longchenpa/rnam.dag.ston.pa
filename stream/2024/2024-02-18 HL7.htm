@@ -41,6 +41,24 @@
 
     <h4>Вступ</h4>
 
+    <p>Валідатор (без модифікованої Xema бібліотеки) займає всього 500 рядків і експонує
+       секцію Resource HTTP API для валідації. Для роботи сервера потрібно поставити
+       Elixir (в macOS <b>brew install elixir</b> або <b>sudo apt intall elixir</b> в WSL або Linux.
+       </p>
+
+    <figure><code>
+ $ sudo apt install elixir
+ $ git clone https://github.com/erpuno/hl7
+ $ cd hl7
+ $ mix deps.get
+ $ iex -S mix
+ ISO/HL7 27931:2009 application server listening at port: 9234.
+ JSON Schema: draft-07, FHIR Protocol Version: R5.
+ Erlang/OTP 26 [erts-14.2.1] [source] [64-bit] [smp:4:4] [ds:4:4:10] [async-threads:1] [jit:ns] [dtrace]
+ Interactive Elixir (1.16.1) - press Ctrl+C to exit (type h() ENTER for help)
+ iex(1)>
+    </code></figure>
+
     <p>FHIR сервер з точки зору таксономії і першої наближеної класифікації функцій системи,
        складається з наступних</p>
 
@@ -413,6 +431,16 @@ $ curl -X POST "http://hl7:9234/List/\$validate" -d @samples/List/List.json
        в основному час тратиться на огранізацію метаінформації у вигляді
        спеціальних екземплярів термінології, що дозволяє тримати
        код у чистоті і малому обʼємі.<p>
+
+    <p>Загальний код JSON валідатора склав 4500 LOC, а сам валідатор і інфраструктура FHIR
+       сервера разом з HTTP зайняла 500 LOC, що говорить про повний очікуваний обʼєм
+       сертифікованого FHIR сервера з інтерфейсом для бізнес-валідаторів у розмірі 5000—10K LOC.
+       По часу аналіз, дизайн і імплементація Terminology, Infrastructure
+       і Resource API зайняв 1 місяць.</p>
+
+    <p>FHIR вже є зручним інтрументом моделювання в просторі типів HL7/FHIR JSON стандарту,
+       ця імплементація гарантує консистентність системи типів і не визначає додаткові
+       бізнес-вимоги які зазвичай реалізуються реальними медичними інформаційними системами.</p>
 
    <figure><img src="img/HL7.png"></figure>
 
