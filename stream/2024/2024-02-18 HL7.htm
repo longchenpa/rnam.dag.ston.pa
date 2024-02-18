@@ -339,6 +339,12 @@ $ curl -X GET http://localhost:9234/
 
     <p><b>Термінологія</b></p>
 
+    <P>HTTP інтерфейс термінології передбачає класифікацію, організація і публікацію статичних
+       файлів які через зовнішнє управління змінами можуть буть перегенеровані. Зазвичай
+       ця інформація генерується з кеш-памʼяті, так як словники не займать більше 250 МБ.
+       Модель цього FHIR сервера включає основні CodeeSystem і ValueSet визначені
+       міжнародними і національними стандартами.</p>
+
 <figure><code>
    get "/CodeSystem/$lookup" do HL7.Service.get4(conn,[],"CodeSystem",[],"$lookup") end
    get "/CodeSystem/:id/$lookup" do HL7.Service.get4(conn,[],"CodeSystem",id,"$lookup") end
@@ -353,6 +359,11 @@ $ curl -X GET http://localhost:9234/
 </code></figure>
 
     <p><b>Моніторинг інфраструктури</b></p>
+
+    <p>Для забезпечення функціональності моніторингу сумісною з
+       інтерфейсом Instatus пропонується використовувати підмножину інфраструктурних ресурсів FHIR:
+       OperationOutcomeIssue, Group, Account, а також доданих Component, Maintenance, Metrics для
+       більш наглядного відображення.</p>
 
 <figure><code>
    get "/OperationOutcomeIssue"
@@ -376,6 +387,12 @@ $ curl -X GET http://localhost:9234/
 </code></figure>
 
     <p><b>Ресурси</b></p>
+
+    <p>Інтерфейс ресурсів визначається універсально для всіх 160 ресурсів,
+       які можна валідувати, додавати, видаляти, модифікувати. Для операцій
+       історії використовується обʼєкт Bundle типу history. Для валідацій
+       використовується обʼєкт OperationOutcome. Операції додавання
+       повертають саму структуру обʼєкту ресурсу.</p>
 
 <figure><code>
   post "/:type/$validate" do HL7.Service.post4(conn,[],type,[],"$validate") end
