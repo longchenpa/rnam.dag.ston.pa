@@ -1,0 +1,505 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Максим Сохацький" />
+    <title>2024-02-18 HL7</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2024-02-18</a>
+</nav>
+<main>
+    <section>
+
+    <h3>ISO/HL7 FHIR: Валідація</h3>
+
+    <h4>Мотивація</h4>
+
+    <p>В 2024 я познайомився зі ще одним ISO стандартом: міжнародним медичним стандартом на інформаційні системи.
+       FHIR сервер цікавий не тільки медичним доменом, але і своїм власним способом або стилем до
+       формування принципів архітектури. Ця стаття має на меті висвітлити особливості побудови
+       промислових ERP систем, зокрема в складі відкритої платформи ERP/1, на якій побудовані
+       продукти МВС і ПриватБанк. До речі в МВС є свої медичні заклади і свої медичні інформаційні системи,
+       підключені до ЕСОЗ. Тому, згідно зі загальною стратегією розвитку інтероперабельності,
+       як з ЕСОЗ, так і з європейськими системами, ринок програмного забезпечення повинен мати
+       палітру інструментів для побудови субпродуктів вільний від ліцензування, що покращить
+       взаємодію і сумісність, і дасть змогу не дублювати імплементації принаймні на рівні однієї мови.
+       У цій статі представлено прототип HL7/FHIR сервера, який розробники медичних інформаційних
+       систем можуть використовувати як SDK або MVP на базі якого далі розвивати свої продукти, іншими
+       словами це — академічна (ідіоматична) модель FHIR написана на мові програмування Elixir.</p>
+
+    <p>Основна увага при проектуванні цього FHIR сервера була приділена компактності реалізації,
+       як необхідна умова для масштабування системи, зокрема її реляційних, не-реляційних та розміщених
+       в памʼяті сховищ, по диференціації різних типів бізнес-обʼєктів системи.</p>
+
+    <h4>Вступ</h4>
+
+    <p>Валідатор (без модифікованої Xema бібліотеки) займає всього 500 рядків і експонує
+       секцію Resource HTTP API для валідації. Для роботи сервера потрібно поставити
+       Elixir (в macOS <b>brew install elixir</b> або <b>sudo apt intall elixir</b> в WSL або Linux).
+       </p>
+
+    <figure><code>
+ $ sudo apt install elixir
+ $ git clone https://github.com/erpuno/hl7
+ $ cd hl7
+ $ mix deps.get
+ $ iex -S mix
+ ISO/HL7 27931:2009 application server listening at port: 9234.
+ JSON Schema: draft-07, FHIR Protocol Version: R5.
+ Erlang/OTP 26 [erts-14.2.1] [source] [64-bit] [smp:4:4] [ds:4:4:10] [async-threads:1] [jit:ns] [dtrace]
+ Interactive Elixir (1.16.1) - press Ctrl+C to exit (type h() ENTER for help)
+ iex(1)>
+    </code></figure>
+
+    <p>FHIR сервер з точки зору таксономії і першої наближеної класифікації функцій системи,
+       складається з наступних класів типів даних:</p>
+
+    <p><b>Примітивні</b>. Типи даних — примітиви, що базуються на
+       <b>draft-07</b> визначають типи, що визначені в самому стандарті JSON Schema:
+       instant, time, date, dateTime, base64binary,
+       decimal, integer64, boolean, url, code, string, integer, uri,
+       canonical, markdown, id, oid, uuid, unsignedInt, positiveInt.</p>
+
+    <p><b>Загальні</b>.
+       Типи даних загального використання, для транспорту не-словникових репрезентацій
+       атомарних чи векторних значень:
+       Address, Age, Annotation, Attachment, ContactPoint, Count, Distance, Dosage,
+       Duration, Element, HumanName, Identifier, Meta, Money, Period,
+       Quantity, Ratio, Range, RatioRange, Reference, SampledData,
+       Timing, Binary.</p>
+
+    <p><b>Основоположні</b>.
+       Інфраструктурні, або фундаційні (основоположні) типи даних визначають структуру,
+       що використовуються для само-моніторингу системи та представлення її топології і інфраструктури:
+       Resource, DomainResource, Basic, Bundle, Composition,
+       List, Subscription, Endpoint, OperationOutcome, CapabilityStatement.</p>
+
+    <p><b>Захисні</b>.
+       Типи даних, що використовуються в моделі захисту даних, і анонсують наступні
+       сервіси: ABAC, сервер авторизації і аутентифікації, електронний підпис ДСТУ-4145 (CAdES,
+       XAdES, ASIC-S, ДСТУ-4145, ДСТУ-7564): Consent, Permission, Provenance, Signature.</p>
+
+    <p><b>Термінологічні</b>.
+       Типи даних, що формують словникову модель FHIR сервера. Словники CodeSystem згідно FHIR стандарту
+       мають ієрархії, можуть бути імпортовані з інших систем, бути складенами з інших словників,
+       мати зрізи або представлення у вигляді ValueSet які можуть включати різні підмножини інших словників.
+       Словники використовуються в моделі даних опитуваньта та можуть включати відображення кодів одних
+       словників на інші ConceptMap. Також сюди включені словники для репрезентації лікарських засобів.
+       Основні словники міжнародних систем
+       SNOMED, LOINC, MMSE, WHODAS, IQ, ICD-10/11. Словникова модель FHIR сервера:
+       CodeSystem, ValueSet, ConceptMap, NamingSystem, Coding,
+       CodeableConcept, CodeableReference, Coding,
+       Medication, Ingredient, Substances, ProductPackageDefinition, Manufacturer.</p>
+
+    <p><b>Адміністративні</b>.
+       Адміністративні типи даних:
+       Patient, RelatedPerson, Person, Group, Practitioner, PractitionerRole,
+       Organization, Account, Location, HealthcareService, Schedule, Communication,
+       Slot, SpecimenDefinition, EpisodOfCare, Encounter, EncounterHistory,
+       Appointment, Flag, ObservationDefinition, NutritionProduct, Device,
+       DeviceDefinition, AuditEvent, MedicationAdministration.</p>
+
+    <p><b>Клінічні</b>.
+       Клінічні типи даних: Condition, Procedure, CarePlan, CareTeam, Goal, DetectedIssue,
+       ClinicalImression, DeviceRequest, DeviceDispense, DeviceUsage,
+       DeviceAssociation, DeviceComponent, DeviceUseStatement, MarketingStatus,
+       SampleData, MedicationRequest, MedicationDispense.</p>
+
+    <p><b>Діагностичні</b>.
+       Типи даних, що використовуються у зразках, аналізах, обстеженнях, опитуваннях, тощо:
+       Observation, Specimen, BodyStructure, BodySite, AdverseEvent,
+       AllergyIntollerance, Questionnaire.</p>
+
+    <p><b>Фінансові</b>.
+       Фінансові типи даних для бухгалтерських підсистем: Account, Contract, Claim, ChargeItem,
+       EnrollmentResponse, EnrollmentRequest,
+       Coverage, PaymentNotice, ExplanatoryOfBenefit, Invoice.</p>
+
+    <p><b>Управління процесами</b>.
+       Модель BPMN не використовується в FHIR стандарті, натомість пропонується підмножина
+       BPMN стандарту, яка природнім чином відображається і може бути реалізована за допомогою промислової BPE Elixir бібліотеки.
+       Модель управління процесами:
+       ActivityDefinition, Definition, EventDefinition, MessageDefinition,
+       PlanDefinition, ObservationDefinition, ClinicalUse, Measure,
+       OperationDefinition, Requirements.</p>
+
+    <h4>Оптимізований до мікросекунд валідатор схем</h4>
+
+     <p>Я передивився всі доступні на Github валідатори JSON схем різних класів, і вже був хотів почати писати свою,
+        але зупинився на xema як кандидаті на форк і дуже багато часу пішло на оптимізацію цієї бібліотеки,
+        щоб час валідації почав вимірюватися в мікросекундах як в Rust бібліотеках.
+        Я бачу ще великий потенціал в оптимізації, але не хотів витрачати багато часу на цю вправу.</p>
+
+     <p>Основна проблема існуючих бібліотек, це то що вони або недостатньо повно підтримують draft-04/06/07,
+        або вони взагалі не повні і не підходять для промислових JSON валідацій, де трема фактично
+        самому будувати інфраструктуру валідації (мінімалістичні бібліотеки). Одна з найбілш повних виявилась
+        Xema, але написана насправді не дуже добре, була повільною і не підтримувала циклічні залежності.
+        Я усунув дві останні проблеми, а першу вирішив відкласти.</p>
+
+<p>
+1. hrzndhrn/json_xema<br>
+2. jonasschmidt/ex_json_schema<br>
+3. E-xyza/Exonerate<br>
+4. dragonwasrobot/json_schema<br>
+5. Nebo15/nex_json_schema<br>
+6. edenlabllc/schemata<br>
+7. hrzndhrn/xema<br>
+</p>
+
+    <p>Всі словники схем валідації тримаються в ETS памʼяті (це такий Redis вбудований в сам Erlang),
+       звідти і сервляться на клієнти, але шоб завантажити їх і побудувати відображення в списках
+       Erlang йде чимало часу (1 секунда). Перевірити в Maintenance Shell можна так:</p>
+
+    <figure><code>
+ $ iex -S mix
+ > HL7.test
+    </code></figure>
+
+    <h4>Словники термінології</h4>
+
+    <p>Обʼєктивно модель словників FHIR мало з чим можна порівняти, хіба шо з промисловими системами
+    типу IBAAN, Salesforce, SAP. Це дійсно промисловий підхід де значна увага приділена імпорту словників,
+    їх ієрархіям, кодуванням, пере-кодуванням.</p>
+
+    <p>То, що зазвичай називають словниками в FHIR називаться CodeSyste, існує словник словників
+    CodeSystem для переліку всіх зареєстрованих CodeSystem. З нього і пропоную почати дослідження словникової
+    структури стандарту:</p>
+
+    <figure><code>
+> HL7.showCodeSystem "CodeSystem"
+{"CodeSystem", :ok, [%{"FHIR" => "CodeSystem"}], "http://terminology.hl7.org/CodeSystem/v3-CodeSystem",
+ [
+   {1, "ДССУ:КОАТУУ/SETTLEMENT_TYPE", :КОАТУУ, "Вид населенного пункту КОАТУУ"},
+   {1, "ДССУ:КАТОТТГ/SETTLEMENT_TYPE", :КАТОТТГ, "Вид населенного пункту КАТОТТГ"},
+   {1, "ДССУ:КВЕД", :КВЕД, "Класифікація видів економічної діяльності (КВЕД)"},
+   {1, "FHIR:CodeSystem", :CodeSystem, "Цей класифікатор ієрархічних словників FHIR сервера"},
+   {1, "FHIR:ActionType", :ActionType, "Type of CRUD operation or Event signalling"},
+   {1, "FHIR:BundleType", :BundleType, "Type of Bundle of FHIR server"},
+   {1, "FHIR:Religion2", :Religion2, "Type of Religion of FHIR nomenclature"},
+   {1, "FHIR:RefferalStatus", :RefferalStatus, "Status of Document in CRM"},
+   {1, "FHIR:ActionCode", :ActionCode, "Type of message in CRM system describing Practitioner action"},
+   {1, "FHIR:AdministrativeGender", :AdministrativeGender, "Gender or person"},
+   {1, "FHIR:AdministrableDoseForm", :AdministrableDoseForm, "Dose form for a medication, in the form suitable for patient"},
+   {1, "FHIR:AllergyIntoleranceCategory", :AllergyIntoleranceCategory, "Category of an identified substance associated with allergies or intolerances"},
+   {1, "FHIR:AllergyIntoleranceType", :AllergyIntoleranceType, "Identification of the underlying physiological mechanism for a Reaction Risk"},
+   {1, "FHIR:AllergyIntoleranceCriticality", :AllergyIntoleranceCriticality, "Estimate of the potential clinical harm of a reaction to an identified substance"},
+   {1, "FHIR:AppointmentStatus", :AppointmentStatus, "Type of Patient appointment in history records of scheduled visits"},
+   {1, "FHIR:ObservationCategory", :ObservationCategory, "ObservationCategory"},
+   ...
+]
+    </code></figure>
+
+    <p>Потім можна подивитися які схеми визначені в цьому FHIR сервері які
+    підтримують валідацію (це сервер підтримує 160 схем).</p>
+
+    <figure><code>
+ > HL7.showCodeSystem "ResourceType"
+[  ...
+   {1, nil, :Contract, "Contract"},
+   {1, nil, :Contributor, "Contributor"},
+   {1, nil, :Coverage, "Coverage"},
+   {1, nil, :CoverageEligibilityRequest, "CoverageEligibilityRequest"},
+   {1, nil, :CoverageEligibilityResponse, "CoverageEligibilityResponse"},
+   {1, nil, :DataRequirement, "DataRequirement"},
+   {1, nil, :DetectedIssue, "DetectedIssue"},
+   {1, nil, :Device, "Device"},
+   {1, nil, :DeviceAssociation, "DeviceAssociation"},
+   {1, nil, :DeviceComponent, "DeviceComponent"},
+   {1, nil, :DeviceDefinition, "DeviceDefinition"},
+   {1, nil, :DeviceDispense, "DeviceDispense"},
+   {1, nil, :DeviceMetric, "DeviceMetric"},
+   {1, nil, :DeviceRequest, "DeviceRequest"},
+   {1, nil, :DeviceUsage, "DeviceUsage"},
+   {1, nil, :DeviceUseStatement, "DeviceUseStatement"},
+   {1, nil, :DiagnosticReport, "DiagnosticReport"},
+   {1, nil, :DocumentManifest, "DocumentManifest"},
+   {1, nil, :DocumentReference, "DocumentReference"},
+   ...
+]    </code></figure>
+
+
+    <p>Кожен CodeSystem може бути ієрархічно влаштований. Для цього реляційна модель повинна мати
+    атрибути parent, а обʼєктна модель повинна тримати підпорядковані значення словника у вигляді
+    переліку (так це і відбувається в JSON файлах).</p>
+
+    <p>Словники на пряму не використовуються за звичай в FHIR, коли словним потрібно використати,
+    для нього створюється похідний обʼєкт ValueSet, який повторюю певним чином словник лише містить
+    підмножину одного або багатьох обʼєктів CodeSystem. Наприклад ValueSet CareTeamCategory
+    містить підмножину визначень з обох словників:</P>
+
+    <figure><code>
+> HL7.showValueSet "CareTeamCategory"
+{"CareTeamCategory", :ok, "care-team-category", "http://hl7.org/fhir/ValueSet/care-team-category",
+ [
+   {1, "http://loinc.org", :"LA27975-4", "Event-focused care team"},
+   {1, "http://loinc.org", :"LA27976-2", "Encounter-focused care team"},
+   {1, "http://loinc.org", :"LA27977-0", "Episode of care-focused care team"},
+   {1, "http://loinc.org", :"LA27978-8", "Condition-focused care team"},
+   {1, "http://loinc.org", :"LA28865-6", "Longitudinal care-coordination focused care team"},
+   {1, "http://loinc.org", :"LA28866-4", "Home & Community Based Services (HCBS)-focused care team"},
+   {1, "http://loinc.org", :"LA27980-4", "Clinical research-focused care team"},
+   {1, "http://loinc.org", :"LA28867-2", "Public health-focused care team"},
+   {1, "http://snomed.info/sct", :"102002", "Hemoglobin Okaloosa"},
+   {1, "http://snomed.info/sct", :"120006", "Ornithine racemase"}
+ ]}
+</code></figure>
+
+      <p>Словник для опитувань (Questionnaire) містить, наприклад, ієрархічні значення:</p>
+
+    <figure><code>
+ HL7.showCodeSystem "ItemType"
+{"ItemType", :ok, "item-type", "http://hl7.org/fhir/item-type",
+ [
+   {1, nil, :group, "Group"},
+   {1, nil, :display, "Display"},
+   {1, nil, :question, "Question"},
+   {2, nil, :boolean, "Boolean"},
+   {2, nil, :decimal, "Decimal"},
+   {2, nil, :integer, "Integer"},
+   {2, nil, :date, "Date"},
+   {2, nil, :dateTime, "Date Time"},
+   {2, nil, :time, "Time"},
+   {2, nil, :string, "String"},
+   {2, nil, :text, "Text"},
+   {2, nil, :url, "Url"},
+   {2, nil, :coding, "Coding"},
+   {2, nil, :attachment, "Attachment"},
+   {2, nil, :reference, "Reference"},
+   {2, nil, :quantity, "Quantity"}
+ ]}
+</code></figure>
+
+    <h4>Регламент взаємодії HTTP</h4>
+
+    <p>HTTP API організовано уніфікованим чином для ресурсів, це означає що інтерфейс CRUD
+       операцій для всіх 160 типів в системі здійснюється уніфікованим способом і для кожного
+       методу чи ресурсу взаємодії не потрібно розробляти свій протокол.</p>
+
+    <p>Метаінфорамції здійснює доступ до інформації та поля системи, яка може
+       використовується для автоматичної побудови форм засобами FORM пакету Elixir.</P>
+
+    <p><b>Метаінформація</b></p>
+
+<figure><code>
+   get "/" do HL7.Service.root(conn) end
+  post "/" do HL7.Service.postRoot(conn) end
+   get "/$meta" do HL7.Service.meta(conn) end
+  post "/$meta" do HL7.Service.postMeta(conn) end
+   get "/metadata" do HL7.Service.metadata(conn) end
+   get "/$export" do HL7.Service.export(conn) end
+  post "/$export" do HL7.Service.postExport(conn) end
+  post "/$diff" do HL7.Service.postDiff(conn) end
+  post "/$reindex" do HL7.Service.reindex(conn) end
+</code></figure>
+
+<figure><code>
+$ curl -X GET http://localhost:9234/
+[
+  {
+    "parameters": [
+      {
+        "name": "return",
+        "valueMeta": {
+          "profile": [
+            "https://hl7.erp.uno/schema/Account.schema.json",
+            "https://hl7.erp.uno/schema/ActivityDefinition.schema.json",
+            "https://hl7.erp.uno/schema/Address.schema.json",
+            "https://hl7.erp.uno/schema/AdverseEvent.schema.json",
+            "https://hl7.erp.uno/schema/Age.schema.json",
+            ...
+          ],
+          "security": [
+            {
+              "code": "N",
+              "display": "normal",
+              "system": "https://hl7.erp.uno/CodeSystem/v4"
+            }
+          ],
+          "tag": [
+            {
+              "code": "N",
+              "display": "normal",
+              "system": "https://hl7.erp.uno/tag/"
+            }
+          ]
+        }
+      }
+    ],
+    "resourceType": "Parameters"
+  }
+]</code></figure>
+
+    <p><b>Термінологія</b></p>
+
+    <P>HTTP інтерфейс термінології передбачає класифікацію, організація і публікацію статичних
+       файлів які через зовнішнє управління змінами можуть буть перегенеровані. Зазвичай
+       ця інформація генерується з кеш-памʼяті, так як словники не займать більше 250 МБ.
+       Модель цього FHIR сервера включає основні CodeeSystem і ValueSet визначені
+       міжнародними і національними стандартами.</p>
+
+<figure><code>
+   get "/CodeSystem/$lookup" do HL7.Service.get4(conn,[],"CodeSystem",[],"$lookup") end
+   get "/CodeSystem/:id/$lookup" do HL7.Service.get4(conn,[],"CodeSystem",id,"$lookup") end
+   get "/CodeSystem/$validate-code" do HL7.Service.get4(conn,[],"CodeSystem",[],"$validate-code") end
+   get "/CodeSystem/:id/$validate-code" do HL7.Service.get4(conn,[],"CodeSystem",id,"$validate-code") end
+   get "/ValueSet/$expand" do HL7.Service.get4(conn,[],"ValueSet",[],"$expand") end
+   get "/ValueSet/:id/$expand" do HL7.Service.get4(conn,[],"ValueSet",id,"$expand") end
+   get "/ConceptMap/$closure" do HL7.Service.get4(conn,[],"ConceptMap",[],"$closure") end
+   get "/ConceptMap/:id/$closure" do HL7.Service.get4(conn,[],"ConceptMap",id,"$closure") end
+   get "/ConceptMap/$translate" do HL7.Service.get4(conn,[],"ConceptMap",[],"$translate") end
+   get "/ConceptMap/:id/$translate" do HL7.Service.get4(conn,[],"ConceptMap",id,"$translate") end
+</code></figure>
+
+    <p><b>Моніторинг інфраструктури</b></p>
+
+    <p>Для забезпечення функціональності моніторингу сумісною з
+       інтерфейсом Instatus пропонується використовувати підмножину інфраструктурних ресурсів FHIR:
+       OperationOutcomeIssue, Group, Account, а також доданих Component, Maintenance, Metrics для
+       більш наглядного відображення.</p>
+
+<figure><code>
+   get "/OperationOutcomeIssue"
+   get "/OperationOutcomeIssue/:id"
+   put "/OperationOutcomeIssue"
+   get "/Maintenance"
+   get "/Maintenance/:id"
+   put "/Maintenance"
+   get "/Metrics"
+   get "/Metrics/:id"
+   put "/Metrics"
+   get "/Component"
+   get "/Component/:id"
+   put "/Component"
+   get "/Group"
+   get "/Group/:type/:id"
+   put "/Group"
+   get "/Account"
+   get "/Account/:id"
+   put "/Account"
+</code></figure>
+
+    <p><b>Ресурси</b></p>
+
+    <p>Інтерфейс ресурсів визначається універсально для всіх 160 ресурсів,
+       які можна валідувати, додавати, видаляти, модифікувати. Для операцій
+       історії використовується обʼєкт Bundle типу history. Для валідацій
+       використовується обʼєкт OperationOutcome. Операції додавання
+       повертають саму структуру обʼєкту ресурсу.</p>
+
+<figure><code>
+  post "/:type/$validate" do HL7.Service.post4(conn,[],type,[],"$validate") end
+   get "/:type/:id" do HL7.Service.get4(conn,[],type,id,"$base") end
+   get "/:type/:id/_history" do HL7.Service.get4(conn,[],type,id,"_history") end
+   get "/:type/:id/_history/:vsn" do HL7.Service.get4(conn,vsn,type,id,"_history") end
+   put "/:type/:id" do HL7.Service.put4(conn,[],type,id,"$base") end
+delete "/:type/:id" do HL7.Service.delete4(conn,[],type,id,"$base") end
+</code></figure>
+
+    <figure><code>
+$ curl -X POST "http://hl7:9234/List/\$validate" -d @samples/List/List.json
+{
+  "issues": [
+    {
+      "code": "invariant",
+      "details": "dom-6: A resource should have narrative for robust management",
+      "expression": "List",
+      "severity": "warning"
+    },
+    {
+      "code": "informational",
+      "details": "Validation is successful!",
+      "severity": "information"
+    }
+  ],
+  "resourceType": "OperationOutcome"
+}
+    </code></figure>
+
+    <p><b>Загальні взіємодії</b></p>
+
+<figure><code>
+   get "/_history" do HL7.Service.history(conn) end
+   get "/_diff" do HL7.Service.diff(conn) end
+  post "/_search" do HL7.Service.post2(conn,[],"_search") end
+  post "/:res/_search" do HL7.Service.post3(conn,[],res,"_search") end
+  post "/:comp/:id/_search" do HL7.Service.post4(conn,[],comp,id,"_search") end
+  post "/:comp/:id/:res/_search" do HL7.Service.post5(conn,[],comp,id,res,"_search") end
+</code></figure>
+
+    <h4>Відкрита ліцензія</h4>
+
+    <p>Валідатор HL7/FHIR сервера побудований на базі Xema, Маркуса Круса,
+       який виданий під MIT ліцензією. Сам HL7 сервер виданий під ISC
+       ліцензією і опублікований на HEX.PM.</p>
+
+    <h4>Артефакти дослідження</h4>
+
+    <p>[1]. <a href="https://hl7.erp.uno">hl7.erp.uno</a> (Домашня сторінка)<br>
+       [2]. <a href="https://github.com/erpuno/hl7">github.com/erpuno/hl7</a> (Репозиторій)<br>
+       [3]. <a href="2024-02-18 HL7.htm">ISO/HL7: FHIR валідація</a> (Стаття)
+    </p>
+
+    <h4>Майбутні дослідження</h4>
+
+     <p>Подальші дослідження передбачають імплементацію CRUD операції і історії,
+        а також апробація цієї моделі на інфраструктурній частині само-моніторингу
+        системи.</p>
+
+    <h4>Висновки</h4>
+
+    <p>Валідатора, який би мав значущу перевагу, на ринку поки що немає,
+       і попасти в залікову таблицю не так складно. По трудоємності
+       протокол FHIR хоча і великий але імплементація не перенавантажена,
+       в основному час тратиться на організацію метаінформації у вигляді
+       спеціальних екземплярів термінології, що дозволяє тримати
+       код у чистоті і малому обʼємі.<p>
+
+    <p>Загальний код JSON валідатора склав 4500 LOC, а сам валідатор і інфраструктура FHIR
+       сервера разом з HTTP зайняла 500 LOC, що говорить про повний очікуваний обʼєм
+       сертифікованого FHIR сервера з інтерфейсом для бізнес-валідаторів у розмірі 5000—10K LOC.
+       По часу аналіз, дизайн і імплементація Terminology, Infrastructure
+       і Resource API зайняв 4 вікенд сесії.</p>
+
+    <p>FHIR вже є зручним інструментом моделювання в просторі типів HL7/FHIR JSON стандарту,
+       ця імплементація гарантує консистентність системи типів і не визначає додаткові
+       бізнес-вимоги які зазвичай реалізуються реальними медичними інформаційними системами.</p>
+
+   <figure><img src="img/HL7.png"></figure>
+
+       <br><center>&dot;</center>
+
+<hr>
+
+       <br><center>&dot;</center>
+
+     <h4>Використані джерела</h4>
+
+<p>[1]. Kirstine Rosenbeck Gøeg, Rune Kongsgaard Rasmussen, Lasse Jensen, Christian Møller Wollesen, Søren Larsen, Louise Bilenberg Pape-Haugaard.
+     A future-proof architecture for telemedicine using loose-coupled modules and HL7 FHIR.
+     Computer Methods and Programs in Biomedicine, Volume 160. 2018. ISSN 0169-2607.<br>
+   [2]. Mense, A., Kienast, L., Noori, A.R., Rathkolb, M., Seidinger, D., Pavão, J. (2023).
+     Practical Guidelines for Developing Secure FHIR Applications. Volume 691.
+     ICITS 2023. Lecture Notes in Networks and Systems. 2023. Springer.<br>
+   [3]. Luis Marco-RuizBirger HaarbrandtBirger HaarbrandtBjoern Schreiweis.
+        FHIR terminology services: assessment and benchmark for data reuse Infrastructures.
+        2023. Preprint.<br>
+   [4]. <a href="https://hl7.org/fhir/terminology-module.html">FHIR Terminology Module 5.0.0</a>. HL7.<br>
+   [5]. <a href="https://www.healthterminologies.gov.au/library/DH_3246_2020_Basic_FHIR_Terminology_Services_Presentation_v1.1.pdf">FHIR Terminology services</a>. Australian Goverenment.<br>
+
+<p>
+
+    </section>
+
+</main>
+<footer><a href="https://5ht.co">Максим Сохацький</a> <span class="heart">&nbsp;❤&nbsp;</span> </footer>
+</body>
+</html>
+
