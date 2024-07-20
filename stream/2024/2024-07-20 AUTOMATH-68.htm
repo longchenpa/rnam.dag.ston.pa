@@ -195,6 +195,33 @@ pub fn type_check_with_context(self, context: HashMap&lt;String, Henk>) -> Resul
 }
 </code></figure>
 
+        <h4>Приклади</h4>
+
+<figure><code>
+   (A:*) (H:A) (T:[L:*][C:[_:A][_:L]L][N:L]L) (L:*)
+   (C:[_:A][_:L]L) (N:L) (C H (T L C N))
+
+   (A: *) (Head: A) (Tail: [List: *] [Cons: [_:A] [_: List] List] [Nil: List] List)
+   (List: *) (Cons: [_:A] [_: List] List) (Nil: List)
+   (Cons Head (Tail List Cons Nil))
+
+   [Nat : *] [Succ : [_:Nat] Nat] [Zero : Nat] Nat
+
+   (pred : [Nat : *] [Succ : [_ : Nat] Nat] [Zero : Nat] Nat) (Nat : *)
+   (Succ : [_: Nat] Nat) (Zero : Nat) (Succ (pred Nat Succ Zero))
+
+   [Nat:*] [Succ: [_:Nat] Nat] [Zero: Nat] Nat
+
+   (x: [Nat:*] [Succ: [_:Nat] Nat] [Zero: Nat] Nat)
+   (x ([Nat:*][Succ:[_:Nat]Nat][Zero:Nat]Nat)
+      ((pred: [Nat:*] [Succ: [_:Nat] Nat] [Zero:Nat] Nat)
+       (Nat2:*)
+       (Succ2:[_:Nat2] Nat2)
+       (Zero2: Nat2) (Succ2 (pred Nat2 Succ2 Zero2))))
+</code></figure>
+
+        <h4>Висновки</h4>
+
 <hr>
 
 <p>[1]. <a href="https://tonpa.guru/stream/2016/2016-08-09%20Школи%20Лямбди.htm">М. Сохацький. Школи лямбди.</a><br>
