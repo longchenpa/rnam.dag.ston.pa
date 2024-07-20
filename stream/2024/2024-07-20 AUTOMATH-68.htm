@@ -1,0 +1,201 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2024-07-20 AUTOMATH-68</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2024-07-20</a>
+</nav>
+<main>
+    <section>
+
+        <h3>AUTOMATH-68</h3>
+
+<p align=right>Присвячується українській школі лямбди</p>
+
+<p>Хоча кожна школя лямбда-числення вважає шо PTS тайпчекери — це непотрібна надлишкова вправа,
+   існує певна педагогічна практика, яку потрібно виконати. Наприклад Чьорч-кодування,
+   та імплементація тайпчекера для перевірки цих термів. Адже евалуатори лямюда числення,
+   як і вся математика, це не щось шо можна зрозуміти, а лиш те що можна запамʼятати
+   і навчитися використовувати. </p>
+
+<p>Існує декілька канонічних імплементації залежних типів:
+   1) Авторський тайпчекер на Haskell від Террі Кокана разом з його статтею про Calculus of Construction 1988 року;
+   2) Тайпчекер "Simple, Easy" від Льоха, МакБрайда і Свієрсти від 2001;
+   3) Тайпчекер Ленарта Аугюстссона "Simpler, Easier!" від 2007 року;
+   4) Тайпчекер Групоїд Інфініті Henk від 2016 року.
+    </p>
+
+<p>Що стосується синтаксисів лямбда-числення то їх палітра описана в
+   окремій статті про <a href="https://tonpa.guru/stream/2016/2016-08-09%20Школи%20Лямбди.htm">школи лямбди</a> [1],
+   і представлена в цій статті імплементація синтаксису відповідає намірам Террі Кокана
+   побудувати тайпчекер навколо AUT-68 синтаксису [2].
+   Імплементація тайпчекера базується на [4] і [3].</p>
+
+        <h4>Синтаксичне дерево</h4>
+
+<figure><code>
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Henk {
+    Universe(i64),
+    Variable(String),
+    App(Box&lt;Henk>, Box&lt;Henk>),
+    Lambda(String, Box&lt;Henk>, Box&lt;Henk>),
+    Forall(String, Box&lt;Henk>, Box&lt;Henk>),
+}
+</code></figure>
+
+        <h4>BNF граматика</h4>
+
+<figure><code>
+use crate::ast::Henk;
+grammar; // AUT = U | V | [ V : AUT ] AUT | ( V : AUT ) AUT | AUT AUT | ( AUT )
+
+Name:      String = { r"[a-zA-Z_][a-zA-Z_\d]*" => &lt;>.to_string() };
+Universe:    Henk = { &lt;n:r"\*[\d]+"> => Henk::Universe(i64::from_str_radix(&n[1..],10).unwrap()), &lt;n:r"\*"> => Henk::Universe(0), };
+Variable:    Henk = { &lt;n:Name> => Henk::Variable(n), };
+Unit:        Henk = { &lt;l:"("> &lt;e:Expr> &lt;r:")"> => e, };
+Lambda:      Henk = { &lt;l:"("> &lt;v:Name> &lt;s:":"> &lt;t:Expr> &lt;r:")"> &lt;e:LExpr> => Henk::Lambda(v,Box::new(t),Box::new(e)), };
+Forall:      Henk = { &lt;l:"["> &lt;v:Name> &lt;s:":"> &lt;t:Expr> &lt;r:"]"> &lt;e:LExpr> => Henk::Forall(v,Box::new(t),Box::new(e)), };
+LExpr:       Henk = { Variable, Universe, Unit, Lambda, Forall, };
+Application: Henk = { &lt;l:Expr> &lt;r:LExpr> => Henk::App(Box::new(l),Box::new(r)), };
+pub    Expr: Henk = { LExpr, Application, };
+</code></figure>
+
+        <h4>Альфа рівність</h4>
+
+<figure><code>
+pub fn alpha_eq(&self, another: &Henk) -> bool {
+    match (self, another) {
+        (&Henk::Universe(v1), &Henk::Universe(v2)) => v1 == v2,
+        (&Henk::Variable(ref v1), &Henk::Variable(ref v2)) => v1 == v2,
+        (&Henk::App(ref left1, ref right1),&Henk::App(ref left2, ref right2),) => left1.alpha_eq(&left2) && right1.alpha_eq(&right2),
+        (&Henk::Lambda(ref b1, ref l1, ref r1), &Henk::Lambda(ref b2, ref l2, ref r2),) => { l1.alpha_eq(l2) && r1.alpha_eq(&r2.clone().subst(&b2, &Henk::Variable(b1.clone())),) }
+        (&Henk::Forall(ref b1, ref l1, ref r1), &Henk::Forall(ref b2, ref l2, ref r2),) => { l1.alpha_eq(l2) && r1.alpha_eq(&r2.clone().subst(&b2, &Henk::Variable(b1.clone())),) }
+        _ => false,
+    }
+}
+</code></figure>
+
+        <h4>Нормальні форми</h4>
+
+<figure><code>
+pub fn nf(self) -> Henk {
+    fn spine(leftmost: Henk, stack: &[Henk]) -> Henk {
+        match (leftmost, stack) {
+            (Henk::App(left, right), _) => { let mut new_stack: Vec&lt;Henk> = stack.into(); new_stack.push(*right); spine(*left, &new_stack) }
+            (Henk::Lambda(ref from, ref l, ref r), ref stack) if stack.is_empty() => { Henk::Lambda(from.clone(), Box::new(l.clone().nf()), Box::new(r.clone().nf()), ) }
+            (Henk::Lambda(ref from, _, ref r), ref stack) => { let mut ns: Vec&lt;Henk> = (*stack).into(); let right = ns.pop().unwrap(); spine(r.clone().subst(&from, &right), &ns) }
+            (Henk::Forall(ref b, ref l, ref r), ref stack) => stack.iter().fold(Henk::Forall(b.clone(), Box::new(l.clone().nf()), Box::new(r.clone().nf()), ), |x, y| Henk::App(Box::new(x), Box::new(y.clone().nf()))),
+            (leftmost, _) => stack.iter().fold(leftmost, |l, r| Henk::App(Box::new(l), Box::new(r.clone().nf())) ),
+        }
+    }
+    spine(self, &[])
+}
+</code></figure>
+
+        <h4>Підстановка</h4>
+
+<figure><code>
+pub fn subst(self, from: &String, to: &Henk) -> Henk {
+    fn lambda(bound: String, left: Box&lt;Henk>, right: Box&lt;Henk>) -> Henk { Henk::Lambda(bound, left, right) }
+    fn forall(bound: String, left: Box&lt;Henk>, right: Box&lt;Henk>) -> Henk { Henk::Forall(bound, left, right) }
+    fn substitute_closure&lt;'a>(from: &String, to: &Henk, bound: &'a String, left: &'a Box&lt;Henk>, right: &'a Box&lt;Henk>,
+       fun: fn (bound: String, left: Box&lt;Henk>, right: Box&lt;Henk>) -> Henk) -> Henk {
+        if bound == from { fun(bound.clone(),Box::new(left.clone().subst(from, to)),right.clone(),) }
+        else {
+            if !to.free_vars().contains(bound) { fun(bound.clone(), Box::new(left.clone().subst(from, to)), Box::new(right.clone().subst(from, to)),) }
+            else {
+                let mut unused: String = bound.clone(); unused.push_str("'");
+                loop {
+                    let used: HashSet&lt;&String> = right.free_vars().union(&to.free_vars()).cloned().collect();
+                    if used.contains(&unused) { unused.push_str("'") }
+                    else {
+                        return fun(unused.clone(), Box::new(left.clone().subst(bound, &Henk::Variable(unused.clone()), )),
+                            Box::new(right.clone().subst(bound, &Henk::Variable(unused)), ), ).subst(from, to);
+                    } 
+               }
+            }
+        }
+    }
+    match self {
+        Henk::Universe(v) => Henk::Universe(v),
+        Henk::Variable(v) => { if v == *from { to.clone() } else { Henk::Variable(v) } }
+        Henk::App(left, right) => { Henk::App(Box::new(left.subst(from, to)), Box::new(right.subst(from, to))) }
+        Henk::Lambda(ref bound, ref left, ref right) => {  substitute_closure(from, to, bound, left, right, lambda) }
+        Henk::Forall(ref bound, ref left, ref right) => {  substitute_closure(from, to, bound, left, right, forall) }
+    }
+}
+</code></figure>
+
+        <h4>Вільні змінні</h4>
+
+<figure><code>
+pub fn free_vars(&self) -> HashSet&lt;&String> {
+    fn  closure_vars&lt;'a>(bound: &'a String, left: &'a Box&lt;Henk>, right: &'a Box&lt;Henk>) -> HashSet&lt;&'a String> {
+        let mut tmp = right.free_vars();
+        tmp.remove(bound);
+        tmp.union(&left.free_vars()).cloned().collect()
+    }
+    let mut set = HashSet::new();
+    match *self {
+        Henk::Universe(v) => {}
+        Henk::Variable(ref v) => { set = HashSet::new(); set.insert(v); }
+        Henk::App(ref left, ref right) => { set = left.free_vars().union(&right.free_vars()).cloned().collect() }
+        Henk::Lambda(ref bound, ref left, ref right) => { closure_vars(bound, left, right); }
+        Henk::Forall(ref bound, ref left, ref right) => { closure_vars(bound, left, right); }
+    }
+    set
+}
+</code></figure>
+
+        <h4>Тайпчекер</h4>
+
+<figure><code>
+pub fn type_check_with_context(self, context: HashMap&lt;String, Henk>) -> Result&lt;Henk, String> {
+    match self {
+        Henk::Universe(n) => Ok(Henk::Universe(n + 1)),
+        Henk::Forall(bound, left, right) => { Ok(Henk::Universe(0)) }
+        Henk::Variable(v) => match context.get(&v) { Some(ty) => Ok(ty.clone()), None => Err(format!("Cannot find variable {}.", &v)), },
+        Henk::App(left, right) => {
+            match left.type_check_with_context(context.clone())? {
+                Henk::Forall(bound, ty_in, ty_out) => {
+                    let right_ty = right.clone().type_check_with_context(context.clone())?;
+                    if right_ty.clone().nf().alpha_eq(&ty_in.clone().nf()) { Ok(ty_out.subst(&bound, &right)) }
+                    else { Err(format!("Expected something of type {}, found that of type {}.", ty_in, right_ty), ) }
+                }
+                left_ty => { Err(format!("Expected lambda, found value of type {}.", left_ty.nf())) }                }
+            }
+        Henk::Lambda(bound, left, right) => {
+            let left_type = left.clone().type_check_with_context(context.clone())?;
+            let mut new_context = context;
+            new_context.insert(bound.clone(), *left.clone());
+            let right_type = right.type_check_with_context(new_context)?;
+            Ok(Henk::Forall(bound, left, Box::new(right_type)))
+        }
+    }
+}
+</code></figure>
+
+<hr>
+
+<p>[1]. <a href="https://tonpa.guru/stream/2016/2016-08-09%20Школи%20Лямбди.htm">М. Сохацький. Школи лямбди.</a><br>
+   [2]. <a href="https://www.cse.chalmers.se/~coquand/v1.pdf">Т. Кокан. Деякі ремарки щодо залежної теорії.</a><br>
+   [3]. <a href="https://gist.github.com/tel/7ad4dafb6c39221fc773">Л. Аугюстссон. Ще простіший тайпчекер.</a><br>
+   [4]. <a href="https://henk.groupoid.space/doc/pts_ua.pdf">М.Сохацький. Одноаксіоматична система</a><br>
+</p>
+
+</section>
+</main>
+<footer>Максим Сохацький, Ігор Горобець</footer>
+</body>
+</html>
