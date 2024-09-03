@@ -67,17 +67,20 @@ pub enum Henk {
 
 <figure><code>
 use crate::ast::Henk;
-grammar; 
+grammar;
 
-Name:      String = { r"[a-zA-Z_][a-zA-Z_\d]*" => &lt;>.to_string() };
-Universe:    Henk = { &lt;n:r"\*[\d]+"> => Henk::Universe(i64::from_str_radix(&n[1..],10).unwrap()), &lt;n:r"\*"> => Henk::Universe(0), };
-Variable:    Henk = { &lt;n:Name> => Henk::Variable(n), };
-Unit:        Henk = { &lt;l:"("> &lt;e:Expr> &lt;r:")"> => e, };
-Lambda:      Henk = { &lt;l:"("> &lt;v:Name> &lt;s:":"> &lt;t:Expr> &lt;r:")"> &lt;e:LExpr> => Henk::Lambda(v,Box::new(t),Box::new(e)), };
-Forall:      Henk = { &lt;l:"["> &lt;v:Name> &lt;s:":"> &lt;t:Expr> &lt;r:"]"> &lt;e:LExpr> => Henk::Forall(v,Box::new(t),Box::new(e)), };
-LExpr:       Henk = { Variable, Universe, Unit, Lambda, Forall, };
-Application: Henk = { &lt;l:Expr> &lt;r:LExpr> => Henk::App(Box::new(l),Box::new(r)), };
-pub    Expr: Henk = { LExpr, Application, };
+// Copyright (c) Groupoid Infinity 2024
+// AUT = U | V | [ V : AUT ] AUT | ( V : AUT ) AUT | AUT AUT | ( AUT )
+
+Name:   String = { r"[a-zA-Z_][a-zA-Z_\d]*" => &lt;>.to_string() };
+Universe: Henk = { &lt;n:r"\*[\d]+"> => Henk::Universe(i64::from_str_radix(&n[1..],10).unwrap()), &lt;n:r"\*"> => Henk::Universe(0) };
+Variable: Henk = { &lt;n:Name> => Henk::Variable(n) };
+Lambda:   Henk = { &lt;l:"("> &lt;v:Name> &lt;s:":"> &lt;t:Expr> &lt;r:")"> &lt;e:Expr1> => Henk::Lambda(v,Box::new(t),Box::new(e)) };
+Forall:   Henk = { &lt;l:"["> &lt;v:Name> &lt;s:":"> &lt;t:Expr> &lt;r:"]"> &lt;e:Expr1> => Henk::Forall(v,Box::new(t),Box::new(e)) };
+Expr1:    Henk = { Lambda, Forall, Expr2 };
+Expr2:    Henk = { &lt;l:Expr2> &lt;r:Expr3> => Henk::App(Box::new(l),Box::new(r)), &lt;x:Expr3> => x };
+Expr3:    Henk = { Variable, Universe, &lt;l:"("> &lt;e:Expr1> &lt;r:")"> => e };
+pub Expr: Henk = { Expr1 };
 </code></figure>
 
         <h4>Альфа рівність</h4>
