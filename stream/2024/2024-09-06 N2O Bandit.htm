@@ -1,0 +1,112 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2024-09-06 N2O Bandit</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2024-09-06</a>
+</nav>
+<main>
+    <section>
+        <h3>N2O Bandit</h3>
+
+        <p>TL;DR: N2O Bandit WebServer for Elixir support out of the box with no changes.</p>
+
+        <h4>N2O Static</h4>
+
+<figure><code>
+defmodule Sample.Static do
+  use Plug.Router
+  plug Plug.Static, at: "/app",
+       from: { :application.get_env(:n2o, :app,    :sample),
+               :application.get_env(:n2o, :upload, "priv/static") }
+
+  match _ do send_resp(conn, 404,
+       "Please refer to https://n2o.dev for more information.") end
+end
+</code></figure>
+
+        <h4>N2O WebSocket</h4>
+
+<figure><code>
+defmodule Sample.WS do
+  require N2O
+  use Plug.Router
+  plug :match
+  plug :dispatch
+
+  get "/ws/app/:mod", do:
+      conn |> WebSockAdapter.upgrade(Sample.WS,
+              [module: extract(mod)], timeout: 60_000) |> halt()
+
+  def extract(route), do:
+      :application.get_env(:n2o, :router,
+           Sample.Application).route(route)
+
+  def init(args), do:
+      {:ok, N2O.cx(module: Keyword.get(args, :module)) }
+
+  def handle_in({"N2O," &lt;> _ = message, _}, state), do:
+      response(:n2o_proto.stream({:text,message},[],state))
+
+  def handle_in({"PING", _}, state), do:
+      {:reply, :ok, {:text, "PONG"}, state}
+
+  def handle_in({message, _}, state) when is_binary(message), do:
+      response(:n2o_proto.stream({:binary,message},[],state))
+
+  def handle_info(message, state), do:
+      response(:n2o_proto.info(message,[],state))
+
+  def response({:reply,{:binary,rep},_,s}), do: {:reply,:ok,{:binary,rep},s}
+  def response({:reply,{:text,rep},_,s}),   do: {:reply,:ok,{:text,rep},s}
+  def response({:reply,{:bert,rep},_,s}),   do: {:reply,:ok,{:binary,:n2o_bert.encode(rep)},s}
+  def response({:reply,{:json,rep},_,s}),   do: {:reply,:ok,{:binary,:n2o_json.encode(rep)},s}
+
+  match _ do send_resp(conn, 404,
+      "Please refer to https://n2o.dev for more information.") end
+end
+</code></figure>
+
+        <h4>N2O Application</h4>
+
+<figure><code>
+defmodule Sample.Application do
+  require N2O
+  use Application
+
+  def route(&lt;&lt;"/ws/app/", p::binary>>),  do: route(p)
+  def route(&lt;&lt;"index", _::binary>>), do: Sample.Index
+  def route(&lt;&lt;"login", _::binary>>), do: Sample.Login
+
+  def finish(state, ctx), do: {:ok, state, ctx}
+  def init(state, context) do
+      %{path: path} = N2O.cx(context, :req)
+      {:ok, state, N2O.cx(context, path: path, module: route(path))}
+  end
+
+  def start(_, _) do
+      :kvs.join()
+      children = [ { Bandit, scheme: :http, port: 8002, plug: Sample.WS },
+                   { Bandit, scheme: :http, port: 8004, plug: Sample.Static } ]
+      Supervisor.start_link(children, strategy: :one_for_one, name: Sample.Supervisor)
+  end
+end
+</code></figure>
+
+        <h4></h4>
+
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2022</footer>
+</body>
+</html>
