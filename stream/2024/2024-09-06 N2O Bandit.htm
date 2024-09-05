@@ -103,7 +103,33 @@ defmodule Sample.Application do
 end
 </code></figure>
 
-        <h4></h4>
+        <h4>N2O Deps</h4>
+
+<figure><code>
+defmodule Sample.Mixfile do
+  use Mix.Project
+  def project() do
+    [
+      app: :sample,
+      version: "6.9.3",
+      description: "SAMPLE Elixir N2O Application",
+      deps: deps()
+    ]
+  end
+  def deps() do
+    [
+      {:plug, "~> 1.15.3"},
+      {:bandit, "~> 1.0"},
+      {:websock_adapter, "~> 0.5"},
+      {:rocksdb, "~> 1.8.0"},
+      {:nitro, "~> 8.2.4"},
+      {:kvs, "~> 10.8.3"},
+      {:n2o, "~> 10.12.4"},
+      {:syn, "~> 2.1.1"}
+    ]
+  end
+end
+</code></figure>
 
     </section>
 </main>
