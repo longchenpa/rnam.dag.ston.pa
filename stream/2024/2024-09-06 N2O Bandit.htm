@@ -21,7 +21,20 @@
 
         <p>TL;DR: Підтримка Elixir веб-сервера Bandit для N2O без модифікацій. Приклад використання.</p>
 
+        <p>Головна причина реврайтів — це пошук оптимальної реалізації. COWBOY веб сервер був
+           довгий час головним і єдиним продакшин реді веб сервером для Erlang/OTP загалом і
+           для Elixir DSL зокрема. Як на мене час компіляції COWLIB занадто великий і тільки це одне
+           могло би бути причиною реврайта. Новий веб-сервер BANDIT цікавий тим, що дозволяє
+           уніфікувати HTTP і WebSocket ендпойнти в інтерфейсах PLUG. Так як N2O може працювати поверх чистого веб-сокет
+           сервера без HTTP ендпойнтів взагалі (їх можна сервити або з Github Pages або іншими веб-серверами,
+           які відгружають статичні асети (JS, CSS, HTML), я використовува спочатку безпосередні біндінги
+           THOUSAND_ISLAND (той самий автор, що і BANDIT), але зрештою вирішив закомітити
+           уніфікований підхід до HTTP та WebSocket ендпойтів який пропонує PLUG.</p>
+
         <h4>N2O Static</h4>
+
+        <p>COWBOY_STATIC модуль заміняється безпосередньо на Plug.Static. Але в продакшині ми взагалі можемо
+           сервити сторінки без використання аплікейшин серверів.</p>
 
 <figure><code>
 defmodule Sample.Static do
@@ -36,6 +49,10 @@ end
 </code></figure>
 
         <h4>N2O WebSocket</h4>
+
+        <p>Щоб завернути THOUSAND_ISLAND в PLUG потрібно використати допоміжну бібліотеку WEBSOCK_ADAPTER,
+           з неї ми беремо тільки WebSocket Upgrade. Сам модуль є адаптером N2O для веб-сокет сервера
+           BANDIT (під капотом THOUSAND_ISLAND).</p>
 
 <figure><code>
 defmodule Sample.WS do
@@ -79,6 +96,10 @@ end
 
         <h4>N2O Application</h4>
 
+<p>В головному файлі Erlang/OTP додатку стартуємо статичні і веб-сокет еднпойнти на різних портах.
+   Це обмеження BANDIT відрізняється від старих способів деплоя N2O на одному порті, але ніби
+   привносить більший порядочок в інфраструктуру.</p>
+
 <figure><code>
 defmodule Sample.Application do
   require N2O
@@ -111,6 +132,9 @@ end
 
         <h4>N2O Deps</h4>
 
+<p>З залежностей N2O Bandit адаптер використовує тільки PLUG, BANDIT і WEBSOCK_ADAPTER.
+  COWBOY — вже для історичної сумісності.</P>
+
 <figure><code>
 defmodule Sample.Mixfile do
   use Mix.Project
@@ -138,6 +162,8 @@ end
 </code></figure>
 
         <h4>N2O Sample Login</h4>
+
+<p>Сторінки ERPUNO/SAMPLE не змінилися.</p>
 
 <figure><code>
 defmodule Sample.Login do
@@ -236,8 +262,28 @@ defmodule Sample.Index do
 end
 </code></figure>
 
+        <h4>N2O Sample Deploy</h4>
+
+<figure><code>
+$ git clone https://github.com/erpuno/sample
+$ mix deps.get
+$ iex -S mix
+$ open http://localhost:8004/app/index.htm
+</code></figure>
+
+<figure><img src="https://n2o.dev/img/n2o-ws.png"></figure>
+
+       <br><center>&dot;</center>
+
+<hr>
+
+<p>
+[1]. <a href="https://sample.erp.uno">SAMPLE.ERP.UNO</a><br>
+[2]. <a href="https://github.com/erpuno/sample">GITHUB.COM/ERPUNO/SAMPLE</a>
+</p>
+
     </section>
 </main>
-<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2022</footer>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2024</footer>
 </body>
 </html>
