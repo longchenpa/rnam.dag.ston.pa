@@ -1,0 +1,289 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2024-09-06 N2O Bandit</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2024-09-06</a>
+</nav>
+<main>
+    <section>
+        <h3>N2O Bandit</h3>
+
+        <p>TL;DR: Підтримка Elixir веб-сервера Bandit для N2O без модифікацій. Приклад використання.</p>
+
+        <p>Головна причина реврайтів — це пошук оптимальної реалізації. COWBOY веб сервер був
+           довгий час головним і єдиним продакшин реді веб сервером для Erlang/OTP загалом і
+           для Elixir DSL зокрема. Як на мене час компіляції COWLIB занадто великий і тільки це одне
+           могло би бути причиною реврайта. Новий веб-сервер BANDIT цікавий тим, що дозволяє
+           уніфікувати HTTP і WebSocket ендпойнти в інтерфейсах PLUG. Так як N2O може працювати поверх чистого веб-сокет
+           сервера без HTTP ендпойнтів взагалі (їх можна сервити або з Github Pages або іншими веб-серверами,
+           які відгружають статичні асети (JS, CSS, HTML), я використовува спочатку безпосередні біндінги
+           THOUSAND_ISLAND (той самий автор, що і BANDIT), але зрештою вирішив закомітити
+           уніфікований підхід до HTTP та WebSocket ендпойтів який пропонує PLUG.</p>
+
+        <h4>N2O Static</h4>
+
+        <p>COWBOY_STATIC модуль заміняється безпосередньо на Plug.Static. Але в продакшині ми взагалі можемо
+           сервити сторінки без використання аплікейшин серверів.</p>
+
+<figure><code>
+defmodule Sample.Static do
+  use Plug.Router
+  plug Plug.Static, at: "/app",
+       from: { :application.get_env(:n2o, :app,    :sample),
+               :application.get_env(:n2o, :upload, "priv/static") }
+
+  match _ do send_resp(conn, 404,
+       "Please refer to https://n2o.dev for more information.") end
+end
+</code></figure>
+
+        <h4>N2O WebSocket</h4>
+
+        <p>Щоб завернути THOUSAND_ISLAND в PLUG потрібно використати допоміжну бібліотеку WEBSOCK_ADAPTER,
+           з неї ми беремо тільки WebSocket Upgrade. Сам модуль є адаптером N2O для веб-сокет сервера
+           BANDIT (під капотом THOUSAND_ISLAND).</p>
+
+<figure><code>
+defmodule Sample.WS do
+  require N2O
+  use Plug.Router
+  plug :match
+  plug :dispatch
+
+  get "/ws/app/:mod", do:
+      conn |> WebSockAdapter.upgrade(Sample.WS,
+              [module: extract(mod)], timeout: 60_000) |> halt()
+
+  def extract(route), do:
+      :application.get_env(:n2o, :router,
+           Sample.Application).route(route)
+
+  def init(args), do:
+      {:ok, N2O.cx(module: Keyword.get(args, :module)) }
+
+  def handle_in({"N2O," &lt;> _ = message, _}, state), do:
+      response(:n2o_proto.stream({:text,message},[],state))
+
+  def handle_in({"PING", _}, state), do:
+      {:reply, :ok, {:text, "PONG"}, state}
+
+  def handle_in({message, _}, state) when is_binary(message), do:
+      response(:n2o_proto.stream({:binary,message},[],state))
+
+  def handle_info(message, state), do:
+      response(:n2o_proto.info(message,[],state))
+
+  def response({:reply,{:binary,rep},_,s}), do: {:reply,:ok,{:binary,rep},s}
+  def response({:reply,{:text,rep},_,s}),   do: {:reply,:ok,{:text,rep},s}
+  def response({:reply,{:bert,rep},_,s}),   do: {:reply,:ok,{:binary,:n2o_bert.encode(rep)},s}
+  def response({:reply,{:json,rep},_,s}),   do: {:reply,:ok,{:binary,:n2o_json.encode(rep)},s}
+
+  match _ do send_resp(conn, 404,
+      "Please refer to https://n2o.dev for more information.") end
+end
+</code></figure>
+
+        <h4>N2O Application</h4>
+
+<p>В головному файлі Erlang/OTP додатку стартуємо статичні і веб-сокет еднпойнти на різних портах.
+   Це обмеження BANDIT відрізняється від старих способів деплоя N2O на одному порті, але ніби
+   привносить більший порядочок в інфраструктуру.</p>
+
+<figure><code>
+defmodule Sample.Application do
+  require N2O
+  use Application
+
+  # роутер для двох сторінок приклада ERPUNO/SAMPLE
+
+  def route(&lt;&lt;"/ws/app/", p::binary>>),  do: route(p)
+  def route(&lt;&lt;"index", _::binary>>), do: Sample.Index
+  def route(&lt;&lt;"login", _::binary>>), do: Sample.Login
+
+  # інтерфейс N2O роутера
+
+  def finish(state, ctx), do: {:ok, state, ctx}
+  def init(state, context) do
+      %{path: path} = N2O.cx(context, :req)
+      {:ok, state, N2O.cx(context, path: path, module: route(path))}
+  end
+
+  # інтерфейс додатку Erlang/OTP
+
+  def start(_, _) do
+      :kvs.join()
+      children = [ { Bandit, scheme: :http, port: 8002, plug: Sample.WS },
+                   { Bandit, scheme: :http, port: 8004, plug: Sample.Static } ]
+      Supervisor.start_link(children, strategy: :one_for_one, name: Sample.Supervisor)
+  end
+end
+</code></figure>
+
+        <h4>N2O Deps</h4>
+
+<p>З залежностей N2O Bandit адаптер використовує тільки PLUG, BANDIT і WEBSOCK_ADAPTER.
+  COWBOY — вже для історичної сумісності.</P>
+
+<figure><code>
+defmodule Sample.Mixfile do
+  use Mix.Project
+  def project() do
+      [
+        app: :sample,
+        version: "6.9.3",
+        description: "SAMPLE Elixir N2O Application",
+        deps: deps()
+      ]
+  end
+  def deps() do
+      [
+        {:plug, "~> 1.15.3"},
+        {:bandit, "~> 1.0"},
+        {:websock_adapter, "~> 0.5"},
+        {:rocksdb, "~> 1.8.0"},
+        {:nitro, "~> 8.2.4"},
+        {:kvs, "~> 10.8.3"},
+        {:n2o, "~> 10.12.4"},
+        {:syn, "~> 2.1.1"}
+      ]
+  end
+end
+</code></figure>
+
+        <h4>N2O Sample Login</h4>
+
+<p>Сторінки ERPUNO/SAMPLE не змінилися.</p>
+
+<figure><code>
+defmodule Sample.Login do
+  require NITRO ; require Logger
+
+  def event(:init) do
+      :nitro.update(:loginButton,
+         NITRO.button(id: :loginButton,
+                      body: "HELO",
+                      postback: :login,
+                      source: [:user, :room]))
+  end
+
+  def event(:login) do
+      user = :nitro.to_list(:nitro.q(:user))
+      room = :nitro.to_binary(:nitro.q(:room))
+      :n2o.user(user)
+      :n2o.session(:room, room)
+      :nitro.wire("ws.close();")
+      :nitro.redirect(["/app/index.htm?room=", room])
+  end
+
+  def event(unexpected), do:
+      unexpected |> inspect() |> Logger.warning()
+end
+</code></figure>
+
+        <h4>N2O Sample Index</h4>
+
+<figure><code>
+defmodule Sample.Index do
+  require NITRO ; require KVS ; require N2O ; require Logger
+
+  def room() do
+      case :n2o.session(:room) do
+           '' -> "lobby"
+           "" -> "lobby"
+           x -> x
+      end
+  end
+
+  def event(:init) do
+      room = Sample.Index.room
+      :kvs.ensure(KVS.writer(id: room)) ; :n2o.reg({:topic, room})
+      :nitro.update(:upload,
+             NITRO.upload())
+      :nitro.update(:heading,
+             NITRO.h2(id: :heading, body: room))
+      :nitro.update(:logout,
+             NITRO.button(id: :logout,
+                          postback: :logout,
+                          body: "Logout"))
+      :nitro.update(:send,
+             NITRO.button(id: :send,
+                          body: "Chat",
+                          postback: :chat, source: [:message]))
+      room |> :kvs.all() |> Enum.each(fn {:msg, _, user, message} ->
+        event({:client, {user, message}})
+      end)
+  end
+
+  def event(:logout) do
+      :n2o.user([])
+      :nitro.wire("ws.close();")
+      :nitro.redirect("/app/login.htm")
+  end
+
+  def event(:chat), do: chat(:nitro.q(:message))
+
+  def event(N2O.ftp(sid: s, filename: f, status: {:event, :stop})) do
+      name = hd(:lists.reverse(:string.tokens(:nitro.to_list(f), '/')))
+      link = NITRO.link(href: :erlang.iolist_to_binary(["/app/",s,"/",name]), body: name)
+      chat(:nitro.render(link))
+  end
+
+  def event({:client, {user, message}}) do
+      :nitro.wire(NITRO.jq(target: :message, method: [:focus, :select]))
+      :nitro.insert_top(:history,
+             NITRO.message(body: [ NITRO.author(body: user),
+                                 :nitro.jse(message) ]))
+  end
+
+  def event(unexpected), do:
+      unexpected |> inspect() |> Logger.warning()
+
+  def chat(message) do
+      room = Sample.Index.room
+      user = :n2o.user()
+      room |> :kvs.writer()
+           |>  KVS.writer(args: {:msg, :kvs.seq([], []), user, message})
+           |> :kvs.add()
+           |> :kvs.save()
+      :n2o.send({:topic, room}, N2O.client(data: {user, message}))
+  end
+
+end
+</code></figure>
+
+        <h4>N2O Sample Deploy</h4>
+
+<figure><code>
+$ git clone https://github.com/erpuno/sample
+$ mix deps.get
+$ iex -S mix
+$ open http://localhost:8004/app/index.htm
+</code></figure>
+
+<figure><img src="https://n2o.dev/img/n2o-ws.png"></figure>
+
+       <br><center>&dot;</center>
+
+<hr>
+
+<p>
+[1]. <a href="https://sample.erp.uno">SAMPLE.ERP.UNO</a><br>
+[2]. <a href="https://github.com/erpuno/sample">GITHUB.COM/ERPUNO/SAMPLE</a>
+</p>
+
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2024</footer>
+</body>
+</html>
