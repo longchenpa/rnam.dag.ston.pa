@@ -31,10 +31,7 @@
 <figure><code>
 defmodule CA.Point do
   defstruct [:x, :y, z: 0]
-  def isAtInfinity?(p) do
-    p.y == 0
-  end
-
+  def isAtInfinity?(p) do p.y == 0 end
 end
 </code></figure>
 
@@ -48,10 +45,10 @@ defmodule CA.Curve do
   defstruct [:A, :B, :P, :N, :G, :name, :oid]
   def contains?(curve, p) do
       cond do
-        p.x < 0 || p.x > curve."P" - 1 -> false
-        p.y < 0 || p.y > curve."P" - 1 -> false
+        p.x &lt; 0 || p.x > curve."P" - 1 -> false
+        p.y &lt; 0 || p.y > curve."P" - 1 -> false
         CA.Integer.ipow(p.y, 2) - (CA.Integer.ipow(p.x, 3)
-                                + curve."A" * p.x + curve."B")
+          + curve."A" * p.x + curve."B")
           |> CA.Integer.modulo(curve."P") != 0 -> false
         true -> true
       end
@@ -173,7 +170,7 @@ defmodule CA.Jacobian do
 end
 </code></figure>
 
-    <h4>Множення в координатах Якобі</h4>
+    <h4>Параметри курв</h4>
 
     <p>Параметри кривих ідентифікуються атомом та/або OID,
        та визначають точки А, Б, Засіювання, Точка на кривій,
@@ -184,14 +181,17 @@ defmodule CA.KnownCurves do
   require CA.Curve
   require CA.Point
 
-  @secp256k1Oid {1, 3, 132, 0, 10}
-  @secp256k1name :secp256k1
+  @secp384r1 {1, 3, 132, 0, 34}
+  @secp256k1 {1, 3, 132, 0, 10}
   @prime256v1 {1, 2, 840, 10045, 3, 1, 7}
+  @secp384r1name :secp384r1
+  @secp256k1name :secp256k1
   @prime256v1name :prime256v1
 
   def getCurveByOid(oid) do
     case oid do
-      @secp256k1Oid -> secp256k1()
+      @secp256k1 -> secp256k1()
+      @secp384r1 -> secp384r1()
       @prime256v1 -> prime256v1()
     end
   end
@@ -199,6 +199,7 @@ defmodule CA.KnownCurves do
   def getCurveByName(name) do
     case name do
       @secp256k1name -> secp256k1()
+      @secp384r1name -> secp384r1()
       @prime256v1name -> prime256v1()
     end
   end
@@ -214,7 +215,7 @@ defmodule CA.KnownCurves do
         x: 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
         y: 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
       },
-      oid: @secp256k1Oid
+      oid: @secp256k1
     }
   end
 
@@ -230,6 +231,21 @@ defmodule CA.KnownCurves do
         y: 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5
       },
       oid: @prime256v1
+    }
+  end
+
+  def secp384r1() do
+    %CA.Curve{
+      name: @secp384r1name,
+      A: 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc,
+      B: 0xb3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef,
+      P: 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff,
+      N: 0xffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973,
+      G: %CA.Point{
+        x: 0xaa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7,
+        y: 0x3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f
+      },
+      oid: @secp384r1
     }
   end
 end
@@ -291,18 +307,12 @@ defmodule CA.ECDSA do
   require CA.Point
   require CA.Integer
   require CA.Jacobian
-  require CA.ECDSA.OTP
+  @moduledoc "CA/ECDSA ECC Signature (SYNRC)."
 
-  def numberFromString(data) do
-      Base.encode16(data)
-      |> Integer.parse(16)
-      |> (fn {parsedInt, ""} -> parsedInt end).()
-  end
-
-  def sign(message, privateKey, options \\ []) do
+  def sign(message, privateKey, options) do
       %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
       number = :crypto.hash(hashfunc, message) |> numberFromString()
-      curve = CA.KnownCurves.secp256k1()
+      curve = CA.KnownCurves.secp384r1()
       randNum = CA.Integer.between(1, curve."N" - 1)
       r = CA.Jacobian.multiply(curve."G", randNum, curve."N", curve."A", curve."P").x
         |> CA.Integer.modulo(curve."N")
@@ -311,19 +321,48 @@ defmodule CA.ECDSA do
       {r, s}
   end
 
-  def private(bin), do: :erlang.element(2,X509.PrivateKey.from_pem(bin))
+  def private(bin), do: numberFromString(:erlang.element(3,:erlang.element(2,X509.PrivateKey.from_pem(bin))))
   def public(bin),  do: :public_key.pem_entry_decode(hd(:public_key.pem_decode(bin)))
 
-  def verify(file, signature, pub) do
+  def numberFromString(string) do
+      Base.encode16(string)
+      |> Integer.parse(16)
+      |> (fn {parsedInt, ""} -> parsedInt end).()
+  end
+
+  def decodePointFromECPoint(ec) do
+      {{:ECPoint, raw}, {:namedCurve, oid}} = ec
+      bin = :binary.part(raw,1,:erlang.size(raw)-1)
+      curve = CA.KnownCurves.getCurveByOid(oid)
+      baseLength = CA.Curve.getLength(curve)
+      xs = :binary.part(bin, 0, baseLength)
+      ys = :binary.part(bin, baseLength, :erlang.size(bin) - baseLength)
+      %CA.Point{ x: numberFromString(xs), y: numberFromString(ys)}
+  end
+
+  def signature(name) do
+      {:ok, sig} = :file.read_file name
+      {{_,[{_,r},{_,s}]},""} = :asn1rt_nif.decode_ber_tlv sig
+      { :ca_enroll.decode_integer(r),
+        :ca_enroll.decode_integer(s) }
+  end
+
+  def sign(file, key) do
+      {:ok, msg} = :file.read_file file
+      {:ok, pem} = :file.read_file key
+      sign(msg, private(pem), [])
+  end
+
+  def verify(file, signature_file, pub) do
       {:ok, msg} = :file.read_file file
       {:ok, pem} = :file.read_file pub
-      verify(msg, CA.ECDSA.OTP.signature(signature), public(pem), [])
+      verify(msg, signature(signature_file), decodePointFromECPoint(public(pem)), [])
   end
 
   def verify(message, {r,s}, publicKey, options) do
       %{hashfunc: hashfunc} = Enum.into(options, %{hashfunc: :sha256})
       number = :crypto.hash(hashfunc, message) |> numberFromString()
-      curve = CA.KnownCurves.secp256k1()
+      curve = CA.KnownCurves.secp384r1()
       inv = CA.Jacobian.inv(s, curve."N")
       v = CA.Jacobian.add(
         CA.Jacobian.multiply(curve."G", CA.Integer.modulo(number * inv, curve."N"),
@@ -331,14 +370,13 @@ defmodule CA.ECDSA do
         CA.Jacobian.multiply(publicKey, CA.Integer.modulo(r * inv, curve."N"),
            curve."N", curve."A", curve."P" ), curve."A", curve."P")
       cond do
-        r < 1 || r >= curve."N" -> false
-        s < 1 || s >= curve."N" -> false
+        r &lt; 1 || r >= curve."N" -> false
+        s &lt; 1 || s >= curve."N" -> false
         CA.Point.isAtInfinity?(v) -> false
         CA.Integer.modulo(v.x, curve."N") != r -> false
         true -> true
       end
   end
-
 end
 </code></figure>
 
@@ -353,13 +391,14 @@ end
     <h4>OpenSSL ECC Sign/Verify</h4>
 
 <figure><code>> CA.CSR.ca
-> CA.CSR.csr "m2"
-> CA.CSR.client "m2"</code></figure>
+> CA.CSR.csr "maxim"
+> CA.CSR.client "maxim"</code></figure>
 
-<figure><code># export client=m2
+<figure><code># export client=maxim
 # openssl dgst -sha256 -sign $client.key mix.exs > mix.sig</code></figure>
 
-<figure><code># export client=m2
+<figure><code># export client=maxim
+# openssl x509 -pubkey -noout -in $client.pem > $client.pub
 # openssl dgst -sha256 -verify $client.pub -signature mix.sig mix.exs</code></figure>
 
    <br><center>&dot;</center>
