@@ -398,6 +398,24 @@ end
 > CA.ECDSA.OTP.verify "mix.exs", "mix.sig", "maxim.pub"
 </code></figure>
 
+     <p>Для додаткової самоперевірки в середовищі Erlang/OTP ми скористалися стандартним
+        додатком CRYPTO. Так виглядає природній ECDSA підпис на платформі
+        Ericsson Open Telecom Platform, який імплементований в модулі CA.ECDSA.OTP:</p>
+
+<figure><code>
+  def signBin(msg, priv) do
+      CA."ECPrivateKey"(privateKey: point, parameters: {:namedCurve, oid}) = priv
+      :crypto.sign(:ecdsa, :sha256, msg,
+          [point, :crypto.ec_curve(:pubkey_cert_records.namedCurves(oid))])
+  end
+
+  def verifyBin(msg, sig, pub) do
+      {CA."ECPoint"(point: point), {:namedCurve, oid}} = pub
+      :crypto.verify(:ecdsa, :sha256, msg, sig,
+          [point, :crypto.ec_curve(:pubkey_cert_records.namedCurves(oid))])
+  end
+</code></figure>
+
     <h4>OpenSSL ECC Sign/Verify C</h4>
 
 <figure><code>
