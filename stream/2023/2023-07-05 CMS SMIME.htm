@@ -159,7 +159,7 @@
        то ми просто вікладемо цю статтю в стіл і покажемо просто як ним користуватися.
        Ну або, якшо ви вмієте можете просто згенерувати їх за допомогою openssl,
        детальний перевірений перелік команд необхідний для цього наведено в офіційній
-       документації по SYNRC CA &mdash; <a href="https://ca.erp.uno/man/ecc.htm">Як видавати ECC сертифікати.</a></p>
+       документації по SYNRC CA &mdash; <a href="https://authority.erp.uno/man/ecc.htm">Як видавати ECC сертифікати.</a></p>
 
     <p>Після описаних вище процедур у вас повинно з'явитися три файли: публічний, приватний
        ключі та публічний ключ сертифікаційного центру.</p>
@@ -344,7 +344,7 @@ def eccCMS(ukm, len), do: {:'ECC-CMS-SharedInfo',
     CA.AES.decrypt(:aes_256_cbc, data, unwrap, :binary.part(iv,2,16))
 end</code></figure>
 
-<p>Це приклад є частиною <a href="https://ca.erp.uno">SYNRC CA</a>
+<p>Це приклад є частиною <a href="https://authority.erp.uno">SYNRC CA</a>
    та <a href="https://chat.erp.uno">SYNRC CHAT</a> які можна просто
    скачати і подивитися маючи Elixir. Сертифікати pki.js закомічені в
    CA, а openssl команди та сертифікати SYNRC CA закомічені в CHAT.</p>
@@ -586,7 +586,7 @@ FIPS — PUB 180-4,<br>
      [1]. <a href="https://tonpa.guru/stream/2020/2020-02-03 Кваліфікований Електронний Підпис.htm">Кваліфікований Електронний Підпис України</a><br>
      [2]. <a href="https:///tonpa.guru/stream/2023/2023-06-22 Месенжер.htm">Сохацький пише Месенжер</a><br>
      [3]. <a href="https://chat.erp.uno">SYNRC CHAT</a><br>
-     [4]. <a href="https://ca.erp.uno">SYNRC CA</a><br>
+     [4]. <a href="https://authority.erp.uno">SYNRC CA</a><br>
      [5]. <a href="https://tonpa.guru/stream/2010/2010-10-18 LDAP.htm">Як написати LDAP сервер за 30 хвилин</a><br>
      [6]. <a href="https://soatok.blog/2021/11/17/understanding-hkdf/">Understanding HKDF</a><br>
      [7]. <a href="https://gist.github.com/5HT/86f25408ed74ddb090d2ed9267b33afb">CMS S/MIME compatible MUA SMTP clients</a><br>
