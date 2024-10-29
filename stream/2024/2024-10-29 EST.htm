@@ -27,6 +27,8 @@
 
         <h3>Центр сертифікації</h3>
 
+        <h4>ASN.1 специфікація на модель даних і регламент взаємодії</h4>
+
 <figure><code>
 EST DEFINITIONS IMPLICIT TAGS ::= BEGIN
     IMPORTS AttributeSet{}, Extension{}, EXTENSION, ATTRIBUTE FROM PKIX-CommonTypes-2009
@@ -43,7 +45,27 @@ EST DEFINITIONS IMPLICIT TAGS ::= BEGIN
 END
 </code></figure>
 
+        <h4>Дерево файлів</h4>
+
 <figure><code>
+~/home/synrc/ca/:
+├── openssl/
+├── arvo/
+├── synrc/
+├── config/
+├── include/
+├── lib/
+├── man/
+├── priv/
+├── src/
+├── CNAME
+├── LICENSE
+├── README.md
+└── mix.exs
+</code></figure>
+
+<figure><code>
+~/home/synrc/ca/lib/:
 ├── application.ex
 ├── agreement
 │   ├── EC
@@ -81,6 +103,8 @@ END
     └── ecdsa_otp.ex
 </code></figure>
 
+        <h4>Опис пакету</h4>
+
 <figure><code>
 defmodule CA.Mixfile do
   use Mix.Project
@@ -108,7 +132,6 @@ defmodule CA.Mixfile do
   end
 end
 </code></figure>
-
 
         <h3>Регламент взаємодії</h3>
 
