@@ -107,6 +107,13 @@ end
            |> resp(200, body)
            |> send_resp()
   end
+
+  def read_ca_public() do
+      {:ok, ca_bin} = :file.read_file "ca.pem"
+      {:ok, ca} = X509.Certificate.from_pem ca_bin
+      {:ok, bin} = :"PKIX1Explicit-2009".encode(:Certificate, CA.CMP.convertOTPtoPKIX(ca))
+      bin
+  end
 </code></figure>
 
         <h4>GET /.well-known/est/cacerts</h4>
