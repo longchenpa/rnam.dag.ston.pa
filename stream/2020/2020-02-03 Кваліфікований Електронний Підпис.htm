@@ -71,60 +71,113 @@ X.520 ---
          <p>Щоб показати як користуватися КЕП, та прочитати атрибутивну інформацію з сертифікату,
             який вшитий в PCKS-7 повідомлення з криптографічним підписом, покажемо 5 функцій:</p>
          <figure><code>
-  Record.defrecord(:certAttrs,
-     serial: "", cn: "", givenName: "", surname: "",
-     o: "", title: "", ou: "", c: "", locality: "")
-
-  def extract(code, person) do
-    case :lists.keyfind(code, 2, person) do
-      false -> ""
-      {_, _, {:printable, str}} -> str
-      {_, _, {:utf8, str}} -> str
-    end
-  end
-
-  def parseSignData(bin) do
-    {_, {:ContentInfo, _, ci}} = :KEP.decode(:ContentInfo, bin)
-    {:ok, {:SignedData, _, alg, x, c, x1, x2}} = :KEP.decode(:SignedData, ci)
-    parseSignDataCert({alg,x,c,x1,x2})
-  end
-
-  def parseSignDataCert({_,_,:asn1_NOVALUE,_,_}), do: []
-  def parseSignDataCert({_,_,[cert],_,_}), do: parseCert(cert)
-
-  def parseCert(cert) do
-    {:Certificate, a, _, _} = cert
-    {:Certificate_toBeSigned, _, _, _, issuer, _, issuee, _, _, _, _} = a
-    person = :lists.flatten(:erlang.element(2, issuee))
-    ca = :lists.flatten(:erlang.element(2, issuer))
-    {parseAttrs(person),parseAttrs(ca)}
-  end
-
-  def parseAttrs(attrs) do
-    certAttrs(
-      o: extract({2, 5, 4, 10}, attrs),
-      ou: extract({2, 5, 4, 11}, attrs),
-      title: extract({2, 5, 4, 12}, attrs),
-      cn: extract({2, 5, 4, 3}, attrs),
-      givenName: extract({2, 5, 4, 42}, attrs),
-      surname: extract({2, 5, 4, 4}, attrs),
-      locality: extract({2, 5, 4, 7}, attrs),
-      serial: extract({2, 5, 4, 5}, attrs),
-      c: extract({2, 5, 4, 6}, attrs)
-    )
-  end
+  def parseContentInfoSMIME(file)  do {:ok, smime} = :file.read_file(file) ; [_,base] = :string.split(smime, "\n\n") ; parseContentInfoBin(:base64.decode(base)) end
+  def parseContentInfoB64(file)    do {:ok, bin} = :file.read_file file ; parseContentInfoBin(:base64.decode(bin)) end
+  def parseContentInfoFile(file)   do {:ok, bin} = :file.read_file file ; parseContentInfoBin(bin) end
+  def parseContentInfoBinUA(bin)   do {:ok, contentInfo} = :KEP.decode(:ContentInfo, bin) ; parseContentInfo(contentInfo, true)  end
+  def parseContentInfoBinX509(bin) do {:ok, contentInfo} = :'CryptographicMessageSyntax-2010'.decode(:ContentInfo, bin) ; parseContentInfo(contentInfo, false) end
 </code></figure>
          <p>У результаті отримуємо наступний високорівневий інтерфейс:</p>
-         <figure><code> > {:ok,bin} = :file.read_file("priv/5HT.p7s")
- > KEP.parseSignData bin
- {{:certAttrs, "1786046", "СОХАЦЬКИЙ МАКСИМ ЕРОТЕЙОВИЧ",
-   "МАКСИМ ЕРОТЕЙОВИЧ", "СОХАЦЬКИЙ",
-   "СОХАЦЬКИЙ МАКСИМ ЕРОТЕЙОВИЧ",
-   "Електронна печатка", "", 'UA', "КИЇВ"},
-  {:certAttrs, "UA-14360570-2018", "АЦСК АТ КБ «ПРИВАТБАНК»",
-   "", "",
-   "АКЦІОНЕРНЕ ТОВАРИСТВО КОМЕРЦІЙНИЙ БАНК «ПРИВАТБАНК»",
-   "", "АЦСК", 'UA', "Київ"}}</code></figure>
+         <figure><code>
+> CA.CMS.parseContentInfoFile "test/CAdES/CAdES-BES-DSTU-4145.p7s"
+[
+  resourceType: :SignedData,
+  version: :v1,
+  cert: [
+    [
+      resourceType: :Certificate,
+      version: :v3,
+      signatureAlgorithm: :"dstu4145WithGost34311-pb",
+      subject: [
+        cn: "ТЕСТ Тестовий Тест Тестович",
+        sn: "Тестовий",
+        givenName: "Тест Тестович",
+        serialNumber: "1058",
+        c: "UA",
+        l: "Київ"
+      ],
+      issuer: [
+        o: "ДП \"ДІЯ\" (ТЕСТ)",
+        cn: "Адміністратор ІТС ЦЗО (CA TEST)",
+        serialNumber: "UA-43395033-2101",
+        c: "UA",
+        l: "Київ",
+        organizationIdentifier: "NTRUA-43395033"
+      ],
+      serial: "AhQ2MEOAPpo0HAQAAAAiBAAA+XgAAA==",
+      validity: [from: '240303220000Z', to: '260303215959Z'],
+      publicKey: [
+        key: <<4, 33, 91, 177, 14, 11, 252, 136, 216, 23, 38, 65, 187, 197, 216,
+          35, 74, 43, 11, 64, 60, 163, 34, 100, 204, 35, 145, 239, 135, 242,
+          217, 222, 35, 110, 1>>,
+        scheme: {1, 2, 804, 2, 1, 1, 1, 1, 3, 1, 1},
+        field: {:DSTU4145Params,
+         {:ecbinary,
+          {:ECBinary, 0, {:BinaryField, 257, {:t, 12}}, 0,
+           <<16, 190, 227, 219, 106, 234, 158, 31, 134, 87, 140, 69, 193, 37,
+             148, 255, 148, 35, 148, 167, 215, 56, 249, 24, 126, 101, ...>>,
+           57896044618658097711785492504343953926772365604796032451169741553099060627213,
+           <<182, 15, 210, 216, 220, 232, 169, 52, 35, 198, 16, 27, 202, 145,
+             196, 122, 0, 126, 108, 48, 11, 38, 205, 85, ...>>}},
+         <<169, 214, 235, 69, 241, 60, 112, 130, 128, 196, 150, 123, 35, 31, 94,
+           173, 246, 88, 235, 164, 192, 55, 41, 29, 56, 217, 107, 240, 37, 202,
+           78, 23, ...>>}
+      ],
+      extensions: [
+        subjectKeyIdentifier: "igFayiwDI1Vfh0ROFRArg3OA4ZmOoAQKtTxbsxzEAOo=",
+        authorityKeyIdentifier: [
+          <<54, 48, 67, 128, 62, 154, 52, 28, 154, 151, 153, 18, 69, 97, 248,
+            219, 115, 140, 126, 63, 183, 189, 163, 241, 159, 230, 55, 168, 177,
+            195, 202, 32>>
+        ],
+        keyUsage: [:digitalSignature, :nonRepudiation],
+        certificatePolicies: ["1.2.804.2.1.1.1.2.2", "1.3.6.1.5.5.7.2.1",
+         "https://ca-test.czo.gov.ua/cps"],
+        basicConstraints: [],
+        qcStatements: ["0.4.0.1862.1.1", "0.4.0.1862.1.2", "UAH", "0.15.66.64",
+         "0.0", "0.4.0.1862.1.5", "https://ca-test.czo.gov.ua/reglament", "en",
+         "1.2.804.2.1.1.1.2.1"],
+        subjectAltName: ["Test@Test.test", "1.3.6.1.4.1.311.20.2.3", "1"],
+        cRLDistributionPoints: ["http://ca-test.czo.gov.ua/download/crls/TestCSK-2021-Full.crl"],
+        freshestCRL: ["http://ca-test.czo.gov.ua/download/crls/TestCSK-2021-Delta.crl"],
+        authorityInfoAccess: [
+          {"1.3.6.1.5.5.7.48.2",
+           "https://ca-test.czo.gov.ua/download/certificates/TestCA2021.p7b"},
+          {"1.3.6.1.5.5.7.48.1", "http://ca-test.czo.gov.ua/services/ocsp/"}
+        ],
+        subjectInfoAccess: [
+          {"1.3.6.1.5.5.7.48.3", "http://ca-test.czo.gov.ua/services/tsp/"}
+        ]
+      ]
+    ]
+  ],
+  signerInfo: [
+    [
+      resourceType: :SignerInfo,
+      issuer: [
+        o: "ДП \"ДІЯ\" (ТЕСТ)",
+        cn: "Адміністратор ІТС ЦЗО (CA TEST)",
+        serialNumber: "UA-43395033-2101",
+        c: "UA",
+        l: "Київ",
+        organizationIdentifier: "NTRUA-43395033"
+      ],
+      keyAlg: {1, 2, 804, 2, 1, 1, 1, 1, 2, 1},
+      signatureAlg: {1, 2, 804, 2, 1, 1, 1, 1, 3, 1, 1},
+      signedAttrs: [
+        contentType: {1, 2, 840, 113549, 1, 7, 1},
+        signingTime: "240304082625Z",
+        messageDigest: "vhSPLtug9UJy3ZGsXHecfG28cC7KmSiw96+Y0foq+Tg=",
+        signingCertificateV2: 309361817556530004395837158894224188190313938944,
+        contentTimestamp: {"1.2.840.113549.1.7.2", 4585411, "20240304082626Z",
+         "vhSPLtug9UJy3ZGsXHecfG28cC7KmSiw96+Y0foq+Tg="}
+      ],
+      attrs: []
+    ]
+  ],
+  signedContent: "Test\r\n"
+]
+</code></figure>
     </section>
     <p>Даний код можна знайти як частину нашої <a href="https://github.com/synrc/ca">synrc/ca</a> бібліотеки:
    🛡️ CA: Certificate Authority — <a href="https://cuthority.erp.uno">authority.erp.uno</a></p>

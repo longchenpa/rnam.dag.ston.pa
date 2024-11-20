@@ -43,25 +43,26 @@
          <h4>Компоненти системи</h4>
 
          <p>1) eIDAS Node (CA): Державний сертифікаційний центр, який забезпечує ідентифікацію та довірчі послуги через протоколи SAML, PKIX і JSON.<br>
-            2) Постачальник послуг перевірки EUDI (VSP): Здійснює перевірку верифікованих презентацій (VP, mDOC).<br>
+            2) Кваліфікований надавач електронних довірчих послуг КНЕДП АЦСК (QTSP, X.509, CA).<br>
             3) Гаманець, EUDI Wallet, Holder: Мобільний додаток (iOS/Android), що підтримує PKIX, mDOC і OpenID4VC.<br>
-            4) Довірений постачальник послуг (TSP): Видає верифіковані облікові дані у форматі OpenID4VC, mDOC та SAML.<br>
-            5) Постачальник персональних ідентифікаційних даних (PID): Реалізований через ДП "Дія" з використанням MSO mDOC.<br>
-            6) Постачальники схем QEAA: Забезпечують атестацію атрибутів (кваліфіковану та некваліфіковану) через MSO mDOC.<br>
-            7) Постачальник кваліфікованих електронних підписів (QSP): Видає кваліфіковані сертифікати (QC).</p>
+            4) Довірчий надавач послуг (TSP): Видає верифіковані облікові дані у форматі OpenID4VC, mDOC та SAML.<br>
+            5) Постачальник послуг перевірки EUDI (VSP): Здійснює перевірку верифікованих презентацій (VP, mDOC).<br>
+            6) Постачальник персональних ідентифікаційних даних (PID): Реалізований через ДП "Дія" з використанням MSO mDOC.<br>
+            7) Постачальники схем QEAA: Забезпечують атестацію атрибутів (кваліфіковану та некваліфіковану) через MSO mDOC.<br>
+            8) Постачальник кваліфікованих електронних підписів (QSP): Видає кваліфіковані сертифікати (QC).</p>
 
          <p>Ця архітектура забезпечує безпечний обмін даними через ролі Власника (Holder),
             Видавця (Issuer) і Перевіряючого (Verifier).</p>
 
-         <h4>Регламенти взаємодії Власника, Видавця і Первіряючого</h4>
+         <h4>Регламенти взаємодії Власника, Надавача і Первіряючого</h4>
 
 <p>Екосистема OpenID4VC, яка є основою EUDI, забезпечує опосередковану взаємодію між Видавцем та Перевіряючим через Власника.</p>
 
-    <p>1) Видавець формує набір атрибутів, які включаються до електронних документів у форматі mDOC.<br>
-       2) Перевіряючий виконує перевірку статусу та достовірності даних, представлених Власником.<br>
-       3) Власник виступає посередником, контролюючи передачу атрибутів і забезпечуючи конфіденційність користувача.</p>
+    <p>1) Надавач формує набір атрибутів, які включаються до електронних документів у форматі mDOC.<br>
+       2) Перевіряючий виконує перевірку статусу та верифікує достовірність даних, представлених Власником.<br>
+       3) Власник виступає посередником, контролюючи передачу атрибутів і їх валідацію і забезпечуючи конфіденційність користувача.</p>
 
-<p>Ця модель мінімізує залежність від прямого зв’язку між Видавцем і Перевіряючим, забезпечуючи
+<p>Ця модель мінімізує залежність від прямого зв’язку між Надавачем і Перевіряючим, забезпечуючи
    при цьому високий рівень довіри та дотримання принципів децентралізації.</p>
 
 <h3>Порівняння EUDI і PKIX</h3>
@@ -82,7 +83,7 @@
 
 <p>Сучасні виклики конфіденційності вирішуються завдяки децентралізованій архітектурі EUDI.</h4>
 
-<p>CRL і OCSP у традиційних системах PKIX можуть розкривати активність користувачів під час запитів до ЦС.
+<p>CRL і OCSP у традиційних системах PKIX можуть розкривати активність користувачів під час запитів до CA.
    У OpenID4VC таких запитів уникнуто завдяки використанню криптографічних доказів, які дозволяють
    перевірку облікових даних без залучення зовнішніх сервісів у реальному часі.</p>
 
@@ -102,7 +103,10 @@
      [2]. <a href="https://www.bundesdruckerei.de/en/innovation-hub/qeaa-put-simply">QEAA Put Simply: Importance of Qualified Electronic Attestation of Attributes for the EUID Wallet</a><br>
      [3]. <a href="https://eu-digital-identity-wallet.github.io/eudi-doc-architecture-and-reference-framework/latest/arf/">European Digital Identity Wallet Architecture and Reference Framework</a><br>
      [4]. <a href="https://github.com/eu-digital-identity-wallet">European Comission EUDI Github Organization</a><br>
-     [5]. <a href="https://youtu.be/ARtcw5Prvx0?t=491">Evolution of identity management</a>
+     [5]. <a href="https://youtu.be/ARtcw5Prvx0?t=491">Evolution of identity management</a><br>
+     [6]. <a href="https://arxiv.org/pdf/2006.04754">Distributed-Ledger-based Authentication with Decentralized Identifiers and Verifiable Credentials</a><br>
+     [7]. <a href="https://5ht.co/walt.id.pdf">Me, myself and (SS)I: Why everybody must have a Self-Sovereign Identity in 5 years. BCG and walt.id</a><br>
+     [8]. <a href="https://www.etsi.org/deliver/etsi_tr/119400_119499/119476/01.02.01_60/tr_119476v010201p.pdf">ETSI TR 119 476 V1.2.1 (2024-07) Electronic Signatures and Trust Infrastructures</a><br>
      </p>
 
 <p>Open Source EUDI/OpenID4VC compatible products:</p>
@@ -113,7 +117,7 @@
      [3]. <a href="https://docs.igrant.io/docs/data-wallet-overview/">IGRANT.IO (EUDI)</a><br>
      [4]. <a href="https://www.sprucekit.dev/verifiable-digital-credentials/didkit/didkit-examples/core-functions-cli">SPRUCEKIT.DEV (OpenID4VC)</a><br>
      [5]. <a href="https://lissi.id">LISSI.ID (EUDI)</a><br>
-     [6]. <a href="https://github.com/malach-it/boruta_auth">BORUTA (Wallet, OpenID4VC)</a><br>
+     [6]. <a href="https://github.com/malach-it/boruta_auth">BORUTA (OpenID4VC)</a><br>
      [7]. <a href="https://authority.erp.uno/">SYNRC.COM (EUDI)</a><br>
      [8]. <a href="https://github.com/diggsweden">DIGG.SE (EUDI)</a><br>
      </p>
