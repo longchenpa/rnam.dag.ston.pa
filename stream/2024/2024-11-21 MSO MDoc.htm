@@ -1,0 +1,335 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2024-11-21 MSO MDoc</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2024-11-21 MSO MDoc</a>
+</nav>
+<main>
+    <section>
+        <h3>MSO MDoc</h3>
+
+        <h4>Анотація</h4>
+
+        <p>Бінарний формат серіалізації документів mDoc базується на стандарті ISO/IEC 18013-5
+           і технічній специфікації 18013-7. Це цифрові документи, що посвідчують особу,
+           призначені для зберігання на мобільному пристрої власника та можуть бути
+           перевірені як особисто, так і віддалено (онлайн). Ключова перевага mDoc
+            перед іншими технологіями цифрових облікових даних полягає в їх здатності
+            забезпечувати надійну автентифікацію та надійну ідентифікацію,
+            підтримуючи цифрові взаємодії, які раніше були неможливими через
+            високі ризики безпеки. Пропонуючи підвищений рівень безпеки як для
+            робочих процесів перевірки в режимі офлайн, так і онлайн, mDoc
+            дозволяє бездоганно інтегрувати його в різні варіанти використання
+            в різних галузях. Вони особливо ідеальні для ідентифікаційних даних
+            високої надійності, таких як паспорти та національні посвідчення особи,
+            оскільки пропонують додатковий захист від підробки, клонування,
+            прослуховування та видавання себе за іншу особу.
+            Розроблений для зберігання в цифровому гаманці на мобільному пристрої,
+            mDoc забезпечує безпечне зв'язування між мобільним пристроєм і обліковими
+            даними. Це означає, що робочі процеси перевірки облікових даних можуть
+            використовувати технології близького доступу (proximity), такі як Bluetooth Low Energy (BLE).
+            У наступних підрозділах детально описано стандарти та технології,
+            на яких базується mDoc, а також основні можливості, які вони пропонують на платформах MATTR:
+        </p>
+
+        <h3>1. Формат документу</h3>
+
+<p>Емітенти mDoc перевіряють інформацію про власників, яким вони видають облікові дані.
+   Ця інформація називається твердженнями (claims) та зберігається в системах,
+   які називаються джерелами тверджень. Коли ці твердження видаються в mDoc,
+   вони групуються в простори імен, щоб запобігти зіткненню між іменами тверджень.
+   Під час створення презентації з mDoc і надання до неї верифікатору вона включає
+   лише підмножину необроблених тверджень із mDoc. Це елементи, необхідні верифікатору,
+   на розкриття яких власник погодився. Порівнюючи ці елементи з відповідними хешами
+   в Mobile Security Object (MSO), верифікатор може переконатися в цілісності тверджень про особу чи об'єкт.
+   На наступній діаграмі зображено архітектуру mDoc як для Credentials так і для Presentation,
+   яка включає вищезгадані елементи.
+
+
+     <p><table width=100%>
+        <tr><td width=40% valign=top>
+           <figure><figcaption>Verifiable Credentials (акредитаці)</figcaption>
+           <img width=300 src="https://learn.mattr.global/_next/static/media/mobile-credential.0799d4cf.svg"></figure>
+        </td><td width=40% valign=top>
+           <figure><figcaption>Verifiable Presentation (атестації)</figcaption>
+           <img width=300 src="https://learn.mattr.global/_next/static/media/mobile-presentation.448301d3.svg">
+        </td></td></tr>
+     </table></p>
+
+   <h4>Верифіковувані акредитації</h4>
+
+        <p>MSO: структура COSE_sign1 (стандарт CBOR для представлення цифрових підписів),
+           що складається з кількох компонентів:
+           Заголовок : деталі алгоритму, який використовується.
+           DSC: Сертифікат підписувача документа (DSC) включено до MSO та може
+           використовуватися разом із сертифікатом КЕНДП/АЦСК для перевірки підпису MSO.
+           Підпис видавця: підпис видавця mDoc.
+           Корисне навантаження: елемент, підписаний DSC. Він включає наступні компоненти:
+           Публічний ключ пристрою.
+           Термін дії облікових даних.
+           Метадані (тип ключа, авторизації тощо).
+           Дайджест/хеш елемента: масив, який містить усі підсолені хеші вимог, підписаних емітентом.
+           Усі елементи: містить необроблені твердження, згруповані за просторами імен.
+           Кожен елемент у просторі імен містить назву претензії, вартість претензії та значення солі.</p>
+
+   <h4>Верифіковувані атестації</h4>
+
+<p>DSC: потрібно для перевірки підпису MSO.
+   Вибрані елементи: підмножина необроблених тверджень із mDoc.
+   Це елементи, необхідні верифікатору та дозволені власнику.
+   Порівнюючи ці елементи з відповідними хешами в MSO, верифікатор може переконатися в їх цілісності.
+   Автентифікація пристрою: підпис, створений за допомогою закритого ключа,
+   пов'язаного з відкритим ключем пристрою в MSO над унікальними даними сеансу.</p>
+
+        <h3>2. Приклади документів</h3>
+
+<p>Отримати приклади MSO MDoc документів можна використовуючи наявді EUDI Issuer або від Єврокомісії,
+   або від комерційних постачальників. Я використовува EUDI Issuer
+   <a href="https://issuer.eudiw.dev">issuer.eudiw.dev</a>, за допомогою якого зібрав низку бінарних файлів:.</p>
+
+<figure><code>
+    524 21 лис 10:06 DeviceAuthentication.hexbin
+    260 21 лис 10:06 DeviceEngagement.hexbin
+    378 21 лис 10:06 DocRequests.hexbin
+   6356 21 лис 10:06 DocResponses.hexbin
+   6406 21 лис 10:06 data.hexbin
+   3720 20 лис 21:19 hiid.b64
+   4652 20 лис 21:13 iban.b64
+   3140 21 лис 10:25 loyal.b64u
+  17784 21 лис 10:06 mDL.b64u
+   6678 20 лис 21:13 mDL.hex
+   3504 21 лис 03:11 pid.b64u
+   2732 21 лис 04:02 por.b64u
+   3760 20 лис 21:18 tax.b64u
+</code></figure>
+
+<p>Кожен документ можна візуалізувати за допомгою MSO MDoc бібліотеки [5]</p>
+
+<figure><code>
+> CA.MDoc.parseMDocEnvelop "test/mdoc/mDL.hex"
+[
+  [
+    issuerSigned: [
+      header: [tag: :bytes, decoded: true, value: [tag: 1, value: -7]],
+      certificates: [
+        [
+          tag: {33, :bytes},
+          value: "MIICKjCCAdCgAwIBAgIUV8bM0wi95D7KN0TyqHE42ru4hOgwCgYIKoZIzj0EAwIwUzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE5ldyBZb3JrMQ8wDQYDVQQHDAZBbGJhbnkxDzANBgNVBAoMBk5ZIERNVjEPMA0GA1UECwwGTlkgRE1WMB4XDTIzMDkxNDE0NTUxOFoXDTMzMDkxMTE0NTUxOFowUzELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE5ldyBZb3JrMQ8wDQYDVQQHDAZBbGJhbnkxDzANBgNVBAoMBk5ZIERNVjEPMA0GA1UECwwGTlkgRE1WMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiTwtg0eQbcbNabf2Nq9L/VM/lhhPCq2s0Qgw2kRx29tgrBcNHPxTT64tnc1Ij3dH/fl42SXqMenpCDw4K6ntU6OBgTB/MB0GA1UdDgQWBBSrbS4DuR1JIkAzj7zK3v2TM+r2xzAfBgNVHSMEGDAWgBSrbS4DuR1JIkAzj7zK3v2TM+r2xzAPBgNVHRMBAf8EBTADAQH/MCwGCWCGSAGG+EIBDQQfFh1PcGVuU1NMIEdlbmVyYXRlZCBDZXJ0aWZpY2F0ZTAKBggqhkjOPQQDAgNIADBFAiAJ/Qyrl7A+ePZOdNfc7ohmjEdqCvxaos6//gfTvncuqQIhANo4q8mKCA9J8k/+zh//yKbN1bLAtdqPx7dnrDqV3Lg+"
+        ]
+      ],
+      issuerAuth: [
+        [
+          tag: :bytes,
+          value: "2BhZAxS5AAZndmVyc2lvbmMxLjBvZGlnZXN0QWxnb3JpdGhtZ1NIQS0yNTZsdmFsdWVEaWdlc3RzuQACb29yZy5jdXN0b20udGVzdKEAWCCaXZKP39Mc2IVoQ9TrdpfSVi3MR9QoBn6BcA6jrafKxHFvcmcuaXNvLjE4MDEzLjUuMawAWCBcIEgU1tB/giVPmhaM7GCrpz0FGaKfaV2piby/xGeOcgFYIBfL/y/+9hzSduC3apNw1W4cSu8oSnn1vApdH6pf0BSGAlggIegRc+3x6jNzUJOzPkhray3IS1c1hWrQIlEu7aJAqfwDWCDJAsHZD1WD8iPzU5OMRgxfoRVT7ncDTmnnjJkuGpS8BgRYIIIMquEpBKwuEiC0td75cy9G8+fst0oEf4U8mEIDd+oIBVgg4K4V4plmywnL/he94ZvhB0LPJow9Iy8EmhmFaVccTXIGWCBlJAzLiUjIo2nYE2Xn1V4uXvikLxGhNdlTKRlgCrX11gdYIIIJFykKtZDBLFGD8lBZnHsoYQQop/4C1fe/ul4LfdatCFggXCgmuzAePphDRWec2d5VFieoydi48/2Sn36bZROeRsIJWCA1ar8iLv8C4YeSiIxpWk05GA+K469OarrqPCmDEkRclQpYIHnUB2pF40HOmy73OgKMfh0N471BkR+l/B5abyIlRy2MC1gguyipxwA9Xa34L1aURjb/aP/URoYWnwr+WXzqlda/09JtZGV2aWNlS2V5SW5mb7kAAWlkZXZpY2VLZXmkAQIhWCCIGHnKeiOLGb8PTB+MAOmi4Zunpvc+rpK4UdTeG1CFWSJYIKMUtTgDkSe1zVBzX1RRnjPBNEUFRcVgOtnyY/rMVtN3IAFnZG9jVHlwZXVvcmcuaXNvLjE4MDEzLjUuMS5tRExsdmFsaWRpdHlJbmZvuQADZnNpZ25lZMB0MjAyMy0wOS0yNlQxNzoxMToxOFppdmFsaWRGcm9twHQyMDIzLTA5LTI2VDE3OjExOjE4Wmp2YWxpZFVudGlswHQyMDczLTA5LTI2VDE3OjExOjE4Wg==",
+          raw: true
+        ],
+        [
+          tag: :bytes,
+          value: "qT3psrcjdQMwZsTzpesTXmhmzkJcTXqd4zSi//Bvx5wyQIGCSzvNRxoyk2pSuk+i5HZmRhhB8msCfojeQb7LlA==",
+          raw: true
+        ]
+      ],
+      nameSpaces: [
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "family_name",
+            elementValue: "Smith",
+            digestID: 0,
+            random: "5Inr5NmbHtuquueb1JXv9CjH/dIKdd2x7vUOicvoq+o="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "given_name",
+            elementValue: "John",
+            digestID: 1,
+            random: "4O6HFvdSJLLjkMGvk4FKay5kpCl76i4P4P4nIV4GQr0="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "birth_date",
+            elementValue: %CBOR.Tag{tag: 1004, value: "1980-06-15"},
+            digestID: 2,
+            random: "dlwVXkouP14mrKbcKvEFnnYspx2f6nAGIrGgzZ9KX3c="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "issue_date",
+            elementValue: %CBOR.Tag{tag: 1004, value: "2023-03-01"},
+            digestID: 3,
+            random: "c2Azy+BT9NKyip5dSKApm4IbOK9wUuLFGayeM6U3fF0="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "expiry_date",
+            elementValue: %CBOR.Tag{tag: 1004, value: "2028-03-31"},
+            digestID: 4,
+            random: "wS8QlMNIYvQ7pQK4CU02Vx7A306+f2gUtuwHRpUWH6o="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "issuing_country",
+            elementValue: "US",
+            digestID: 5,
+            random: "fyhg/H4mc+e0HCP9pOrUi0249RChr15tZbyo7NoH7C8="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "issuing_authority",
+            elementValue: "NY DMV",
+            digestID: 6,
+            random: "VNkdnelx0FvWEaS2DUPT1LiO60lb+Zg/67G6BHlnEhc="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "issuing_jurisdiction",
+            elementValue: "New York",
+            digestID: 7,
+            random: "ruLdExyKAAzSNO2ELOG0zxPVq9gBJ4/3a3zTWkYQhQU="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "document_number",
+            elementValue: "01-333-7070",
+            digestID: 8,
+            random: "aUeY6ZIHFfKCHtR34IvsWITYxzqgbsWbCD5i24G85pY="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "portrait",
+            elementValue: "bstr",
+            digestID: 9,
+            random: "fz51Hdd/Yq+HGaux3VR6NN/0U2zl3HoN+85b6mS13Cg="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "driving_privileges",
+            elementValue: [
+              %{
+                "expiry_date" => "2028-03-31",
+                "issue_date" => "2023-03-01",
+                "vehicle_category_code" => "C"
+              }
+            ],
+            digestID: 10,
+            random: "yXTydQsRCOOqQk4PLy11hitP45BZJsTvOKkEmDCnlOY="
+          ]
+        ],
+        [
+          tag: {24, :bytes},
+          decoded: true,
+          value: [
+            elementIdentifier: "un_distinguishing_sign",
+            elementValue: "tbd-us.ny.dmv",
+            digestID: 11,
+            random: "cypVHKOmQPVCJfsyf4sr4R71pqvE6EsRoSCrwnGJQl0="
+          ]
+        ]
+      ],
+      docType: "org.iso.18013.5.1"
+    ],
+    deviceSigned: [
+      deviceAuth: [
+        deviceSignature: [
+          [tag: :bytes, decoded: true, value: [tag: 1, value: -7]],
+          %{4 => %CBOR.Tag{tag: :bytes, value: "11"}},
+          [
+            tag: :bytes,
+            value: "2BhY0IR0RGV2aWNlQXV0aGVudGljYXRpb26D9vaEZjEyMzQ1NngrQ3ExYW5QYjh2WlU1ajVDMGQ3aGNzYnVKTEJwSWF3VUpJRFFSaTJFYndiNHhcaHR0cDovL2xvY2FsaG9zdDo0MDAwL2FwaS9wcmVzZW50YXRpb25fcmVxdWVzdC9kYzg5OTlkZi1kNmVhLTRjODQtOTk4NS0zN2E4YjgxYTgyZWMvY2FsbGJhY2tnYWJjZGVmZ3VvcmcuaXNvLjE4MDEzLjUuMS5tREzYGEO5AAA=",
+            raw: true
+          ],
+          [
+            tag: :bytes,
+            value: "yUS2HvmeSSUahmDaVk65GI3BlTDex92m/leuv3aCV76nYfukyVVfTT0NODL8KlpxSBgUOFjqqQcrZZLnjlLHAA==",
+            raw: true
+          ]
+        ]
+      ],
+      nameSpaces: [[tag: {24, :bytes}, decoded: true, value: %{}]]
+    ],
+    docType: "org.iso.18013.5.1.mDL"
+  ]
+]
+</code></figure>
+
+<p>Слід зауважити, що тількі ті MDoc файли які в CBOR кодуванні не перевищують розмів в 4KB можуть
+   бути візуаліовані за допомогою QR кодів.</p>
+
+<figure><code>
+> CA.MDoc.test
+[
+  [bin: 268, name: "test/mdoc/DeviceAuthentication.hexbin"],
+  [bin: 136, name: "test/mdoc/DeviceEngagement.hexbin"],
+  [bin: 195, name: "test/mdoc/DocRequests.hexbin"],
+  [bin: 3184, name: "test/mdoc/DocResponses.hexbin"],
+  [bin: 3209, name: "test/mdoc/data.hexbin"],
+  [bin: 2795, name: "test/mdoc/hiid.b64"],
+  [bin: 3495, name: "test/mdoc/iban.b64"],
+  [bin: 2359, name: "test/mdoc/loyal.b64u"],
+  [bin: 13343, name: "test/mdoc/mDL.b64u"],
+  [bin: 3345, name: "test/mdoc/mDL.hex"],
+  [bin: 2633, name: "test/mdoc/pid.b64u"],
+  [bin: 2054, name: "test/mdoc/por.b64u"],
+  [bin: 2825, name: "test/mdoc/tax.b64u"]
+]
+</code></figure>
+
+       <br><center>&dot;</center>
+
+<hr>
+
+     <p>
+     [1]. <a href="https://mobiledl-e5018.web.app/ISO_18013-5_E_draft.pdf">ISO 18013-5</a><br>
+     [2]. <a href="https://learn.mattr.global/docs/mdocs">MATTR.GLOBAL (MSO MDoc format)</a><br>
+     [3]. <a href="https://hex.pm/packages/cbor">CBOR Elixir Package</a><br>
+     [4]. <a href="https://hex.pm/packages/cose">COSE Elixir Package (SYNRC)</a><br>
+     [5]. <a href="https://hex.pm/packages/ca">MSO MDoc Elixir Package (SYNRC)</a><br>
+     </p>
+
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2024</footer>
+</body>
+</html>
