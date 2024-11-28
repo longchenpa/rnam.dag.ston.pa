@@ -1,0 +1,540 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2020-09-02 Колекція комп'ютерів</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2020-09-02</a>
+</nav>
+<main>
+    <section>
+       <h3>Колекція комп'ютерів</h3>
+
+       <h4>Про що</h4>
+
+        <p>Про колекцію комп'ютерів, шину PCIe і побутову електроніку DIY PC.</p>
+
+        <p>Даний текст — це багатоцільова спроба розповісти історію комп'ютерної
+           техніки: задокументувати розвиток та виділити генеалогію, спробувати
+           розповісти про комп'ютер з погляду споживчої електроніки, сформувати
+           список найкращих колекційних екземплярів для будівництва шоурумів чи
+           ютуб каналів.</p>
+
+       <h4>Історія цього тексту</h4>
+
+        <p>Цей текст з'явився завдяки носталігії за PC культурою та повернення до її DIY витоків.
+           Тепер, коли прийшла старість, можу собі дозволити відтворити колекцію комп'ютерів,
+           якими володів у цьому житті. Авторський період 2010-2018 років, який вимагав лише
+           друкарську машинку та процесор рівня ARM32, давно позаду і тепер хочеться зайнятися
+           справжніми обчислювальними завданнями, які потребують ресурсів рівня робочих станцій.
+           В основному, я планую зайнятися системами зберігання на SSD/NVMe з використанням spdk
+           та RocksDB/NVMe, а для будівництва цих масивів потрібні бажано невіртуальні диски,
+           і більше, адже йдеться про 32 лінії PCI Express (PCIe) для дискової підсистеми.
+           Тому грошей все це споживатиме багато, особливо з урахуванням бажання працювати
+           на сучасному залізі версії PCIe 4.0. Також хочу поекспериментувати із системами
+           індексації, які працюють у просторі GPU (такими як Uber AresDB). Для цього потрібні
+           відеокарти з максимальною кількістю пам'яті, а це зазвичай карти рівня Titan.
+           На щастя, nVidia з анонсом 30-ї серії знизила ціни на такі карти
+           втричі (до $1500 за 24ГБ). Починаючи з планів купівлі цих сучасних
+           дорогих компонентів, я плавно увійду в рестроспективу комп'ютерної
+           техніки (у тому числі і свою особисту) і простежу історію її розвитку
+           з точки зору стандарту PCIe, перша версія якого була створена в 2003 році.
+           Все що до PCIe 1.0 не є для мене колекційною цінністю.</p>
+
+        <p>Зазвичай, на курсах системного програмування вивчаються
+           якісь неіснуючі MIX процесори, все це я рішуче засуджую! Приєднуйтесь до
+           уніфікації промисловості та академії у вигляді таких проектів як RISC-V,
+           який також компонується на шині PCI Express на прикладі таких плат як HiFive
+           Unleashed Expansion Board зі слотом x16 та своїм PCIe свічем для периферії.
+           PCIe також можна знайти в легендарній відктритій платформі IBM POWER9,
+           яка представлена такими материнськими платами як Talos II (PCIe 4.0).
+           Gigabyte давно вже робить ARM64 на платформі Marvel ThunderX2, також на PCIe.
+           Я вважаю, що кожен системний програміст повинен розуміти як влаштований
+           комп'ютер і як програмується PCI Express. Як мінімум spdk — це прикладний
+           рівень фреймворку, тому вибачення не приймаються!</p>
+
+       <h4>Визначення, що таке комп'ютер</h4>
+
+        <p>Спочатку хочу розповісти, що таке комп'ютер, з погляду яких критеріїв
+           ми його представляємо в цьому випуску. Комп'ютер — це система з таких
+           пристроїв: 1) процесор; 2) пам'ять; 3) відеокарта; 4) диск; 5) мережна
+           картка; 6) система живлення та інші технічні модулі; які з'єднані певним
+           чином (зазвичай це шина або безпосереднє з'єднання точка-точка чере
+           хаб (InfiniBand, PCIe, QPI, HyperTransport, etc.) Ці з'єднання є
+           видимими доріжками на материнській платі, де компонується вся
+           електроніка. У разі PCIe такий хаб називається кореневою комплекс,
+           куди сходяться всі лінії PCIe. Основний принцип DYI електроніки —
+           це максимально. гнучка система розширень, що дозволяє додавати
+           додаткові пристрої у вигляді плат-розширень у спеціальні місця,
+           які підключені до шини або до хаба.</p>
+
+        <figure><figcaption>З'єднання компонент в типовому PC</figcaption>
+                <img src="img/PCIe.png?v=2" height=380></figure>
+
+        <p>Види таких систем з'єднання компонентів називаються платформи.
+           Розрізняють електричні (PCI, PCIe) і форм-факторні специфікації (PC/104, PCIe, mPCIe) платформ.
+           PCIe переторилась на народну шину, яка стала стандартом де-факто
+           при побудові датацентрів на ринку споживчої електроніки, витіснивши такі, раніше здавалося
+           перспективні, стандарти, як InfiniBand или RapidIO. Тепер PCIe використовується
+           не тільки як з'єднання для масових (Intel і AMD), але і для інших
+           (POWER9m ARM, RISC-V) мікропроцесорних архітектур.</p>
+
+       <h4>Причини успіху PCIe</h4>
+
+       <p>Причини такої популярності у справді гарній архітектурі електричної
+          специфікації PCIe. На відміну від шини PCI, яка працює в загальному
+          випадку як апаратний брокер каналів, PCIe є системою з кореневого
+          комплексу і набору свічок, які можна підключати до нього каскадами.
+          Ці пристрої можна налаштувати таким чином, щоб вони передавали дані
+          один одному без участі посередників, запрограмувавши певним чином
+          роутинг кореневого комплексу та системи PCIe свічок. Налаштовані певним чином,
+          пристрої можуть використовувати спільну пам'ять і синхронізувати передачу
+          даних між своїми буферами (DMA). Уявіть собі, що коли копіюється файл із
+          диска на диск, CPU при цьому не пересилає жодних байтів. Приблизно те
+          саме відбувається коли ви підключили дві відеокарти в режим SLI, вони
+          спілкуються між собою по PCIe шині і здатні обмінюватися даними не
+          вимагаючи відволікання процесора. Теоретично можливе підключення 
+          мережевих карт до будь-яких PCIe пристроїв, які сумісні за
+          атрибутами підключення. Так, наприклад, мережева карта може складати пакети
+          на диск автоматично без участі процесора, який можливо пізніше
+          прочитає ці дані асинхронним чином. На жаль, архітектурні обмеження
+          асинхронної природи TCP/IP не дозволяють робити такі чудеса в
+          промисловому оточенні, для цього бажано повністю перепроектувати
+          мережевий рівень. Завдяки цим особливостям, які раніше були доступні
+          тільки в дорожчих оптичних стандартах типу InfiniBand, разом із
+          зрозумілою та гнучкою системою масштабування, яка збільшує
+          пропускну здатність двічі кожну версію, стандарт PCI Express
+          протримався на ринку 17 років і ще протримається до моменту
+          згортання закону Мура у 2024 році, коли ми досягнемо 2нм техпроцесу.</p>
+
+       <h4>Проблеми масштабування PCIe в побутовій електроніці</h4>
+
+       <p>За допомогою PCIe свічів розпаюється система вводу-виводу для підключення
+          зовнішніх пристроїв. Зазвичай це підключається до пропрієтарного мосту та
+          власного протоколу, що з'єднує кореневий комплекс із системою свічів для
+          зовнішніх пристроїв. У випадку Intel такий протокол називається DMI і має
+          архітектурне обмеження в 4/8 PCIe ліній і це не дає можливості будувати
+          ефективні RAID NVMe масиви на Intel платформі, які зазвичай підключаються до
+          пропрієтарного мосту для зовнішніх пристроїв через DMI bottleneck, яке,
+          у свою чергу, підключено до кореневого комплексу – це перша проблема масштабування.
+
+       <p>На щастя на материнських платах розпаюються слоти для відеокарт, які
+          під'єднані не через DMI інтерконнект, а безпосередньо до кореневого
+          комплексу через високопродуктивний свіч, який зазвичай видно як PCI-to-PCI міст.
+          Ви можете використовувати ці слоти для будівництва дискового масиву,
+          але ви позбавляєтеся можливості використовувати GPU.</p>
+
+       <p>Інша проблема, яка може виникнути при масштабуванні дискового масиву
+          — це кількість PCIe ліній, які можна підключити до кореневого комплексу,
+          які в сучасних системах знаходяться прямо в процесорі.</p>
+
+       <p>І нарешті існує третя проблема — це кількість ядер у процесорі,
+          якщо їх дуже мало, то кожне переривання на лінії вимагатиме відволікання
+          процесора, що створюватиме багато зайвих переключень контекстів процесора
+          та знижуватиме загальну теоретичну продуктивність. В ідеальній синхронній
+          системі, для контролю кожної PCIe лінії потрібно виділяти окреме ядро
+          процесора, щоб у разі переривання виниклого при обміні даними між
+          пристроями це жодним чином не впливало на роботу інших потоків
+          системи (QoS на рівні ліній PCIe). Таким чином хотілося б процесор
+          у якого ядер вдвічі більше ніж PCIe ліній, тому що хочеться ще щось
+          рахувати. Це, звичайно, оверкіл, але тільки так можна
+          досягти гарантій рівня систем реального часу. Саме такі експерименти
+          з дисковими масивами мене інетерсують як продовження мого дослідження
+          високопродуктивних систем реального часу.</p>
+
+       <h3>Системи</h3>
+
+       <p>Свою колекцію бачу як підрешітку кількох вимірів:</p>
+       <p>1) форм-фактор материнської плати: Mini-ITX (компактні), EATX (станції);<br>
+          2) тип мікропроцесорної архітектури: Intel, AMD, ARM64, POWER9, RISC-V;<br>
+          3) версія PCIe: 3.0, 4.0, 5.0 (версії, які підтримують NVMe M.2).</p>
+       <p>Перші колекційні, розглянуті мною, чіпсети — це перші чіпсети для PCIe,
+          які мали графічну шину 16 ліній PCIe і були створені для перших процесорів Intel Core.</p>
+
+       <p>Intel Core веде свою родословну від процесорів Intel Pentium Pro (P6).
+          Покоління 32-бітних x86 процесорів Intel: 1) i386; 2) i486, перші
+          мої процесори і перший Intel Datasheet, який я прочитав від першої
+          до останньої сторінки, у мене були і чіпи Intel і AMD, а також версія
+          AMD i586 з множником FSB x5); 3) Pentium (P5, 1994), який попав на
+          ринок майже одночасно зі своїми серверними, більш потужними аналогами P6;
+          4) Pentium Pro (P6, 1995), Pentium II, Pentium III — ці процесори мали
+          загальне архітектурне ядро, і розвивалися в основному в напрямку
+          мультимедійних розширень (MMX, SSE, які стали прекурсорами
+          сучасних інструкцій AVX, NNI), експериментах із сокетами
+          і картриджами. У цей час з'явилися процесори Xeon, зі збільшеним об'ємом кеша.</p>
+
+       <h4>Багатосокетний 32-бітний період </h4>
+
+       <p>У мене були двопроцесорні материнські плати для картриджних (TYAN Tiger 133, Slot 1)
+          і сокетних (TYAN Thunder, Socket 370) P6 процесорів, колекція материнських плат
+          на чіпсеті i440BX (ABit BP6, ASUS P2B), дві легендарні оверклокерскі плати TUSL2 і CUSL2.
+          я скуповував дуальні SMP плати на Intel тоді.</p>
+
+       <p>П'ята за рахунком архітектура 32-бітових процесорів Intel — Pentium 4 NetBurst
+          виявилася абсолютно невдалою, хотіли навіть змінити стандарт на блоки живлення
+          (з ATX на BTX) через збільшені показники потужності, що розсіюється, але вернулися назад до архітектури P6.
+          Наступна архітектура була вже 64-бітною і отримала. Назва Intel Core,
+          вперше з'явилися VT-x, SSE3. Ця архітектура і живе в процесорах Intel
+          і досі і саме з процесорів Intel Core та чіпсета Q35 почнеться моя колекція.
+          Збиратимемо комплектами по типу сокетів і чіпсетів: материнська плата,
+          максимальний процесор, максимальний обсяг ОЗУ.</p>
+
+       <h4>Компактні системи</h4>
+
+       <p>Компактними ми називаємо системи з кількістю ядер від 4 до 16.
+          Спочатку з Intel Core стало зрозуміло, що мости, відеокарти,
+          корневі комплекси, котроллери пам'яті, когерентний кеш — все
+          це краще розміщувати прямо на кристалічному процесорі.
+          Багатопроцесорні системи стали однопакетними і популярними
+          стали мінітюаризацією, ринок наповнився платами Mini-ITX,
+          а енергоефективність стала важливою продуктивністю на шляху прогресу.</p>
+
+       <figure><table cellspacing=10>
+       <thead>
+       <th>Platform</th><th>Lanes</th><th>PCIe/DMI ver</th><th>Motherboard</th><th>Generation</th>
+       </thead>
+       <tbody>
+       <tr><td>LGA1155/Z77</td><td>16</td><td>3.0/2.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1155/P8Z77-I_DELUXE/E7987_P8Z77-I_DELUXE.pdf?model=P8Z77-I%20DELUXE">mITX P8Z77-I DELUXE</a></td><td>2,3</td></tr>
+       <tr><td>LGA1150/Z97</td><td>16+1</td><td>3.0/2.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1150/MAXIMUS-VII-IMPACT/e9751_maximus_vii_impact_v2_um_for_web_only.pdf?model=MAXIMUS%20VII%20IMPACT">mITX MAXIMUS VII IMPACT</a></td><td>4,5</td></tr>
+       <tr><td>LGA1151/Z270</td><td>24</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/STRIX_Z270I_GAMING/E12438_STRIX_Z270I_GAMING_UM_V2_WEB.PDF?model=STRIX%20Z270I%20GAMING">mITX STRIX Z270-I</a></td><td>6,7</td></tr>
+       <tr><td>LGA1151/Z370</td><td>24</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/ROG_STRIX_Z370-I_GAMING/E13601b_ROG_STRIX_Z370-I_GAMING_UM_V2_WEB.pdf?model=ROG%20STRIX%20Z370-I%20GAMING">mITX STRIX Z370-I</a></td><td>8,9</td></tr>
+       <!--tr><td>LGA1151/Z390</td><td>24</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/ROG_STRIX_Z390-I_GAMING/E14477_ROG_STRIX_Z390-I_GAMING_UM_WEB.pdf?model=ROG%20STRIX%20Z390-I%20GAMING">mITX STRIX Z390-I</a></td><td>8,9</td></tr-->
+       <!--tr><td>LGA1151/Z490</td><td>24</td><td>4.0/3.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1200/ROG_STRIX_Z490-I_GAMING/E16217_ROG_STRIX_Z490-I_GAMING_UM_WEB.pdf?model=ROG%20STRIX%20Z490-I%20GAMING">mITX STRIX Z490-I</a></td><td>10</td></tr-->
+       <tr><td>LGA1151/Z590</td><td>24</td><td>4.0/4.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1200/ROG_STRIX_Z590-I_GAMING_WIFI/E17708_ROG_STRIX_Z590-I_GAMING_UM_WEB.pdf?model=ROG%20STRIX%20Z590-I%20GAMING%20WIFI">mITX STRIX Z590-I</a></td><td>10,11</td></tr>
+       <tr><td>LGA1151/Z690</td><td>24</td><td>5.0/4.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1700/ROG_STRIX_Z690-I_GAMING_WIFI/E19233_ROG_STRIX_Z690-I_GAMING_WIFI_UM_V2_WEB.pdf?model=ROG%20STRIX%20Z690-I%20GAMING%20WIFI">mITX STRIX Z690-I</a></td><td>12,13,14</td></tr>
+       <!--tr><td>LGA1151/Z790</td><td>24</td><td>5.0/4.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1700/ROG_STRIX_Z790-I_GAMING_WIFI/E21241_ROG_STRIX_Z790-I_GAMING_WIFI_UM_V2_WEB.pdf?model=ROG%20STRIX%20Z790-I%20GAMING%20WIFI">mITX STRIX Z790-I</a></td><td>12,13,14</td></tr-->
+       <tr><td>LGA1151/Z890</td><td>24</td><td>5.0/4.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1851/PRIME%20Z890-P%20WIFI/E24237_PRIME_Z890-P_WIFI_EM_WEB.pdf?model=PRIME%20Z890-P%20WIFI">mITX PRIME Z890-P WIFI</a></td><td>15</td></tr>
+       </tbody></table></figure>
+
+       <p>Декілька коментарів з приводу таблиці. Тут зібрано сім плат на семи чіпсетах,
+          що покривають споживчі процесори Intel. Це така гра: зібрати мінімальну
+          кількість материнських плат, до яких можна вставити будь-який процесор.
+          Після Z370 я перестав оновлюватися, тому що не вважаю нові чіпсети гідні
+          апгрейду, поки не випустяться нові серверні аналоги чіпсетів. Z390
+          відрізняється від Z370 лише підтримкою 64ГБ RAM та USB 3.2 портом
+          додатковим. Z490 просто зміна сокету, хоча ці процесори 10-ї серії
+          можна отримати на минулій X299 платформі, та ще й більш потужні з
+          великою кількістю PCIe ліній. Взагалі ви як хочете, а я
+          колекціоними Z390 і Z490 не вважаю, хоча від нового STRIX Z390-I
+          не відмовився б для свого 9900K, щоб запакувати його до 64GB RAM.</p>
+
+       <figure><table cellspacing=10>
+       <thead>
+       <th>Codename</th><th>CPUs</th><th>Cores/Threads</th><th>Lanes</th>
+       </thead>
+       <tbody>
+       <tr><td>Sandy Bridge</td><td>i7-2700K</td><td>4</td><td>16</td></tr>
+       <tr><td>Ivy Bridge</td><td>i7-3770K</td><td>4</td><td>16</td></tr>
+       <tr><td>Haswell</td><td>i7-4790K, E5-4669V3</td><td>4</td><td>16</td></tr>
+       <tr><td>Broadwell</td><td>i7-5775C, E5-2699V4</td><td>4</td><td>16</td></tr>
+       <tr><td>Skylake</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/88195/intel-core-i76700k-processor-8m-cache-up-to-4-20-ghz/specifications.html">i7-6700K</a></td><td>4/8</td><td>16</td></tr>
+       <tr><td>Kaby Lake</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/97129/intel-core-i77700k-processor-8m-cache-up-to-4-50-ghz/specifications.html">i7-7700K</a></td><td>4/8</td><td>16</td></tr>
+       <tr><td>Coffee Lake</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/126684/intel-core-i78700k-processor-12m-cache-up-to-4-70-ghz/specifications.html">i7-8700K</a></td><td>6/12</td><td>16</td></tr>
+       <tr><td>Coffee Lake Refresh</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/186604/intel-core-i79700k-processor-12m-cache-up-to-4-90-ghz/specifications.html">i7-9700K</a></td><td>8/8</td><td>16</td></tr>
+       <tr><td>Comet Lake</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/199335/intel-core-i710700k-processor-16m-cache-up-to-5-10-ghz/specifications.html">i7-10700K</a></td><td>8/16</td><td>16</td></tr>
+       <tr><td>Rocket Lake</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/212047/intel-core-i711700k-processor-16m-cache-up-to-5-00-ghz/specifications.html">i7-11700K</a></td><td>8/16</td><td>16</td></tr>
+       <tr><td>Alder Lake</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/134594/intel-core-i712700k-processor-25m-cache-up-to-5-00-ghz/specifications.html">i7-12700K</a></td><td>12(8+4)/20</td><td>20</td></tr>
+       <tr><td>Raptor Lake</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/230500/intel-core-i713700k-processor-30m-cache-up-to-5-40-ghz/specifications.html">i7-13700K</td><td>16(8+8)/24</td><td>20</td></tr>
+       <tr><td>Raptor Lake</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/236783/intel-core-i7-processor-14700k-33m-cache-up-to-5-60-ghz/specifications.html">i7-14700K</td><td>20(8+12)/28</td><td>20</td></tr>
+       <tr><td>Arrow Lake</td><td><a href="https://www.intel.com/content/www/us/en/products/sku/241060/intel-core-ultra-9-processor-285k-36m-cache-up-to-5-70-ghz/specifications.html">285K</a></td><td>24(8+16)/24</td><td>24</td></tr>
+       </tbody></table></figure>
+
+          <p>Що стосується AMD, то на щастя вона привела назву своїх споживчих
+             продуктів у відповідності до лінійки Intel, моделі Ryzen 3, 5, 7, 9.
+             Це аналоги лінійки Intel Core з кількість ядер до 16.
+             Всі ці процесори (Zen+, Zen 2, Zen 3) можна встановити в mITX
+             материнську плату ASUS ROG STRIX X570-I c найкращим на ринку VRM.
+             Взагалі плати mITX найкращі для розгону.</p>
+
+         <!--p>Як бачите в легендарну X99E-ITX/ac можна встромити Xeon
+            процесори з 18 і 22 ядрами. Будь-яке використання процесора
+            на платформі Mini-ITX, споживання якого більше 65W на мій погляд
+            незбалансоване і є предметом винятково ентузіазму та спортивного інтересу.
+            Якщо мені знадобиться щось порахувати, я збільшуватиму не мегагерци,
+            а кількість ядер, та до такого ступеня, щоб плюс мінус пара ядер
+            була вже не важлива. Саме тому в цьому огляді взагалі не згадується
+            пристрій тактового генератора, важливий елемент будь-якого комп'ютера.
+            Тоді довелося б розповісти про пристрій адаптивної SpeedStep технології,
+            яка регулює напругою на ядрах, частотою інтерконекту та пам'яті.
+            Канальність у пам'яті це як RAID з дисками, чим більше ніж швидше
+            може бути п'ять, тому в бенмарках виграють древні Xeon з чотириканальними,
+            а в деяких випадках шести-канальними контролерами пам'яті. При складанні
+            Mini-ITX системи я насамперед приділив би увагу енергоспоживання,
+            а потім уже вичавив максимальну потужність — це стимулює купувати
+            сучасне обладнання. Правилом гарного тону для Mini-ITX систем
+            вважаються блоки живлення 600W рівня Titanium, бажано безвентиляторні.
+            Такі БП існують, я користуюся БП Seasonic, які стояли в перших
+            IBM PC (який у мене теж був). Все, що вище 600W - це ентузіазм.
+            Наприклад використання 9900K в Mini-ITX – це ентузіазм.</p-->
+
+       <h4>Робочі станції</h4>
+
+       <p>Робочими станціями ми називаємо системи з кількістю ядер більше 16.
+          На ринку серверних процесорів збільшення ядер йшло ще більш бадьорими темпами,
+          для збільшення кількості PCIe ліній, потрібно було більше ядер, і це стало
+          основним пріоритетом для еволюції дійсно багатоядерних архітектур.
+          Mac Pro на платформі LGA3647 (Xeon-W) були побудовані з використанням чіпсету C261,
+          тому якщо хочеться максимально оригінальний Хакінтош, то DOMINUS EXTREME за $1800 звучить
+          як розумний вибір :-) Я зосередив свій фокус на Alpgha (TRX40) та Omega (X299)
+          материнських платах для робочих станцій від ASUS.</p>
+
+       <figure><table cellspacing=10>
+       <thead>
+       <th>Platform</th><th>x/PCIe/DMI</th><th>Motherboard</th><th>Generations</th>
+       </thead>
+       <tbody>
+       <tr><td>LGA2066/X299</td><td>48/3.0/3.0</td><td>RAMPAGE VI EXTREME OMEGA</td><td>Core (10-th), Xeon (2-nd)</td></tr>
+       <tr><td>LGA3647/C621</td><td>64/3.0/3.0</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA3647/ROG_DOMINUS_EXTREME/E15457_ROG_DOMINUS_EXTREME_UM_V3_WEB.pdf?model=ROG%20DOMINUS%20EXTREME">DOMINUS EXTREME</a></td><td>Xeon (2-nd)</td></tr>
+       <tr><td>LGA4189/C621A</td><td>64/4.0/3.0</td><td><a href="https://download.asrock.com/Manual/C621A%20WS.pdf">C621A WS</a></td><td>Xeon (3-rd)</td></tr>
+       <tr><td>LGA4677/W790</td><td>48/5.0/4.0</td><td>WS-W790E SAGE SE</td><td>Xeon (4-th)</td></tr>
+       <tr><td>LGA7529/W890</td><td>48/5.0/4.0</td><td></td><td></td></tr>
+       </tbody></table></figure>
+
+        <p>LGA3647 платорфма призначена для Xeon процесорів сімейств W і Platinum,
+        які ведуть свій родовід не від Pentium Pro (P6), а від багатоядерних Xeon Phi,
+        де кожне ядро — це Atom процесор, представлений раніше як енергоефективний x86 конкурент ARM процесора.</p>
+
+       <figure><table cellspacing=10>
+       <thead>
+       <th>Codename</th><th>CPU</th><th>Cores</th><th>Cores/Threads</th><th>Lanes</th>
+       </thead>
+       <tbody>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/series/134861/intel-xeon-e-processor.html">Xeon E</a> (Coffee, Rocket, Raptor)</td><td>LGA1700</td><td>Xeon E-2468</td><td>8/8</td><td>20</td></tr>
+       <tr><td>Cascade Lake (2-nd, 2019)</td><td>LGA2066</td><td>i9-10980XE</td><td>18/36</td><td>48</td></tr>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/series/87041/intel-xeon-d-processor.html">Xeon D</a> (Broadwell, Skylake, Ice)</td><td>LGA4710</td><td>Xeon 6780E</td><td>22/44</td><td>32</td></tr>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/series/125191/intel-xeon-scalable-processors.html">Skylake</a> (1-st, 2017)</td><td>LGA3647</td><td>Platinum 8180, W-3175X</td><td>28/56</td><td>48</td></tr>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/series/192283/2nd-gen-intel-xeon-scalable-processors.html">Cascade Lake</a> (2-nd, 2019)</td><td>LGA3647</td><td>Platinum 8280</td><td>28/56</td><td>48</td></tr>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/series/204098/3rd-gen-intel-xeon-scalable-processors.html">Ice Lake</a> (3-rd, 2021)</td><td>LGA4189</td><td>Platinum 8380</td><td>28/56</td><td>64</td></tr>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/series/228622/4th-gen-intel-xeon-scalable-processors.html">Sapphire Rapids</a> (4-th, 2024)</td><td>LGA4677</td><td>Platinum 8480+</td><td>56/112</td><td>80</td></tr>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/series/125035/intel-xeon-w-processor.html">Xeon W</a> (SKL, CSL, CML, RTL, SPR)</td><td>LGA4677</td><td>Xeon w9-3595X</td><td>60/120</td><td>112</td></tr>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/series/236644/5th-gen-intel-xeon-scalable-processors.html">Emerald Rapids</a> (5-th, 2024)</td><td>LG4677</td><td>Platinum 8592+</td><td>64/128</td><td>80</td></tr>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/codename/198508/products-formerly-sierra-forest.html">Sierra Forest</a> (6-th, 2025)</td><td>LGA4710</td><td>Xeon 6780E</td><td>144/144</td><td>88</td></tr>
+       <tr><td><a href="https://www.intel.com/content/www/us/en/ark/products/series/240357/intel-xeon-6.html">Granite Rapids</a> (6-th, 2025)</td><td>LGA7529</td><td>Xeon 6980P</td><td>128/256</td><td>96</td></tr>
+       </tbody></table></figure>
+
+       <P>AMD почала випускати енергоефективні багатоядерні (від 32) процесори на Zen 3
+          архітектурі лише через 7 років (2017) після появи Xeon Phi процесорів.
+          Зате одразу дали 88 PCIe ліній, версію 4.0 і без пропрієтарного мосту (DMI),
+          майже всі лінії заведені одразу на кореневий комплекс.
+       </p>
+
+        <figure><figcaption>Сравнение размеров Intel Core и Xeon Phi</figcaption>
+                <img src="img/core-phi.png" height=280></figure>
+
+       <p>Intel довелося зробити крок у відповідь на Threadripper і випустити 10-е
+          покоління Cascade Lake для платформи X299, щоб продовжити свій цейтнот.
+          Я думаю спеціально для цієї емісії 10-го покоління X-серії ASUS випустила
+          додаткову серію плат RAMPAGE VI EXTREME OMEGA, підкреслюючи швидкоплинний момент HEDT платформи.
+       </p>
+
+       <hr>
+
+       <p>
+       [1]. <a href="https://www.intel.com/content/dam/www/public/us/en/documents/datasheets/8th-gen-core-family-datasheet-vol-1.pdf">Intel® Core™ 8th, 9th and Intel® Xeon®E Processor Families #1</a><br>
+       [2]. <a href="https://www.intel.com/content/dam/www/public/us/en/documents/datasheets/8th-gen-core-family-datasheet-vol-2.pdf">Intel® Core™ 8th, 9th and Intel® Xeon®E Processor Families #2</a><br>
+       [3]. <a href="https://www.intel.com/content/dam/www/public/us/en/documents/datasheets/200-series-chipset-pch-datasheet-vol-1.pdf">Intel® 200 Series: B250, Q250, H270, Q270, Z270, X299, Z370 PCHs #1</a><br>
+       [4]. <a href="https://www.intel.com/content/dam/www/public/us/en/documents/datasheets/200-series-chipset-pch-datasheet-vol-2.pdf">Intel® 200 Series: B250, Q250, H270, Q270, Z270, X299, Z370 PCHs #2</a><br>
+       [5]. <a href="https://www.intel.com/content/dam/www/public/us/en/documents/technical-specifications/300-series-chipset-on-package-pch-datasheet-vol-1.pdf">Intel® 300 Series: H310, B365, B360, B370, Q370, Z370, Z390 PCHs #1</a><br>
+       [6]. <a href="https://www.intel.com/content/dam/www/public/us/en/documents/technical-specifications/300-series-chipset-on-package-pch-datasheet-vol-2.pdf">Intel® 300 Series: H310, B365, B360, B370, Q370, Z370, Z390 PCHs #2</a><br>
+       </P>
+
+       <h3>Відеокарти</h3>
+
+       <p>Що стосується експериментів із системами індексації, які розташовуються в пам'яті GPU,
+          то тут має сенс гратиcя тільки з пам'яттю від 10ГБ, тобто не нижче 1080 Ti.
+       </p>
+
+       <figure><table cellspacing=10>
+       <thead>
+       <th>Model</th><th>PCIe</th><th>Chip</th><th>Memory</th><th>Process</th><th>Transistors</th>
+       </thead>
+       <tbody>
+       <!--tr><td>8800 GTX</td><td>1.0</td><td>G80</td><td>768MB DDR3</td><td>90nm</td><td>681M</td></tr>
+       <tr><td>8800 GT</td><td>2.0</td><td>G92</td><td>1GB DDR3</td><td>65nm</td><td>754M</td></tr>
+       <tr><td>GTX 280</td><td>2.0</td><td>GT200</td><td>1GB DDR3</td><td>65nm</td><td>1.4B</td></tr>
+       <tr><td>GTX 340</td><td>2.0</td><td>GT215</td><td>1GB DDR5</td><td>40nm</td><td>727M</td></tr>
+       <tr><td>GTX 480</td><td>2.0</td><td>GF100</td><td>1.5GB DDR5</td><td>40nm</td><td>3B</td></tr>
+       <tr><td>GTX 580</td><td>2.0</td><td>GF110</td><td>3GB DDR5</td><td>40nm</td><td>3B</td></tr>
+       <tr><td>GTX 680</td><td>3.0</td><td>GK104</td><td>4GB DDR5</td><td>28nm</td><td>3540M</td></tr-->
+       <tr><td>GTX 780 Ti</td><td>3.0</td><td>GK110</td><td>3GB DDR5</td><td>28nm</td><td>7080M</td></tr>
+       <tr><td>GTX 980 Ti</td><td>3.0</td><td>GM200</td><td>6GB DDR5</td><td>28nm</td><td>8B</td></tr>
+       <tr><td>GTX 1080 Ti</td><td>3.0</td><td>GP102</td><td>11GB DDR5</td><td>16nm</td><td>12B</td></tr>
+       <tr><td>RTX 2080 Ti</td><td>3.0</td><td>TU102</td><td>11GB DDR6</td><td>12nm</td><td>18.6B</td></tr>
+       <tr><td>RTX 3090</td><td>4.0</td><td>GA102</td><td>24GB DDR6</td><td>8nm</td><td>28B</td></tr>
+       <tr><td>RTX 4070 Ti Super</td><td>5.0</td><td></td><td>24GB DDR6</td><td>8nm</td><td>28B</td></tr>
+       </tbody></table></figure>
+
+       <p>Відеокарти — це другий вид обчислювальних потужностей після CPU.
+          Сучасні комп'ютери є аналогом таких систем як BeBox або Cell/BE, які можуть
+          поєднувати обчислювальні CISC, RISC, SIMD або VLIW блоки. Процесори відеокарт
+          називаються GPU і, як і звичайні процесори CPU, мають свій набір інструктій і
+          свою локальну пам'ять. Аналог інструкції MOV виступає команда копіювання в/з
+          DMA буфера DDR пам'яті по PCIe. Як і в CPU, в GPU є ALU інструкції (додавання,
+          множення) та інструкції управління потоками виконання.
+         </p>
+
+       <p><b>CUDA и RDNA</b></p>
+
+       <p>Головні ядра CUDA [1] називаються потоковими процесорами (SM),
+          їхня кількість визначає продуктивність. Кожен SM складається з
+          багатьох скалярних процесорів, кожен із яких можна виділити для
+          обробки вершин, фіугр, або пікселів. Для управління скалярними
+          процесорами як потоками виконання використовується високорівнева
+          модель паралельного програмування на кшталт SIMD, лише джерела
+          й цілі операцій це клітинки пам'яті, а потоки виконання — SIMT.
+       </p>
+
+       <p>У картах AMD використовується інший набір інструкцій [2],
+          але дуже схоже. Буфери пам'яті поділяються на три типи: вершини,
+          фігури та пікселі. Команди GPU - це обчислення, які використовують
+          один тип пам'яті як джерело, і інший тип пам'яті як мета команди.
+          Вершинні шейдери роблять обчислення на вершинах і записують результат
+          у кільцевий буфер примітивів (масиви фігур). Геометричні шейдери
+          проводять обчислення на буферах геометричних примітивів і записують
+          результат на згадку про фрагменти, які представляють собор
+          розтеризований шматок екрану в буфері. Фрагмен стає пікселем,
+          коли переноситься в реальний буфер екрану (піксельні шейдери).
+          На кожному етапі такого пайпа лайна обчислювальні ядра користуються
+          текстурами, які вже завантажені в пам'ять GPU.
+       </p>
+
+       <hr>
+
+       <p>
+       [1]. <a href="https://docs.nvidia.com/pdf/ptx_isa_7.0.pdf">PTX ISA 7.0 (2020)</a><br>
+       [2]. <a href="https://developer.amd.com/wp-content/resources/RDNA_Shader_ISA.pdf">RDNA ISA 1.0 (2020)</a><br>
+       [3]. <a href="https://www.cs.cmu.edu/afs/cs/academic/class/15462-f11/www/lec_slides/lec19.pdf">CMU CS 15-462 Lecture 19 (2011)</a>
+       </P>
+
+       <h3>Дискові масиви</h3>
+
+       <p>Для експериментів у рамках проекту RocksDB/NVMe нам знадобляться
+          карти PCIe x16 (4 слоти M.2 кожен по x4 лінії), для версій PCIe 3.0 та 4.0.
+          Кожна така карта конфігурується як RAID-0 масив і таким чином
+          збільшується швидкість передачі лінійно в 4 рази. Нам потрібні
+          саме RAID-0 масиви, тому що продуктивність – це головна мотивація проекту
+          RocksDB/NVMe. Звичайно, такі карти це потрібно вставляти в PCIe слот,
+          підключений безпосередньо до кореневого комплексу, а не до
+          пропрієтарного мосту для підключення периферії. Зазвичай половина
+          слотів (а на mITX іноді і все) M.2 розташовані на материнських платах
+          платформи Intel, підключені саме по такій шині DMI, яка має пропускну
+          здатність всього 4 PCIe лінії, тому RAID-0 на таких слотах будувати
+          сенсу немає. У випадку ATX і EATX плат для побудови RAID-0 найкраще
+          вставляти плати розширення для M.2 масивів у PCIe x16 слоти, підключені
+          до кореневого комплексу. У разі mITX систем доведеться витягувати на
+          час GPU і вставляти M.2 RAID-0 в єдиний x16 слот.
+       </p>
+
+       <h4>M.2 Hyper x16 SW VROC RAID</h4>
+
+       <p>M.2 слоти підключені до пропрієтарного мосту DMI, можна використовувати
+          для поодиноких x4 NVMe інстансів, як завантажувальні диски для
+          альтернативних ОС і т.д. Я планую використати Haiku, FreeBSD,
+          Linux, Windows. Не пропадати ж M.2 слотам.</p>
+
+       <h4>SATA VDM HW RAID-0</h4>
+
+       <p>Є ще варіант використання RocksDB/SATA: будуємо масив на дисках,
+          максимальна пропускна спроможність яких лише 600МБ/c. Для цього
+          на mITX системах можна побудувати масив із 3-4 дисків, а для великих
+          ATX/EATX систем я раджу купувати материнські плати, де є 10 портів SATA.
+          Ці 10 портів зазвичай використовують для RAID систем, але не апаратних
+          (бо відновлювати будь-який RAID це нетривіальне завдання), а програмних
+          комплексів типу Unraid, Ceph, GlusterFS. Ceph до речі використовує
+          RocksDB/NVMe бекенд для одного з типів своїх сховищ BlueStore). Ці
+          системи пропонують зручніший ніж апаратний спосіб роботи з масивами:
+          якщо один диск полетів, ви просто його витягуєте і вставляєте новий.</p>
+
+       <p>Твердотілі накопичувачі не варто використовувати для бекапа. Замість
+          механічних та SSD накопичувачів зазвичай для бекапа використовували магнітні
+          стрічки або магнітооптику, яка досі є найактуальнішим способом зберігання даних,
+          як, наприклад <a href="https://pro.sony/en_GB/products/stand-alone-drives/ods-d380u">SONY PRO ODS-D380U</a>.</p>
+
+       <p>За 10 років ціна на SSD знизилася з $1 за 1ГБ до $1 за 10ГБ. Твердотільні
+          накопичувачі NVMe складаються з DRAM кешу, SLC кешу та зазвичай 64-шарових
+          TLC або QLC чіпів. Деякі виробники (ADATA, Transcend) використовують
+          технологію HMB і постачають диски без DRAM кешу, натомість передбачається
+          використання пам'яті хоста, яка підключена до PCIe. Такі диски не працюють
+          у Thunderbolt перехідниках USB-to-PCIe. Потрібно купувати тільки ті NVMe,
+          які пропонують показники продуктивності близькі до теоретичної межі PCIe
+          3.0 x4 (3938.5МБ/с), і максимально не залежать від об'єму даних, що
+          передаються (SLC кеш), DRAM кеш на 1Т зазвичай становить 1ГБ. У 2020
+          році купувати NVMe менше 1Т сенсу немає, вони швидше, у них більше SLC кешу,
+          якісніші мікросхеми, вигідна питома вартість одиниці обсягу.
+       </p>
+
+       <figure><table cellspacing=10>
+       <thead>
+       <th>Model</th><th>PCIe</th><th>Size</th><th>Chip</th><th>Flash</th><th>MB/s</th><th>Lifetime</th>
+       </thead>
+       <tbody>
+       <tr style="font-weight: bold;"><td>Samsung&nbsp;970&nbsp;EVO+</td><td>3.0&nbsp;x4</td><td>1T</td><td>Samsung&nbsp;Phoenix</td><td>64&nbsp;TLC&nbsp;Samsung&nbsp;256G</td><td>3500/3300</td><td>600T</td></tr>
+       <tr style="font-weight: bold;"><td>Samsung&nbsp;970&nbsp;PRO</td><td>3.0&nbsp;x4</td><td>1T</td><td>Samsung&nbsp;Phoenix</td><td>64&nbsp;MLC&nbsp;Samsung&nbsp;256G</td><td>3500/3300</td><td>1200T</td></tr>
+       <tr><td>WS Black SN750</td><td>3.0&nbsp;x4</td><td>1T</td><td>SanDisk</td><td>64 TLC SanDisk 256G</td><td>3470/3000</td><td>600T</td></tr>
+       <tr><td>Patriot VPN100</td><td>3.0&nbsp;x4</td><td>1T</td><td>Phison PS5012-E12</td><td>64 TLC Toshiba 256G</td><td>3450/3000</td><td>1665T</td></tr>
+       <tr><td>Intel 760P</td><td>3.0&nbsp;x4</td><td>1T</td><td>SMI SM2262</td><td>64 TLC Intel 256G</td><td>3230/1625</td><td>576T</td></tr>
+       <tr><td>ATADA XPG S11 Pro</td><td>3.0&nbsp;x4</td><td>1T</td><td>SMI SM2262EN</td><td>64 TLC Micron 512G</td><td>3500/3000</td><td>640T</td></tr>
+       <tr><td>MTE220S</td><td>3.0&nbsp;x4</td><td>1T</td><td>SMI SM2262EN</td><td>64 TLC Micron 512G</td><td>3500/2800</td><td>640T</td></tr>
+       <tr><td>Kingston KC2000</td><td>3.0&nbsp;x4</td><td>1T</td><td>SMI SM2262EN</td><td>96 TLC Toshiba 512G</td><td>3200/2200</td><td>600T</td></tr>
+       <tr><td>Sabrent Rocket</td><td>4.0&nbsp;x4</td><td>1T</td><td>Phison PS5016-E16</td><td>96 TLC Toshiba 512G</td><td>5000/4400</td><td>1800T</td></tr>
+       <tr><td>Corsair MP600</td><td>4.0&nbsp;x4</td><td>1T</td><td>Phison PS5016-E16</td><td>96 TLC Toshiba 512G</td><td>4950/2500</td><td>1800Т</td></tr>
+       <tr style="font-weight: bold;"><td>FireCUDA&nbsp;520</td><td>4.0&nbsp;x4</td><td>1T</td><td><nobr>Phison PS5016-E16</nobr></td><td>96 TLC Toshiba 512G</td><td>5000/4400</td><td>1800Т</td></tr>
+       <tr><td>GAMMIX S50</td><td>4.0&nbsp;x4</td><td>1T</td><td>Phison PS5016-E16</td><td>96 TLC Toshiba 512G</td><td>5000/4400</td><td>1800Т</td></tr>
+       </tbody></table></figure>
+
+       <p>Коллекционными считаются четырехканальные RAID-0 переходники
+          на 16 линий PCIe, т.е. четыре диска (если меньше &mdash; не берите).
+          Если на материнской плате остаются свободные х8 слоты и хочется их использовать для RAID,
+          то можно использовать x8 M.2 адаптеры на два диска.</p>
+
+       <figure><table cellspacing=10>
+       <thead>
+       <th>Model</th><th>PCIe</th>
+       </thead>
+       <tbody>
+       <tr><td>ASUS Hyper M.2 Gen5</td><td>5.0&nbsp;x16</td></tr>
+       <tr><td>ASUS Hyper M.2 V2</td><td>3.0&nbsp;x16</td></tr>
+       <tr><td>ASUS Hyper M.2</td><td>4.0&nbsp;x16</td></tr>
+       <tr><td>ASRock ULTRA QUAD</td><td>3.0&nbsp;x16</td></tr>
+       <tr><td>AORUS Gen4 AIC</td><td>4.0&nbsp;x16</td></tr>
+       <tr><td>Startech x8 Dual M.2</td><td>3.0&nbsp;x8</td></tr>
+       <tr><td>Sonnet M.2 4x4</td><td>3.0&nbsp;x8</td></tr>
+       <tr><td>Synology M2D18</td><td>4.0&nbsp;x8</td></tr>
+       </tbody></table></figure>
+
+       <hr>
+
+       <p>
+       [1]. <a href="https://spdk.io/doc/">SPDK.IO/DOC</a><br>
+       [2]. <a href="https://nvmexpress.org/wp-content/uploads/NVM-Express-1_4-2019.06.10-Ratified.pdf">NVMe 1.4</a><br>
+       [3]. <a href="https://github.com/Beyer-Yan/kvstore">Yan Beyer. A fast kvstore based on spdk programing framework.</a><br>
+       [4]. <a href="https://www.usenix.org/system/files/hotstorage19-paper-yoshimura.pdf">T.Yoshimura, T.Chiba, H.Horii. EvFS: User-level, Event-Driven File System for Non-Volatile Memory.</a><br>
+       </P>
+
+       <h3>Мережеві адаптери</h3>
+
+       <p></p>
+
+       <h3>Корпуса</h3>
+
+       <p>Как видно из таблиц, все платы можно разделить на две категории: маленькие и большие.
+          В категории малых корпусов мне больше всего понравились DeepCool Tristellar,
+          NZXT H200i, AZZA Pyramyd 804. Для полноразмерных больших CEB/EEB/XLATX
+          плат &mdash; Lian Li O11D XL, а для EATX плат и дисковых
+          массивов &mdash; DeepCool Quadstellar. Всего 5 корпусов. Если хватает
+          денег можно еще купить стол Lian Li.</p>
+
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2020</footer>
+</body>
+</html>

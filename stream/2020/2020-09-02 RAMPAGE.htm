@@ -1,0 +1,78 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2020-09-02 Колекція комп'ютерів</title>
+    <link rel="stylesheet" href="../../blank.css" />
+    <link rel="stylesheet" href="../../journal.css" />
+</head>
+<body>
+<nav>
+    <a href='../../index.html'>5HT</a>
+    <a href='../index.html'>TOP</a>
+    <a href='#'>2020-09-02</a>
+</nav>
+<main>
+    <section>
+       <h3>Робоча станція X299</h3>
+
+       <p>В качестве платформы была выбрана серия ASUS Rampage VI.
+          На примере сериии материнских плат Rampage VI для X-Series процессоров Intel покажем
+          как производители компонуют PCIe линии.</p>
+
+       <p>Первая плата Rampage VI Apex была представлена на COMPUTEX в 2017 году.
+          Через пол года вышла версия с U.2 портом Rampage VI Extreme.
+          Через два года, на CES в 2019 была представлена плата Rampage VI Omega
+          с более минималистичной PCIe разводкой ориентированной на NVMe массивы.
+          Так же через пол года на GAMESCOM в 2019 году была представлена
+          обновленная версия платы без U.2 порта Rampage VI Extreme Encore.
+          Я самостоятельно восстановил конфигурации этих материнских плат
+          для процессоров с 48 PCIe линиями, использовал при этом
+          их руководства пользователя.</p>
+
+        <h4>RAMPAGE VI APEX Q1 2017</h4>
+
+        <p>Достаточно классическая и минималистичная конфигурация с двумя полными x16 слотами
+           и еще одним дисковым массивом для VROC на DIMM.2 слоте на два NVMe x4. И еще остается
+           один x4 PCIe слот для карты расширения, куда можно вставить NVMe x4. Таким
+           образом можно сказать что эта плата спроектирована для процессоров с 44 линиями
+           и позволяют строить SLI x16 конфигурации + VROC 3x RAID-0.</p>
+
+
+        <figure><img style="padding: 20px" src="img/RAMPAGE VI APEX.svg?v=2" height=300></figure>
+
+        <h4>RAMPAGE VI EXTREME Q3 2017</h4>
+
+        <p>На мой взгляд переусложненная конфигурация с большим количеством PCIe свичей,
+           но с дополнительной опцией в виде U.2 порта (правда придется пожертвовать одним
+           диском в VROC массиве), и дополнительного M.2 сокета на X299 чипсете, который
+           обычно используется для загрузочных дисков.</p>
+
+        <figure><img style="padding: 20px" src="img/RAMPAGE VI EXTREME.svg?v=2" height=300></figure>
+
+        <h4>RAMPAGE VI EXTREME OMEGA Q1 2019</h4>
+
+        <p>Омега вернула былую простоту разводки APEX, так же есть M.2 слот на X299 и U.2 слот,
+           который так же конфликтует с 3x VROC массивом, но при этом не с DIMM с еще одним дополнительным M.2
+           разеведенный на процессор. Второй M.2 конфликтует с PCIe x4 слотом.</p>
+
+        <figure><img style="padding: 20px" src="img/RAMPAGE VI EXTREME OMEGA.svg?v=1" height=300></figure>
+
+        <h4>RAMPAGE VI EXTREME ENCORE Q3 2019</h4>
+
+        <p>Последняя ревизия платы без U.2 слота, с обеими M.2 дисками разведенными на X299.
+           Плата сохранила традиционную для Rampage VI емкость 32 полный PCIe линий
+           и возможность строительства VROC массива на 3 диска.</p>
+
+        <figure><img style="padding: 20px" src="img/RAMPAGE VI EXTREME ENCORE.svg?v=1" height=300></figure>
+
+        <br><br>
+
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2020</footer>
+</body>
+</html>
