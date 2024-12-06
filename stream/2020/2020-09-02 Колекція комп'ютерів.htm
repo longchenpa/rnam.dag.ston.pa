@@ -48,9 +48,9 @@
            дорогих компонентів, я плавно увійду в рестроспективу комп'ютерної
            техніки (у тому числі і свою особисту) і простежу історію її розвитку
            з точки зору стандарту PCIe, перша версія якого була створена в 2003 році.
-           Все що до PCIe 1.0 не є для мене колекційною цінністю.</p>
+           Все що до PCIe 2.0 не є для мене архівною цінністю, а лише колекційною.</p>
 
-        <p>Зазвичай, на курсах системного програмування вивчаються
+        <!--p>Зазвичай, на курсах системного програмування вивчаються
            якісь неіснуючі MIX процесори, все це я рішуче засуджую! Приєднуйтесь до
            уніфікації промисловості та академії у вигляді таких проектів як RISC-V,
            який також компонується на шині PCI Express на прикладі таких плат як HiFive
@@ -60,7 +60,7 @@
            Gigabyte давно вже робить ARM64 на платформі Marvel ThunderX2, також на PCIe.
            Я вважаю, що кожен системний програміст повинен розуміти як влаштований
            комп'ютер і як програмується PCI Express. Як мінімум spdk — це прикладний
-           рівень фреймворку, тому вибачення не приймаються!</p>
+           рівень фреймворку, тому вибачення не приймаються!</p-->
 
        <h4>Визначення, що таке комп'ютер</h4>
 
@@ -126,19 +126,18 @@
           ефективні RAID NVMe масиви на Intel платформі, які зазвичай підключаються до
           пропрієтарного мосту для зовнішніх пристроїв через DMI bottleneck, яке,
           у свою чергу, підключено до кореневого комплексу – це перша проблема масштабування.
-
-       <p>На щастя на материнських платах розпаюються слоти для відеокарт, які
+          На щастя на материнських платах розпаюються слоти для відеокарт, які
           під'єднані не через DMI інтерконнект, а безпосередньо до кореневого
           комплексу через високопродуктивний свіч, який зазвичай видно як PCI-to-PCI міст.
           Ви можете використовувати ці слоти для будівництва дискового масиву,
           але ви позбавляєтеся можливості використовувати GPU.</p>
 
-       <p>Інша проблема, яка може виникнути при масштабуванні дискового масиву
-          — це кількість PCIe ліній, які можна підключити до кореневого комплексу,
+       <p>Друга проблема, яка може виникнути при масштабуванні дискового масиву
+          — це дифіцит кількості PCIe ліній, які можна підключити до кореневого комплексу,
           які в сучасних системах знаходяться прямо в процесорі.</p>
 
-       <p>І нарешті існує третя проблема — це кількість ядер у процесорі,
-          якщо їх дуже мало, то кожне переривання на лінії вимагатиме відволікання
+       <p>І нарешті існує третя проблема — це кількість ядер у процесорі.
+          Якщо їх дуже мало, то кожне переривання на лінії вимагатиме відволікання
           процесора, що створюватиме багато зайвих переключень контекстів процесора
           та знижуватиме загальну теоретичну продуктивність. В ідеальній синхронній
           системі, для контролю кожної PCIe лінії потрібно виділяти окреме ядро
@@ -155,7 +154,7 @@
 
        <p>Свою колекцію бачу як підрешітку кількох вимірів:</p>
        <p>1) форм-фактор материнської плати: Mini-ITX, ATX, E-ATX;<br>
-          2) тип мікропроцесорної архітектури: Intel, AMD, ARM64, POWER9, RISC-V;<br>
+          2) тип мікропроцесорної архітектури: Intel, AMD, ARM, POWER9, RISC-V;<br>
           3) версія PCIe: 3.0, 4.0, 5.0 (версії, які підтримують NVMe M.2).</p>
        <p>Перші колекційні, розглянуті мною, чіпсети — це перші чіпсети для PCIe,
           які мали графічну шину 16 ліній PCIe і були створені для перших
@@ -178,8 +177,7 @@
 
        <p>У мене були двопроцесорні материнські плати для картриджних (TYAN Tiger 133, Slot 1)
           і сокетних (TYAN Thunder, Socket 370) P6 процесорів, колекція материнських плат
-          на чіпсеті i440BX (ABit BP6, ASUS P2B), дві легендарні оверклокерскі плати TUSL2 і CUSL2.
-          Головним чином я скуповував дуальні SMP плати на Intel тоді.</p>
+          на чіпсеті i440BX (ABit BP6, ASUS P2B), дві легендарні оверклокерскі плати TUSL2 і CUSL2.</p>
 
        <figure><table cellspacing=10>
        <thead>
@@ -198,7 +196,8 @@
 
        <p>П'ята за рахунком архітектура 32-бітових процесорів Intel — Pentium 4 NetBurst
           виявилася абсолютно невдалою, хотіли навіть змінити стандарт на блоки живлення
-          (з ATX на BTX) через збільшені показники потужності, що розсіюється, але вернулися назад до архітектури P6 1995 року.</p>
+          (з ATX на BTX) через збільшені показники потужності, що розсіюється, але
+          вернулися назад до архітектури P6 1995 року.</p>
 
        <figure><table cellspacing=10>
        <thead>
@@ -223,7 +222,7 @@
 
        <p>Наступна архітектура була вже 64-бітною, ліцензованою у AMD і отримала назву EM64T,
           вперше з'явилися VT-x, SSE3. Ця архітектура досі живе в процесорах Intel
-          і саме з процесорів Intel Core та чіпсета X48/Q45 почнеться моя колекція.
+          і саме з процесорів Intel Core та чіпсетів X38 і P45 почнеться моя колекція.
           </p>
 
        <h4>Компактні клієнтські системи EM64T</h4>
@@ -241,11 +240,10 @@
        <th>Platform</th><th>Lanes</th><th>PCIe/DMI ver</th><th>Motherboard</th><th>Generation</th>
        </thead>
        <tbody>
-       <tr><td>LGA775/G41</td><td>16</td><td>1.0/1.0x4</td><td><a href="pdf/P5G41T-M-LX3-PLUS.pdf">P5P41T PLUS</a></td><td>Core 2 Duo</td></tr>
-       <tr><td>LGA775/Q45</td><td>16</td><td>1.0/1.0x4</td><td><a href="https://theretroweb.com/motherboard/manual/e4365-p5q-em-do-contents-6311b107e0cd4540100006.pdf">P5Q-EM DO</a></td><td>Core 2 Duo</td></tr>
+       <tr><td>LGA775/P45</td><td>16</td><td>2.0/1.0x4</td><td><a href="https://theretroweb.com/motherboard/manual/e4200-p5q-se2-contents-web-64a5963d61092929341863.pdf">ASUS P5Q SE2</a></td><td>Core 2 Duo</td></tr>
        <tr><td>LGA1156/H55</td><td>16</td><td>2.0/1.0x4</td><td><a href="https://download.asrock.com/Manual/H55M%20Pro.pdf">H55M PRO</a></td><td>1</td></tr>
-       <tr><td>LGA1155/H61</td><td>16</td><td>2.0/2.0x4</td><td><a href="pdf/E6347_P8H61-I.pdf">P8H61-H</a></td><td>2,3</td></tr>
-       <tr><td>LGA1155/Z77</td><td>20</td><td>3.0/2.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1155/P8Z77-I_DELUXE/E7987_P8Z77-I_DELUXE.pdf?model=P8Z77-I%20DELUXE">P8Z77-I DELUXE</a></td><td>2,3</td></tr>
+       <tr><td>LGA1155/H61</td><td>16</td><td>2.0/2.0x4</td><td><a href="pdf/E6347_P8H61-I.pdf">P8H61-I</a></td><td>2,3</td></tr>
+       <!--tr><td>LGA1155/Z77</td><td>20</td><td>3.0/2.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1155/P8Z77-I_DELUXE/E7987_P8Z77-I_DELUXE.pdf?model=P8Z77-I%20DELUXE">P8Z77-I DELUXE</a></td><td>2,3</td></tr-->
        <tr><td>LGA1150/Z97</td><td>20</td><td>3.0/2.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1150/MAXIMUS-VII-IMPACT/e9751_maximus_vii_impact_v2_um_for_web_only.pdf?model=MAXIMUS%20VII%20IMPACT">MAXIMUS VII IMPACT</a></td><td>4,5</td></tr>
        <tr><td>LGA1151/Z270</td><td>24</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/STRIX_Z270I_GAMING/E12438_STRIX_Z270I_GAMING_UM_V2_WEB.PDF?model=STRIX%20Z270I%20GAMING">STRIX Z270-I</a></td><td>6,7</td></tr>
        <tr><td>LGA1151-v2/Z370</td><td>24</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/ROG_STRIX_Z370-I_GAMING/E13601b_ROG_STRIX_Z370-I_GAMING_UM_V2_WEB.pdf?model=ROG%20STRIX%20Z370-I%20GAMING">STRIX Z370-I</a></td><td>8,9</td></tr>
@@ -266,7 +264,7 @@
        <tr><td>LGA1151/Z790</td><td>24</td><td>5.0/4.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1700/ROG_STRIX_Z790-I_GAMING_WIFI/E21241_ROG_STRIX_Z790-I_GAMING_WIFI_UM_V2_WEB.pdf?model=ROG%20STRIX%20Z790-I%20GAMING%20WIFI">STRIX Z790-I</a></td><td>12,13,14</td></tr-->
        </tbody></table></figure>
 
-       <p>Тут зібрано сім плат на семи чіпсетах, що покривають споживчі
+       <p>Тут зібрано дев'ять плат на дев'яти чіпсетах, що покривають споживчі
           клієнтські процесори Intel. Це така гра: зібрати мінімальну
           кількість материнських плат, до яких можна вставити будь-який процесор.
           Після Z370 я оновився до Z690, потім планую оновитися на наступний чіпсет після Z890,
@@ -321,8 +319,8 @@
        <th>Platform</th><th>Lanes</th><th>PCIe/DMI</th><th>Motherboard</th><th>Generations</th>
        </thead>
        <tbody>
-       <tr><td>LGA775/X38</td><td>36</td><td>1.0/1.0x4</td><td><a href="pdf/E3576_P5E64-ws-pro-v2.pdf">P5E64 WS PRO</a></td><td>Core 2 Duo</td></tr>
-       <tr><td>LGA775/X48</td><td>36</td><td>1.0/1.0x4</td><td><a href="pdf/E3559_Rampage-Formula.pdf">RAMPAGE I</a></td><td>Core 2 Duo</td></tr>
+       <tr><td>LGA775/X38</td><td>36</td><td>2.0/1.0x4</td><td><a href="pdf/E3576_P5E64-ws-pro-v2.pdf">P5E64 WS PRO</a></td><td>Core 2 Duo</td></tr>
+       <tr><td>LGA775/X48</td><td>36</td><td>2.0/1.0x4</td><td><a href="pdf/E3559_Rampage-Formula.pdf">RAMPAGE I</a></td><td>Core 2 Duo</td></tr>
        <tr><td>LGA1366/X58</td><td>36</td><td>2.0/2.0x4</td><td><a href="pdf/E4606_P6T7-WS-SC.pdf">P6T7 WS SC</a></td><td>Nehalem, Westmere</td></tr>
        <tr><td>LGA1366/X58</td><td>36</td><td>2.0/2.0x4</td><td><a href="pdf/E4268_Rampage-II-Extreme-v2.pdf">RAMPAGE II</a></td><td>Nehalem, Westmere</td></tr>
        <tr><td>LGA1366/X58</td><td>36</td><td>2.0/2.0x4</td><td><a href="pdf/E6488_Rampage-III-Black-Edition.pdf">RAMPAGE III</a></td><td>Nehalem, Westmere</td></tr>
@@ -337,7 +335,7 @@
        <tr><td>LGA7529/W890</td><td>136</td><td>5.0/4.0x8</td><td>?</td><td>Birch Stream (GNR-SP, SRF-SP)</td></tr>
        </tbody></table></figure>
 
-       <p>Колекція починається платами з класу робочих станцій для сокета 2011 на чіпсетах X79 і X99.
+       <p>Архів робочих станцій (PCIe 2.0) починається для сокета 775 на чіпсетах X38 і X48.
           Кожна з них подвоює число доступних PCIe у порівнянні з клієнтськими платформами.</p>
 
         <p>Xeon Scalable (Platinum 8x80) процесори для робочих станцій випускалися для сокетів:
@@ -347,6 +345,7 @@
            Ці процесори ведуть свій родовід не від Pentium Pro (P6), а від багатоядерних Xeon Phi (Knights Landing),
            де кожне ядро — це Atom процесор (E-core починаючи з 12 серії), представлений раніше як енергоефективний x86 конкурент ARM процесора.
            З початком Skylake перша генерація отримала продуктивні P6 ядра (P-core починаючи з 12 серії).</p>
+
         <p>З початком Sierra Forest процесори Xeon Scalable знов випускаються у варіації лише з E-core ядрами (як Xeon Phi).
            Але Xeon 6 процесори потребують нових сокетів LGA7529 (Granite Rapids) і LGA4710 (Sierra Forest).
            Emerald Rapids підтримують той самий сокет, що ї Sapphire Rapids.</p>
