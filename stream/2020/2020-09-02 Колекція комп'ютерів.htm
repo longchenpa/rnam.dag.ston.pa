@@ -50,18 +50,6 @@
            з точки зору стандарту PCIe, перша версія якого була створена в 2003 році.
            Все що до PCIe 2.0 не є для мене архівною цінністю, а лише колекційною.</p>
 
-        <!--p>Зазвичай, на курсах системного програмування вивчаються
-           якісь неіснуючі MIX процесори, все це я рішуче засуджую! Приєднуйтесь до
-           уніфікації промисловості та академії у вигляді таких проектів як RISC-V,
-           який також компонується на шині PCI Express на прикладі таких плат як HiFive
-           Unleashed Expansion Board зі слотом x16 та своїм PCIe свічем для периферії.
-           PCIe також можна знайти в легендарній відктритій платформі IBM POWER9,
-           яка представлена такими материнськими платами як Talos II (PCIe 4.0).
-           Gigabyte давно вже робить ARM64 на платформі Marvel ThunderX2, також на PCIe.
-           Я вважаю, що кожен системний програміст повинен розуміти як влаштований
-           комп'ютер і як програмується PCI Express. Як мінімум spdk — це прикладний
-           рівень фреймворку, тому вибачення не приймаються!</p-->
-
        <h4>Визначення, що таке комп'ютер</h4>
 
         <p>Спочатку хочу розповісти, що таке комп'ютер, з погляду яких критеріїв
@@ -71,10 +59,10 @@
            чином (зазвичай це шина або безпосереднє з'єднання точка-точка чере
            хаб (InfiniBand, PCIe, QPI, HyperTransport, etc.) Ці з'єднання є
            видимими доріжками на материнській платі, де компонується вся
-           електроніка. У разі PCIe такий хаб називається кореневою комплекс,
+           електроніка. У разі PCIe такий хаб називається кореневим комплексом,
            куди сходяться всі лінії PCIe. Основний принцип DYI електроніки —
-           це максимально. гнучка система розширень, що дозволяє додавати
-           додаткові пристрої у вигляді плат-розширень у спеціальні місця,
+           це максимально гнучка система розширень, що дозволяє додавати
+           додаткові пристрої у вигляді плат у спеціальні місця,
            які підключені до шини або до хаба.</p>
 
         <figure><figcaption>З'єднання компонент в типовому PC</figcaption>
@@ -225,18 +213,18 @@
        <th>Platform</th><th>PCI</th><th>Expansions</th><th>Motherboard</th><th>Generation</th>
        </thead>
        <tbody>
-       <tr><td>PGA132</td><td>2.0</td><td>0/1/2/0</td><td><a href="https://theretroweb.com/motherboard/manual/m70-ssi-5f2b0fc55f4e8249830979.pdf">PS/2 Model 70 Type 3</a></td><td>386DX 25MHz</td></tr>
-       <tr><td>Socket 3</td><td>2.0</td><td>0/1/2/0</td><td><a href="https://theretroweb.com/motherboard/manual/m70-ssi-5f2b0fd969ef9834470208.pdf">PS/2 Model 70 Type 4</a></td><td>486DX</td></tr>
-       <tr><td>Socket 7/MVP3</td><td>2.1</td><td>1/4/2/0</td><td><a href="https://theretroweb.com/motherboard/manual/pa2013-b1-6465ffba63543629244333.pdf">FIC PA-2013 B1</a></td><td>Pentium MMX</td></tr>
-       <tr><td>Socket 7/430TX</td><td>2.1</td><td>0/4/4/0</td><td><a href="https://theretroweb.com/motherboard/manual/tx97xe-303-5f08d199e2a9e686812911.pdf">TX97-XE</a></td><td>Pentium MMX</td></tr>
-       <tr><td>Socket 8/440FX</td><td>2.1</td><td>0/5/3/0</td><td><a href="pdf/p6n-141.pdf">P/I-P6NP5</a></td><td>Pentium Pro</td></tr>
-       <tr><td>Slot 1/440BX</td><td>2.1</td><td>1/5/2/0</td><td><a href="pdf/m_s1832_210.pdf">Tiger 100 S1832D</a></td><td>Pentium III</td></tr>
-       <tr><td>Slot 1/440BX</td><td>2.1</td><td>1/4/2/3</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/slot1/440bx/p2b-ls/p2bls-106.pdf">P2B-L</a></td><td>Pentium III</td></tr>
-       <tr><td>Slot 1/440BX</td><td>2.1</td><td>1/4/2/3</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/slot1/440bx/p2b-d/p2bd(s)-106.pdf">P2B-DS</a></td><td>Pentium III</td></tr>
-       <tr><td>Socket 370/815EP</td><td>2.1</td><td>1/3/0/0</td><td><a href="https://theretroweb.com/motherboard/manual/cusl2cbp-104-61d40c698ad28969901955.pdf">CUSL2-C Black Pearl</a></td><td>Pentium III</td></tr>
-       <tr><td>Socket 370/815EP</td><td>2.2</td><td>1/3/0/0</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/sock370/815ep/tusl2-c/tusl2c-104.pdf">TUSL2-C</a></td><td>Pentium III S</td></tr>
+       <tr><td style="color:silver;">PGA132</td><td>2.0</td><td>0/1/2/0</td><td><a style="color:silver;" href="https://theretroweb.com/motherboard/manual/m70-ssi-5f2b0fc55f4e8249830979.pdf">PS/2 Model 70 Type 3</a></td><td>386DX 25MHz</td></tr>
+       <tr><td style="color:silver;">Socket 3</td><td>2.0</td><td>0/1/2/0</td><td><a style="color:silver;" href="https://theretroweb.com/motherboard/manual/m70-ssi-5f2b0fd969ef9834470208.pdf">PS/2 Model 70 Type 4</a></td><td>486DX</td></tr>
+       <tr><td style="color:silver;">Socket 7/MVP3</td><td>2.1</td><td>1/4/2/0</td><td><a style="color:silver;" href="https://theretroweb.com/motherboard/manual/pa2013-b1-6465ffba63543629244333.pdf">FIC PA-2013 B1</a></td><td>Pentium MMX</td></tr>
+       <tr><td style="color:silver;">Socket 7/430TX</td><td>2.1</td><td>0/4/4/0</td><td><a style="color:silver;" href="https://theretroweb.com/motherboard/manual/tx97xe-303-5f08d199e2a9e686812911.pdf">TX97-XE</a></td><td>Pentium MMX</td></tr>
+       <tr><td style="color:silver;">Socket 8/440FX</td><td>2.1</td><td>0/5/3/0</td><td><a style="color:silver;" href="pdf/p6n-141.pdf">P/I-P6NP5</a></td><td>Pentium Pro</td></tr>
+       <tr><td style="color:silver;">Slot 1/440BX</td><td>2.1</td><td>1/5/2/0</td><td><a style="color:silver;" href="pdf/m_s1832_210.pdf">Tiger 100 S1832D</a></td><td>Pentium III</td></tr>
+       <tr><td style="color:silver;">Slot 1/440BX</td><td>2.1</td><td>1/4/2/3</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/slot1/440bx/p2b-ls/p2bls-106.pdf">P2B-L</a></td><td>Pentium III</td></tr>
+       <tr><td style="color:silver;">Slot 1/440BX</td><td>2.1</td><td>1/4/2/3</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/slot1/440bx/p2b-d/p2bd(s)-106.pdf">P2B-DS</a></td><td>Pentium III</td></tr>
+       <tr><td style="color:silver;">Socket 370/815EP</td><td>2.1</td><td>1/3/0/0</td><td><a style="color:silver;" href="https://theretroweb.com/motherboard/manual/cusl2cbp-104-61d40c698ad28969901955.pdf">CUSL2-C Black Pearl</a></td><td>Pentium III</td></tr>
+       <tr><td style="color:silver;">Socket 370/815EP</td><td>2.2</td><td>1/3/0/0</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/sock370/815ep/tusl2-c/tusl2c-104.pdf">TUSL2-C</a></td><td>Pentium III S</td></tr>
        <tr><td>Socket 478/865PE</td><td>2.3</td><td>1/3/0/0</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/sock478/p4p800-se/e1886_p4p800_se.pdf">P4P800 SE</a></td><td>Pentium D/4/M (CT-479)</td></tr>
-       <tr><td>Socket 479/915GV</td><td>1.1 Express</td><td>0/1/0/0</td><td>PTGV-DM</td><td>Pentium M</td></tr>
+       <tr><td style="color:silver;">Socket 479/915GV</td><td>1.1 Express</td><td>0/1/0/0</td><td><div style="color:silver;">PTGV-DM</a></td><td>Pentium M</td></tr>
        <tr><td>LGA775/945G</td><td>2.3 Express</td><td>1/2/0/0</td><td><a href="https://theretroweb.com/motherboard/manual/conroe945g-dvi-62f8e40b6c213939219046.pdf">ConRoe945G-DVI</a></td><td>Pentium D/4/Core/Core2</td></tr>
        <tr><td>LGA775/945P</td><td>2.3 Express</td><td>2/3/0/0</td><td><a href="https://theretroweb.com/motherboard/manual/conroexfire-esata2-641c0903bc7c2949949298.pdf">ConRoeXFire-eSATA2</a></td><td>Pentium D/4/Core/Core2</td></tr>
        </tbody></table></figure>
@@ -270,8 +258,7 @@
 
        <p>Наступна архітектура була вже 64-бітною, ліцензованою у AMD і отримала назву EM64T,
           вперше з'явилися VT-x, SSE3. Ця архітектура досі живе в процесорах Intel
-          і саме з процесорів Intel Core та чіпсетів X48 і P45 почнеться моя колекція.
-          </p>
+          і саме з процесорів Intel Core та чіпсетів X48 і P45 почнеться моя колекція.</p>
 
        <h4>Компактні клієнтські системи EM64T</h4>
 
@@ -289,29 +276,45 @@
        </thead>
        <tbody>
        <tr><td>LGA775/P45</td><td>16</td><td>2.0/1.0x4</td><td><a href="pdf/E4182_P5Q-SE-Plus.pdf">P5Q SE PLUS</a></td><td>Core2</td></tr>
-       <tr><td>LGA1156/H55</td><td>16</td><td>2.0/1.0x4</td><td><a href="pdf/E5291_P7H55.pdf">P7H55</a></td><td>1</td></tr>
+       <tr style="color:silver;"><td>LGA1156/H55</td><td>16</td><td>2.0/1.0x4</td><td><a style="color:silver;" href="pdf/E5291_P7H55.pdf">P7H55</a></td><td>1</td></tr>
        <tr><td>LGA1155/H61</td><td>16</td><td>2.0/2.0x4</td><td><a href="pdf/E6347_P8H61-I.pdf">P8H61-I</a></td><td>2,3</td></tr>
        <tr style="color:silver;"><td>LGA1155/Z77</td><td>20</td><td>3.0/2.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1155/P8Z77-I_DELUXE/E7987_P8Z77-I_DELUXE.pdf?model=P8Z77-I%20DELUXE">P8Z77-I DELUXE</a></td><td>2,3</td></tr>
        <tr style="color:silver;"><td>LGA1150/Z87</td><td>20</td><td>3.0/2.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1150/Z87I-PRO/E8703_Z87I-PRO.pdf?model=Z87I-PRO">Z87I-PRO</a></td><td>4</td></tr>
-       <tr><td>LGA1150/Z97</td><td>20</td><td>3.0/2.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1150/Z97I-PLUS/E9272_Z97I-PLUS.pdf?model=Z97I-PLUS">Z97I-PLUS</a></td><td>4,5</td></tr>
+       <tr style="color:silver;"><td>LGA1150/Z97</td><td>20</td><td>3.0/2.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1150/Z97I-PLUS/E9272_Z97I-PLUS.pdf?model=Z97I-PLUS">Z97I-PLUS</a></td><td>4,5</td></tr>
        <tr style="color:silver;"><td>LGA1151/Z170</td><td>24</td><td>3.0/3.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/Z170I_PRO_GAMING/E10725_Z170I-PRO_GAMING_UM_WEB.pdf">Z170I PRO GAMING</a></td><td>6</td></tr>
-       <tr><td>LGA1151/Z270</td><td>24</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/STRIX_Z270I_GAMING/E12438_STRIX_Z270I_GAMING_UM_V2_WEB.PDF?model=STRIX%20Z270I%20GAMING">STRIX Z270-I</a></td><td>6,7</td></tr>
+       <tr style="color:silver;"><td>LGA1151/Z270</td><td>24</td><td>3.0/3.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/STRIX_Z270I_GAMING/E12438_STRIX_Z270I_GAMING_UM_V2_WEB.PDF?model=STRIX%20Z270I%20GAMING">STRIX Z270-I</a></td><td>6,7</td></tr>
        <tr><td>LGA1151-2/Z370</td><td>24</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/ROG_STRIX_Z370-I_GAMING/E13601b_ROG_STRIX_Z370-I_GAMING_UM_V2_WEB.pdf?model=ROG%20STRIX%20Z370-I%20GAMING">STRIX Z370-I</a></td><td>8,9</td></tr>
        <tr style="color:silver;"><td>LGA1151-2/Z390</td><td>24</td><td>3.0/3.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/ROG_STRIX_Z390-I_GAMING/E14477_ROG_STRIX_Z390-I_GAMING_UM_WEB.pdf?model=ROG%20STRIX%20Z390-I%20GAMING">STRIX Z390-I</a></td><td>8,9</td></tr>
        <tr style="color:silver;"><td>LGA1200/Z490</td><td>24</td><td>4.0/3.0x8</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1200/ROG_STRIX_Z490-I_GAMING/E16217_ROG_STRIX_Z490-I_GAMING_UM_WEB.pdf?model=ROG%20STRIX%20Z490-I%20GAMING">STRIX Z490-I</a></td><td>10</td></tr>
-       <tr><td>LGA1200/Z590</td><td>24</td><td>4.0/3.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1200/ROG_STRIX_Z590-I_GAMING_WIFI/E17708_ROG_STRIX_Z590-I_GAMING_UM_WEB.pdf?model=ROG%20STRIX%20Z590-I%20GAMING%20WIFI">STRIX Z590-I</a></td><td>10,11</td></tr>
+       <tr style="color:silver;"><td>LGA1200/Z590</td><td>24</td><td>4.0/3.0x8</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1200/ROG_STRIX_Z590-I_GAMING_WIFI/E17708_ROG_STRIX_Z590-I_GAMING_UM_WEB.pdf?model=ROG%20STRIX%20Z590-I%20GAMING%20WIFI">STRIX Z590-I</a></td><td>10,11</td></tr>
        <tr><td>LGA1700/Z690</td><td>24</td><td>5.0/4.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1700/ROG_STRIX_Z690-I_GAMING_WIFI/E19233_ROG_STRIX_Z690-I_GAMING_WIFI_UM_V2_WEB.pdf?model=ROG%20STRIX%20Z690-I%20GAMING%20WIFI">STRIX Z690-I</a></td><td>12,13,14</td></tr>
        <tr style="color:silver;"><td>LGA1151/Z790</td><td>24</td><td>5.0/4.0x8</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1700/ROG_STRIX_Z790-I_GAMING_WIFI/E21241_ROG_STRIX_Z790-I_GAMING_WIFI_UM_V2_WEB.pdf?model=ROG%20STRIX%20Z790-I%20GAMING%20WIFI">STRIX Z790-I</a></td><td>12,13,14</td></tr>
-       <tr><td>LGA1851/Z890</td><td>24</td><td>5.0/4.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1851/ROG_STRIX_Z890-I_GAMING_WIFI/E24355_ROG_STRIX_Z890-I_GAMING_WIFI_EM_WEB.pdf">STRIX Z890-I</a></td><td>15</td></tr>
+       <tr style="color:silver;"><td>LGA1851/Z890</td><td>24</td><td>5.0/4.0x8</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1851/ROG_STRIX_Z890-I_GAMING_WIFI/E24355_ROG_STRIX_Z890-I_GAMING_WIFI_EM_WEB.pdf">STRIX Z890-I</a></td><td>15</td></tr>
        </tbody></table></figure>
 
        <p>Тут зібрано дев'ять плат на дев'яти чіпсетах, що покривають споживчі
           клієнтські процесори Intel. Це така гра: зібрати мінімальну
-          кількість материнських плат, до яких можна вставити будь-який процесор.
+          кількість материнських плат, в які можна вставити будь-який процесор.
           Після Z370 я оновився до Z690, потім планую оновитися на наступний чіпсет після Z890,
           або плату на Z890, якщо вона буде підтримувати дві
           Core Ultra генерації 15 (Series 2) і 16 (Series 3). Поза увагою опинилися плати
           Z390, Z490, Z790. </p>
+
+       <p>Кожен сокет в номенклатурі ASUS має свій номер після бувки P:
+          1) Socket 8 (P1);
+          2) Slot 1 (P2);
+          3) Socket 370 (P3);
+          4) Socket 478 (P4);
+          5) LGA755 (P5);
+          6) LGA1366 (P6);
+          7) LGA1156 (P7);
+          8) LGA1155 (P8);
+          9) LGA1150 (P9);
+          10) LGA1151 (P10). До скайлейків, після цього нумерація перейшла на префікси
+          чіпсетів Intel (X — воркстейшин без ECC, Z — клієнт без ECC, W — воркстейшин з ECC, С — клієнт з ECC)
+          і власні імена типу STRIX, RAMPAGE, DOMINUS.</p>
+
+
 
        <figure><table cellspacing=10>
        <thead>
@@ -357,30 +360,30 @@
        <tbody>
        <tr style="color:silver;"><td>LGA775/X38</td><td>36</td><td>2.0/1.0x4</td><td><a style="color:silver;" href="pdf/E3576_P5E64-ws-pro-v2.pdf">P5E64 WS PRO</a></td><td>Core2</td></tr-->
        <tr><td>LGA775/X48</td><td>36</td><td>2.0/1.0x4</td><td><a href="pdf/E3559_Rampage-Formula.pdf">RAMPAGE I</a></td><td>Core2</td></tr>
-       <tr><td>LGA775/X48</td><td>36</td><td>2.0/1.0x4</td><td><a href="pdf/E3935_Rampage-Extreme.pdf">RAMPAGE I DDR3</a></td><td>Core2</td></tr>
-       <tr style="color:silver;"><td>LGA1156/3450</td><td>36</td><td>2.0/2.0x4</td><td><a style="color:silver;" href="pdf/E5403_P7F7-E-WS-SC.pdf">P7F7-E WS SC</a></td><td> Nehalem (NHM-EP, WSM-EP)</td></tr-->
+       <tr style="color:silver;"><td>LGA775/X48</td><td>36</td><td>2.0/1.0x4</td><td><a style="color:silver;" href="pdf/E3935_Rampage-Extreme.pdf">RAMPAGE I DDR3</a></td><td>Core2</td></tr>
        <tr><td>LGA1366/X58</td><td>36</td><td>2.0/2.0x4</td><td><a href="pdf/E4606_P6T7-WS-SC.pdf">P6T7 WS SC</a></td><td>Nehalem (NHM-EP, WSM-EP)</td></tr>
        <tr style="color:silver;"><td>LGA1366/X58</td><td>36</td><td>2.0/2.0x4</td><td><a style="color:silver;" href="pdf/E4268_Rampage-II-Extreme-v2.pdf">RAMPAGE II</a></td><td>Nehalem (NHM-EP, WSM-EP)</td></tr>
        <tr style="color:silver;"><td>LGA1366/X58</td><td>36</td><td>2.0/2.0x4</td><td><a style="color:silver;" href="pdf/E6488_Rampage-III-Black-Edition.pdf">RAMPAGE III</a></td><td>Nehalem (NHM-EP, WSM-EP)</td></tr-->
        <tr><td>LGA2011/X79</td><td>40</td><td>3.0/2.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA2011/P9X79-WS/Manual&QVL/E6896_P9X79_WS_Manual.pdf?model=P9X79%20WS">P9X79 WS</a></td><td>Romley (SNB-E, IVB-E)</td></tr>
        <tr style="color:silver;"><td>LGA2011/X79</td><td>40</td><td>3.0/2.0x4</td><td><a style="color:silver;" href="pdf/E6989_Rampage-IV-Extreme.pdf">RAMPAGE IV</a></td><td>Romley (SNB-E, IVB-E)</td></tr-->
-       <tr><td>LGA2011-3/X99</td><td>40</td><td>3.0/2.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA2011/RAMPAGE_V_EDITION_10/E11861_RAMPAGE_V_EDITION_10_UM_V2_WEB.pdf?model=RAMPAGE%20V%20EDITION%2010">RAMPAGE V</a></td><td>Grantley (HSW-E, BDW-E)</td></tr>
+       <tr style="color:silver;"><td>LGA2011-3/X99</td><td>40</td><td>3.0/2.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA2011/RAMPAGE_V_EDITION_10/E11861_RAMPAGE_V_EDITION_10_UM_V2_WEB.pdf?model=RAMPAGE%20V%20EDITION%2010">RAMPAGE V</a></td><td>Grantley (HSW-E, BDW-E)</td></tr>
        <tr><td>LGA2066/X299</td><td>48</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA2066/ROG_RAMPAGE_VI_EXTREME_OMEGA/E15119_ROG_RAMPAGE_VI_EXTREME_OMEGA_UM_V2_WEB.pdf?model=ROG%20RAMPAGE%20VI%20EXTREME%20OMEGA">RAMPAGE VI</a></td><td>Basin Falls (SKL-X, CSL-X)</td></tr>
-       <tr><td>LGA3647/C621</td><td>64</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA3647/ROG_DOMINUS_EXTREME/E15457_ROG_DOMINUS_EXTREME_UM_V3_WEB.pdf?model=ROG%20DOMINUS%20EXTREME">DOMINUS EXTREME</a></td><td>Purley (CSL-W, CSL-SP)</td></tr>
-       <tr><td>LGA4189/C621A</td><td>64</td><td>4.0/3.0x4</td><td><a href="https://download.asrock.com/Manual/C621A%20WS.pdf">C621A WS</a></td><td>Whitley (ICL-SP), Cedar Island (CPL-SP)</td></tr>
-       <tr><td>LGA4677/W790</td><td>80</td><td>5.0/4.0x8</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA4677/Pro_WS_W790-ACE/E22143_Pro_WS_W790-ACE_UM_V3_WEB.pdf?model=Pro%20WS%20W790-ACE">Pro WS W790-ACE</td><td>Eagle Stream (SPR-SP, EMR-SP)</td></tr>
-       <tr style="color:silver;"><td>LGA7529/W890</td><td>136</td><td>5.0/4.0x8</td><td>?</td><td>Birch Stream (GNR-SP, SRF-SP)</td></tr-->
+       <tr style="color:silver;"><td>LGA3647/C621</td><td>64</td><td>3.0/3.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA3647/ROG_DOMINUS_EXTREME/E15457_ROG_DOMINUS_EXTREME_UM_V3_WEB.pdf?model=ROG%20DOMINUS%20EXTREME">DOMINUS EXTREME</a></td><td>Purley (CSL-W, CSL-SP)</td></tr>
+       <tr style="color:silver;"><td>LGA4189/C621A</td><td>64</td><td>4.0/3.0x4</td><td><a style="color:silver;" href="https://download.asrock.com/Manual/C621A%20WS.pdf">C621A WS</a></td><td>Whitley (ICL-SP), Cedar Island (CPL-SP)</td></tr>
+       <tr style="color:silver;"><td>LGA4677/W790</td><td>80</td><td>5.0/4.0x8</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA4677/Pro_WS_W790-ACE/E22143_Pro_WS_W790-ACE_UM_V3_WEB.pdf?model=Pro%20WS%20W790-ACE">Pro WS W790-ACE</td><td>Eagle Stream (SPR-SP, EMR-SP)</td></tr>
+       <tr style="color:silver;"><td>LGA7529/W890</td><td>136</td><td>5.0/4.0x8</td><td>–</td><td>Birch Stream (GNR-SP, SRF-SP)</td></tr-->
        <tr><td colspan=5><hr></td></tr>
+       <tr style="color:silver;"><td>LGA1156/3450</td><td>36</td><td>2.0/2.0x4</td><td><a style="color:silver;" href="pdf/E5403_P7F7-E-WS-SC.pdf">P7F7-E WS SC</a></td><td>1</td></tr-->
        <tr><td>LGA1156/P55</td><td>32</td><td>2.0/1.0x4</td><td><a href="pdf/E5071_P7P55-WS-SC.pdf">P7P55 WS SC</a></td><td>1</td></tr>
        <tr><td>LGA1155/C206</td><td>32</td><td>3.0/2.0x4</td><td><a href="https://dlcdnet.asus.com/pub/ASUS/mb/LGA1155/P8B-WS/Manual/E6384_P8B_WS.pdf">P8B WS</a></td><td>2,3</td></tr>
-       <tr><td>LGA1155/C216</td><td>32</td><td>2.0/1.0x4</td><td><a href="https://dlcdnet.asus.com/pub/ASUS/mb/socket1155/P8C_WS/Manual&QVL/E7435_P8C_WS.pdf">P8C WS</a></td><td>2,3</td></tr>
+       <tr style="color:silver;"><td>LGA1155/C216</td><td>32</td><td>2.0/1.0x4</td><td><a style="color:silver;" href="https://dlcdnet.asus.com/pub/ASUS/mb/socket1155/P8C_WS/Manual&QVL/E7435_P8C_WS.pdf">P8C WS</a></td><td>2,3</td></tr>
        <tr><td>LGA1150/C224</td><td>32</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/socket1150/P9D-M/Manual&AVL/E8096_P9D-M_series_VER8096.pdf">P9D-M</a></td><td>4</td></tr>
-       <tr><td>LGA1150/C226</td><td>32</td><td>3.0/3.0x4</td><td><a href="https://dlcdnet.asus.com/pub/ASUS/mb/socket1150/P9D_WS/Manual&QVL/E12545_P9D_WS_UM_V2_WEB.pdf">P9D WS</a></td><td>4</td></tr>
-       <tr><td>LGA1366/5500</td><td>32</td><td>3.0/2.0x4</td><td><a href="https://theretroweb.com/motherboard/manual/z8nad6-motherboard-atx-66af7967cc031647016881.pdf">Z8NA-D6</a></td><td>4,5</td></tr>
-       <tr><td>LGA2011/C602</td><td>32</td><td>3.0/2.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA2011/Z9PE-D8-WS/Manual/E12544_Z9PE-D8_WS_UM_V5_WEB.pdf">Z9PE-D8 WS</a></td><td>4,5</td></tr>
-       <tr><td>LGA2011-3/C612</td><td>32</td><td>3.0/2.0x4</td><td><a href="https://dlcdnet.asus.com/pub/ASUS/mb/Socket2011-R3/Z10PE-D16_WS/Manual/E13683_Z10PE-D16_WS_UM_V5_WEB.pdf">Z10PE-D16 WS</a></td><td>4,5</td></tr>
-       <tr><td>LGA1151/C236</td><td>32</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/socket1151/P10S_WS/Manual/E15008_P10S_WS_UM_V6_WEB.pdf">P10S WS</a></td><td>6,7</td></tr>
-       <tr><td>LGA1151/C246</td><td>32</td><td>3.0/3.0x4</td><td><a href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/Pro_WS_C246-ACE/E15411_Pro_WS_C246-ACE_UM_WEB.pdf">Pro WS C246-ACE</a></td><td>8,9</td></tr>
+       <tr style="color:silver;"><td>LGA1150/C226</td><td>32</td><td>3.0/3.0x4</td><td><a style="color:silver;" href="https://dlcdnet.asus.com/pub/ASUS/mb/socket1150/P9D_WS/Manual&QVL/E12545_P9D_WS_UM_V2_WEB.pdf">P9D WS</a></td><td>4</td></tr>
+       <tr style="color:silver;"><td>LGA1366/5500</td><td>32</td><td>3.0/2.0x4</td><td><a style="color:silver;" href="https://theretroweb.com/motherboard/manual/z8nad6-motherboard-atx-66af7967cc031647016881.pdf">Z8NA-D6</a></td><td>4,5</td></tr>
+       <tr style="color:silver;"><td>LGA2011/C602</td><td>32</td><td>3.0/2.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA2011/Z9PE-D8-WS/Manual/E12544_Z9PE-D8_WS_UM_V5_WEB.pdf">Z9PE-D8 WS</a></td><td>4,5</td></tr>
+       <tr style="color:silver;"><td>LGA2011-3/C612</td><td>32</td><td>3.0/2.0x4</td><td><a style="color:silver;" href="https://dlcdnet.asus.com/pub/ASUS/mb/Socket2011-R3/Z10PE-D16_WS/Manual/E13683_Z10PE-D16_WS_UM_V5_WEB.pdf">Z10PE-D16 WS</a></td><td>4,5</td></tr>
+       <tr style="color:silver;"><td>LGA1151/C236</td><td>32</td><td>3.0/3.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/socket1151/P10S_WS/Manual/E15008_P10S_WS_UM_V6_WEB.pdf">P10S WS</a></td><td>6,7</td></tr>
+       <tr style="color:silver;"><td>LGA1151/C246</td><td>32</td><td>3.0/3.0x4</td><td><a style="color:silver;" href="https://dlcdnets.asus.com/pub/ASUS/mb/LGA1151/Pro_WS_C246-ACE/E15411_Pro_WS_C246-ACE_UM_WEB.pdf">Pro WS C246-ACE</a></td><td>8,9</td></tr>
        </tbody></table></figure>
 
        <p>Архів робочих станцій (PCIe 2.0) починається для сокета 775 на чіпсеті X48.
