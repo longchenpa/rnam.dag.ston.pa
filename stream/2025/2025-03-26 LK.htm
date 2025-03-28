@@ -176,10 +176,10 @@ $ sudo apt install lld llvm gcc-aarch64-linux-gnu \
   gcc-arm-none-eabi git build-essential gcc g++ \
   make qemu-system-arm
 
-$ gmake qemu-virt-riscv64-test \
-  'CC=/usr/bin/clang --target=riscv64-unknown-elf' \
-  'CPP=/usr/bin/clang-cpp --target=riscv64-unknown-elf' \
-  'CXX=/usr/bin/clang++ --target=riscv64-unknown-elf' \
+$ gmake qemu-virt-arm64-test \
+  'CC=/usr/bin/clang --target=aarch64-unknown-elf' \
+  'CPP=/usr/bin/clang-cpp --target=aarch64-unknown-elf' \
+  'CXX=/usr/bin/clang++ --target=aarch64-unknown-elf' \
   'LD=/usr/bin/ld.lld' \
   TOOLCHAIN_PREFIX=/usr/bin/llvm- \
   CPPFILT=/usr/bin/llvm-cxxfilt
