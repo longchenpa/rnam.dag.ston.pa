@@ -109,12 +109,213 @@ Fuchsia від Google. Воно базується на LK і було знач�
 <p>LK часто застосовується як основа для створення кастомних операційних систем реального часу (RTOS) у вбудованих проєктах завдяки його легкості (15-20 КБ на ARM) та модульності.
 QEMU Емуляція: LK підтримує тестування в QEMU для різних архітектур (ARM, RISC-V, ARM64), що робить його популярним для розробки та навчання.</p>
 
+<h3>Інсталяція</h3>
+
+<figure><code>
+$ sudo apt install lld llvm gcc-aarch64-linux-gnu \
+  gcc-arm-none-eabi git build-essential gcc g++ \
+  make qemu-system-arm
+</code></figure>
+
+<h3>Запуск</h3>
+
+<figure><code>
+$ ./scripts/do-qemuarm
+
+qemu-system-arm -cpu cortex-a15 -m 512 -smp 1
+-machine virt,highmem=off -kernel build-qemu-virt-arm32-test/lk.elf
+-net none -nographic
+
+Generic timer initialized with freq 62500000 Hz, irq 27
+FDT: found memory bank range [0x40000000, 0x5fffffff] (length 0x20000000)
+FDT: reserving physical range for FDT: [0x40000000, 0x400fffff]
+
+welcome to lk/MP
+
+boot args 0x0 0x0 0x0 0x0
+INIT: cpu 0, calling hook 0x8011fab9 (version) at level 0x3ffff, flags 0x1
+version:
+        arch:     arm
+        platform: qemu-virt-arm
+        target:   qemu-virt-arm
+        project:  qemu-virt-arm32-test
+        buildid:  O3S23_LOCAL
+INIT: cpu 0, calling hook 0x801216ad (vm_preheap) at level 0x3ffff, flags 0x1
+initializing heap
+calling constructors
+INIT: cpu 0, calling hook 0x801216f5 (vm) at level 0x4ffff, flags 0x1
+initializing mp
+initializing threads
+initializing timers
+initializing ports
+creating bootstrap completion thread
+top of bootstrap2()
+INIT: cpu 0, calling hook 0x8011c6c1 (minip) at level 0x70000, flags 0x1
+INIT: cpu 0, calling hook 0x8011d06d (pktbuf) at level 0x70000, flags 0x1
+pktbuf: creating 256 pktbuf entries of size 1536 (total 393216)
+INIT: cpu 0, calling hook 0x80120489 (virtio) at level 0x70000, flags 0x1
+releasing 0 secondary cpus
+initializing platform
+FDT: found 1 cpu
+PCIE: initializing pcie with ecam at 0x3f000000 found in FDT
+PCI: pci ecam functions installed
+PCI: last pci bus is 15
+PCI dump:
+  bus 0
+   dev 0000:00:00.0 vid:pid 1b36:0008 base:sub:intr 6:0:0
+PCI dump post assign:
+  bus 0
+   dev 0000:00:00.0 vid:pid 1b36:0008 base:sub:intr 6:0:0
+initializing target
+INIT: cpu 0, calling hook 0x801203d9 (e1000) at level 0x90001, flags 0x1
+initializing apps
+starting app inetsrv
+starting internet servers
+starting app shell
+entering main console loop
+]
+
+
+] help
+command list by block:
+  [aes_test]
+        aes_test        : test AES encryption
+        aes_bench       : bench AES encryption
+  [app]
+        app             : commands to operate on apps
+        start           : shortcut for app start
+  [bio]
+        bio             : block io debug commands
+  [cache_tests]
+        cache_tests     : test/bench the cpu cache
+  [console]
+        help            : this list
+        test            : test the command processor
+        history         : command history
+        repeat          : repeats command multiple times
+  [crc]
+        crc16           : crc16
+        crc32           : crc32
+        adler32         : adler32
+        bench_cksum     : benchmark the checksum routines
+  [dcc]
+        dcc             : dcc stuff
+  [float_tests]
+        float_tests     : floating point test
+  [fs]
+        fs              : fs debug commands
+  [fs_shell]
+        ls              : dir listing
+        cd              : change dir
+        pwd             : print working dir
+        mkdir           : make dir
+        mkfile          : make file
+        rm              : remove file
+        stat            : stat file
+        cat             : cat file
+        df              : list mounts
+  [gfx]
+        gfx             : gfx commands
+  [heap]
+        heap            : heap debug commands
+  [kernel]
+        threads         : list kernel threads
+        threadstats     : thread level statistics
+        threadload      : toggle thread load display
+  [mem]
+        dw              : display memory in words
+        dh              : display memory in halfwords
+        db              : display memory in bytes
+        mw              : modify word of memory
+        mh              : modify halfword of memory
+        mb              : modify byte of memory
+        fw              : fill range of memory by word
+        fh              : fill range of memory by halfword
+        fb              : fill range of memory by byte
+        mc              : copy a range of memory
+        crash           : intentionally crash
+        panic           : intentionally panic
+        stackstomp      : intentionally overrun the stack
+        mtest           : simple memory test
+        chain           : chain load another binary
+        sleep           : sleep number of seconds
+        sleepm          : sleep number of milliseconds
+        time            : print current time
+        timeh           : print current time hires
+  [mem_tests]
+        mem_test        : test memory
+  [minip]
+        arp             : arp commands
+        mi              : minip commands
+  [page_alloc]
+        page_alloc      : page allocator debug commands
+  [pcitests]
+        pci             : pci toolbox
+  [platform_power]
+        reboot          : soft reset
+        poweroff        : powerdown
+  [pmm]
+        pmm             : physical memory manager
+  [psci]
+        psci_version    : show psci version
+  [spifs]
+        spifs           : commands related to the spifs implementation.
+  [stringtests]
+        string          : memcpy tests
+  [tcp]
+        tcp             : tcp commands
+  [tests]
+        printf_tests    : test printf
+        printf_tests_float: test printf with floating point
+        thread_tests    : test the scheduler
+        port_tests      : test the ports
+        clock_tests     : test clocks
+        bench           : miscellaneous benchmarks
+        fibo            : threaded fibonacci
+        spinner         : create a spinning thread
+        cbuf_tests      : test lib/cbuf
+        v9p_tests       : test dev/virtio/9p
+        v9fs_tests      : test lib/fs/9p
+  [unit_tests]
+        ut              : run some or all of the unit tests
+  [version]
+        version         : print version
+  [vm]
+        vm              : vm commands
+  [vmm]
+        vmm             : virtual memory manager
+]
+
+
+] bench
+took 43866 cycles overhead to loop 1024 times
+took 194670812 cycles to memset a buffer of size 1048576 1024 times (1073741824 bytes), 5.515680 bytes/cycle
+took 166825809 cycles to memcpy a buffer of size 524288 1024 times (536870912 source bytes), 3.218153 source bytes/cycle
+took 1528583921 cycles to manually clear a buffer using wordsize 1 of size 1048576 1024 times (1073741824 bytes), 0.702442 bytes/cycle
+took 770214353 cycles to manually clear a buffer using wordsize 2 of size 1048576 1024 times (1073741824 bytes), 1.394082 bytes/cycle
+took 393369633 cycles to manually clear a buffer using wordsize 4 of size 1048576 1024 times (1073741824 bytes), 2.729600 bytes/cycle
+took 202183535 cycles to manually clear a buffer using wordsize 8 of size 1048576 1024 times (1073741824 bytes), 5.310728 bytes/cycle
+took 176413961 cycles to manually clear a buffer of size 1048576 1024 times 8 words at a time (1073741824 bytes), 6.086490 bytes/cycle
+took 183002285 cycles to manually clear a buffer of size 1048576 1024 times 8 words at a time using stm (1073741824 bytes), 5.867368 bytes/cycle
+touching the floating point unit
+took 144615 cycles for sin()
+took 139215 cycles for cos()
+took 103318 cycles for sinf()
+took 100141 cycles for cosf()
+took 16962 cycles for sqrt()
+took 133675 cycles for sqrtf()
+]
+
+</code></figure>
+
+
 <h3>Висновки</h3>
 
 <p>LK не є повноцінною операційною системою для кінцевих
 користувачів, а скоріше ядром або завантажувачем, яке
 адаптується під конкретні потреби. Тому його використання
 часто приховане в низькорівневих компонентах продуктів.</p>
+
 
     </section>
 </main>
