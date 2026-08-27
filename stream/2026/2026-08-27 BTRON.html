@@ -51,9 +51,61 @@
             ядро ITRON Кена Сакамури портоване на Raspberry Pi 2/3 Йокобаяші. Також я хотів би презентувати
             своє урізане TRON ядро разом з TAD-браузером яке є ще більш мінімалістичною версією ніж стандарт 3.20.</p>
 
-        <h4> Формалізація </h4>
+        <h4> Формалізація і гіпервізія</h4>
 
-        <p> </p>
+        <p> Важливо розуміти, що побувати RTOS з гарантованими властивостями (теоремам) -- це не просто
+            вкрасти пару бібліотек на гітхабі, підправити інтерфейси спряження і обкласти тестами, ---
+            ви повинні побудувати модель як минімум в System Fw або краще в MLTT і довести що
+            код ізоморфний моделі (а краще щоб це був автоматичний екстракт). Саме за такою схемою
+            верифікувався код гіпервізор seL4 (який гарантує властивості, тобто виконання теорем, на однопроцесорних ядрах).
+            Якщо вам який інженер пропонує RTOS в 2026 без доведених властивостей які можна перевірити в Agda, Coq, Lean
+            або в інших MLTT тайпчекерах -- гоніть в шию цьго дебіла.</p>
+
+        <h4> Комерціалізація </h4>
+
+        <p> Для демонтрації всього стенда одразу я підготував детальний звіт з розробленими документамт:</5p>
+
+        <p>
+                <ul>
+                    <li><a href="https://os.synrc.com/os-hyper.pdf">2026-08-19 VirtIO Xen ESXi</a></li>
+                    <li><a href="https://os.synrc.com/os.pdf">2026-07-19 Guest Alpine</a></li>
+                    <li><a href="https://os.synrc.com/os.txt">2026-07-29 NIST 53 Architecture</a></li>
+                    <li><a href="https://hv.synrc.com/hv.pdf">2026-08-10 OTP 20 seL4</a></li>
+                    <li><a href="https://hv.synrc.com/hv-smp.pdf">2026-08-13 OTP 30 4-Core</a></li>
+                    <li><a href="https://hv.synrc.com/hv-bc.pdf">2026-08-13 Byte-code VMs</a></li>
+                    <li><a href="https://hv.synrc.com/hv-infosec.pdf">2026-08-14 Infosec Architecture</a></li>
+                    <li><a href="https://hv.synrc.com/hv-crypto.pdf">2026-08-19 LibreSSL Crypto</a></li>
+                    <li><a href="https://bitedits.github.io/btron-tad.pdf">2026-08-27 TAD</a></li>
+                </ul>
+        </p>
+
+        <p> А також сайт <a href="https://hv.synrc.com">hv.synrc.com</a>:</5p>
+
+<figure>
+<pre>
+  • Applications
+  • Products
+  • Downloads
+  • Planes ▾
+      □ Security
+      □ Control
+      □ Web
+      □ Compute
+      □ Service
+  • Languages ▾
+      □ BEAM Elixir/Erlang
+      □ CLR F#/C#
+      □ JVM Scala/Java
+  • Systems ▾
+      □ Alpine
+      □ NetBSD
+      □ FreeBSD
+      □ BTRON
+      □ NuttX
+      □ LK
+  • Hypervision
+</pre>
+</figure>
 
     </section>
 </main>
